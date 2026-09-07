@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN" xml:lang="zh-CN"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Electricity Market Review</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-ea1971949f186b5d7ecce1fd3cf000e4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script type="application/json" class="js-hypothesis-config">
+{
+  "theme": "clean",
+  "openSidebar": false
+}
+</script>
+<script async="" src="https://hypothes.is/embed.js"></script>
+<script>
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    document.body.classList.add('hypothesis-enabled');
+  });
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Electricity Market Review</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="搜索"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="展开或折叠导航栏" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Literature review</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Electricity Market Review</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="collection-intro">
+<p>Click on the title of the document to expand or collapse the full text. Subsequent documents will be continuously compiled on this page.</p>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注记</span>[P001] Matamala et al.&nbsp;(2025) — A Bi-Level Nash Bargaining Model for Electricity Trading Among Microgrids With Endogenous Nodal Prices
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p><strong>Paper:</strong> Yolanda Matamala, Kevin A. Melendez, and Felipe Feijoo<br>
+<strong>Journal:</strong> IEEE Transactions on Smart Grid, 16(4), 3113–3124, 2025<br>
+<strong>DOI:</strong> 10.1109/TSG.2025.3570964</p>
+<p><strong>Main topics:</strong> multi-microgrid trading; Nash bargaining; Stackelberg game; endogenous prices; locational marginal price; battery flexibility; renewable generation</p>
+<section id="quick-takeaway" class="level3">
+<h3 class="anchored" data-anchor-id="quick-takeaway">Quick takeaway</h3>
+<p>This paper asks a simple but important question:</p>
+<p><strong>If several microgrids trade electricity with each other, how can they set a fair trading price when their actions also change electricity prices in the main grid?</strong></p>
+<p>The paper combines two ideas:</p>
+<ol type="1">
+<li>A <strong>Nash Bargaining Solution (NBS)</strong> is used to share the economic benefit fairly among microgrids.</li>
+<li>A <strong>Stackelberg game</strong> is used to model the interaction between the microgrids and the <strong>Independent System Operator (ISO)</strong>.</li>
+</ol>
+<p>The key point is that both the trading price among microgrids and the grid’s <strong>Locational Marginal Price (LMP)</strong> are treated as <strong>endogenous prices</strong>. They are determined by the model instead of being fixed inputs.</p>
+<hr>
+</section>
+<section id="problem-addressed" class="level3">
+<h3 class="anchored" data-anchor-id="problem-addressed">1. Problem addressed</h3>
+<p>There are two linked problems.</p>
+<section id="problem-a-cooperation-may-reduce-total-cost-but-still-be-unfair" class="level4">
+<h4 class="anchored" data-anchor-id="problem-a-cooperation-may-reduce-total-cost-but-still-be-unfair">Problem A — Cooperation may reduce total cost but still be unfair</h4>
+<p>A group of microgrids can cooperate and minimize their total operating cost.</p>
+<p>However, this does <strong>not</strong> mean every microgrid benefits.</p>
+<p>One microgrid may receive most or all of the cost reduction, while another microgrid receives little or no benefit. If a microgrid cannot benefit individually, it has little reason to join the trading scheme.</p>
+</section>
+<section id="problem-b-grid-prices-are-affected-by-microgrid-decisions" class="level4">
+<h4 class="anchored" data-anchor-id="problem-b-grid-prices-are-affected-by-microgrid-decisions">Problem B — Grid prices are affected by microgrid decisions</h4>
+<p>Many trading models treat the electricity price from the main grid as a fixed input.</p>
+<p>This paper argues that this is incomplete.</p>
+<p>When microgrids buy from or sell to the main grid, they change the net demand seen by the grid. This changes generator dispatch and congestion. As a result, the LMP can also change.</p>
+<p>Therefore:</p>
+<p><strong>microgrid trading decisions affect grid prices, and grid prices affect microgrid trading decisions.</strong></p>
+<p>The two sides need to be solved together.</p>
+<hr>
+</section>
+</section>
+<section id="why-existing-approaches-are-not-enough" class="level3">
+<h3 class="anchored" data-anchor-id="why-existing-approaches-are-not-enough">2. Why existing approaches are not enough</h3>
+<p>The paper highlights two common approaches.</p>
+<section id="total-cost-or-social-welfare-optimization" class="level4">
+<h4 class="anchored" data-anchor-id="total-cost-or-social-welfare-optimization">Total-cost or social-welfare optimization</h4>
+<p>This can find a low-cost solution for the whole group.</p>
+<p>The weakness is that it does not guarantee a fair distribution of the benefit among individual microgrids.</p>
+</section>
+<section id="nash-bargaining-models" class="level4">
+<h4 class="anchored" data-anchor-id="nash-bargaining-models">Nash bargaining models</h4>
+<p>Nash bargaining can improve fairness.</p>
+<p>However, many previous bargaining studies do not fully capture the feedback between:</p>
+<ul>
+<li>trading prices among microgrids,</li>
+<li>LMPs in the main grid,</li>
+<li>buying and selling decisions,</li>
+<li>storage operation, and</li>
+<li>renewable generation.</li>
+</ul>
+<p>This paper tries to connect all of these decisions in one model.</p>
+<hr>
+</section>
+</section>
+<section id="core-idea" class="level3">
+<h3 class="anchored" data-anchor-id="core-idea">3. Core idea</h3>
+<p>The proposed framework has two levels.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p001-matamala2025/figures/matamala2025/fig1_framework.png" class="img-fluid figure-img" style="width:72.0%"></p>
+<figcaption>Main model structure: microgrids bargain at the upper level, while the ISO clears the grid at the lower level. Source: Fig. 1 of Matamala et al.&nbsp;(2025).</figcaption>
+</figure>
+</div>
+<section id="upper-level-microgrids" class="level4">
+<h4 class="anchored" data-anchor-id="upper-level-microgrids">Upper level — Microgrids</h4>
+<p>The microgrids cooperate with each other.</p>
+<p>They decide:</p>
+<ul>
+<li>how much electricity to buy or sell,</li>
+<li>how to use renewable generation,</li>
+<li>how to charge or discharge batteries,</li>
+<li>how much electricity to exchange with the main grid, and</li>
+<li>the trading price among microgrids.</li>
+</ul>
+<p>The trading relationship is modeled using the <strong>Nash Bargaining Solution (NBS)</strong>.</p>
+</section>
+<section id="lower-level-main-grid" class="level4">
+<h4 class="anchored" data-anchor-id="lower-level-main-grid">Lower level — Main grid</h4>
+<p>The <strong>Independent System Operator (ISO)</strong> operates the main grid.</p>
+<p>The ISO solves a <strong>Direct Current Optimal Power Flow (DC-OPF)</strong> problem.</p>
+<p>Its objective includes:</p>
+<ul>
+<li>electricity generation cost, and</li>
+<li>the <strong>Social Cost of Carbon (SCC)</strong> associated with generator emissions.</li>
+</ul>
+<p>The lower-level model produces the <strong>Locational Marginal Price (LMP)</strong> at each grid node.</p>
+<hr>
+</section>
+</section>
+<section id="why-this-is-a-bi-level-problem" class="level3">
+<h3 class="anchored" data-anchor-id="why-this-is-a-bi-level-problem">4. Why this is a bi-level problem</h3>
+<p>The microgrids are treated as the leaders.</p>
+<p>The ISO is treated as the follower.</p>
+<p>The logic is:</p>
+<ol type="1">
+<li>Microgrids make trading and operating decisions.</li>
+<li>These decisions change the power injected into or withdrawn from the grid.</li>
+<li>The ISO redispatches generation.</li>
+<li>The LMP changes.</li>
+<li>The new LMP changes the cost of buying or selling electricity for the microgrids.</li>
+</ol>
+<p>So the upper and lower levels are strongly connected.</p>
+<p>This is the main reason for using a Stackelberg bi-level model.</p>
+<hr>
+</section>
+<section id="what-does-endogenous-price-mean-here" class="level3">
+<h3 class="anchored" data-anchor-id="what-does-endogenous-price-mean-here">5. What does “endogenous price” mean here?</h3>
+<p>An <strong>endogenous price</strong> is a price calculated inside the model.</p>
+<p>It is not given in advance.</p>
+<p>This paper has two important endogenous prices:</p>
+<ul>
+<li>the trading price among microgrids, and</li>
+<li>the LMP from the main grid.</li>
+</ul>
+<p>This is one of the main contributions of the paper.</p>
+<p>It allows the model to study how renewable generation, storage, electricity trading, and grid operation jointly affect prices.</p>
+<hr>
+</section>
+<section id="how-fairness-is-defined" class="level3">
+<h3 class="anchored" data-anchor-id="how-fairness-is-defined">6. How fairness is defined</h3>
+<p>The most useful concept in this paper is the <strong>disagreement point</strong>.</p>
+<p>The disagreement point is the cost of a microgrid when cooperation or peer trading is not available.</p>
+<p>For microgrid <span class="math inline">\(m\)</span>:</p>
+<ul>
+<li><span class="math inline">\(d_m\)</span>: disagreement-point cost,</li>
+<li><span class="math inline">\(z_m\)</span>: cost after cooperation.</li>
+</ul>
+<p>The benefit from cooperation is therefore:</p>
+<p><span class="math display">\[
+d_m-z_m
+\]</span></p>
+<p>If this value is positive, the microgrid saves money by cooperating.</p>
+<p>The basic Nash bargaining idea is to maximize the product of these benefits:</p>
+<p><span class="math display">\[
+\max \prod_m (d_m-z_m)
+\]</span></p>
+<p>This is different from only minimizing:</p>
+<p><span class="math display">\[
+\sum_m z_m
+\]</span></p>
+<p>The first expression cares about how the benefit is distributed.</p>
+<p>The second mainly cares about the total cost.</p>
+<p>This difference explains why Nash bargaining can produce a fairer result.</p>
+<hr>
+</section>
+<section id="how-the-disagreement-point-is-obtained" class="level3">
+<h3 class="anchored" data-anchor-id="how-the-disagreement-point-is-obtained">7. How the disagreement point is obtained</h3>
+<p>The disagreement point is not assumed.</p>
+<p>The authors calculate it by solving the market when microgrids do <strong>not</strong> trade electricity with each other.</p>
+<p>This non-cooperative case is formulated as an <strong>Equilibrium Problem with Equilibrium Constraints (EPEC)</strong>.</p>
+<p>The resulting cost for each microgrid becomes its disagreement point.</p>
+<p>This gives the bargaining model a clear baseline:</p>
+<p><strong>A microgrid should not accept cooperation if it performs worse than it would without cooperation.</strong></p>
+<hr>
+</section>
+<section id="model-solution" class="level3">
+<h3 class="anchored" data-anchor-id="model-solution">8. Model solution</h3>
+<p>The original bi-level model is difficult to solve directly.</p>
+<p>The authors convert it into a <strong>Mathematical Program with Equilibrium Constraints (MPEC)</strong>.</p>
+<p>The lower-level DC-OPF is replaced by its <strong>Karush-Kuhn-Tucker (KKT)</strong> optimality conditions.</p>
+<p>This creates complementarity constraints and nonlinear terms.</p>
+<p>Several techniques are then used to improve solution performance:</p>
+<ul>
+<li><strong>Special Ordered Set Type 1 (SOS1)</strong> for complementarity constraints,</li>
+<li><strong>Second-Order Cone (SOC)</strong> reformulation for the Nash bargaining objective,</li>
+<li>strong duality for some bilinear terms, and</li>
+<li>a valid inequality to improve the optimization bound.</li>
+</ul>
+<p>The numerical results show that SOS1 performs much better than a standard Big-M formulation for the tested cases.</p>
+<hr>
+</section>
+<section id="case-study" class="level3">
+<h3 class="anchored" data-anchor-id="case-study">9. Case study</h3>
+<p>The model is tested on:</p>
+<ul>
+<li>a PJM 5-bus system with two microgrids, and</li>
+<li>an IEEE 14-bus system with four microgrids.</li>
+</ul>
+<p>The time horizon is 24 hours.</p>
+<p>The microgrids include:</p>
+<ul>
+<li>electricity demand,</li>
+<li>wind and solar generation,</li>
+<li>battery storage, and</li>
+<li>connection to the main grid.</li>
+</ul>
+<p>Different renewable-generation levels and battery capacities are tested.</p>
+<hr>
+</section>
+<section id="main-findings" class="level3">
+<h3 class="anchored" data-anchor-id="main-findings">10. Main findings</h3>
+<section id="renewable-generation-reduces-market-prices" class="level4">
+<h4 class="anchored" data-anchor-id="renewable-generation-reduces-market-prices">Renewable generation reduces market prices</h4>
+<p>When renewable generation increases, the microgrids need less electricity from fossil-fuel generators in the main grid.</p>
+<p>In the high-renewable scenario:</p>
+<ul>
+<li>the nodal price decreases by about <strong>1.53%</strong>, and</li>
+<li>the trading price among microgrids decreases by about <strong>1.27%</strong>.</li>
+</ul>
+<p>This shows an important feedback:</p>
+<p><strong>more local renewable generation can influence not only microgrid operation but also the market price seen by the microgrids.</strong></p>
+</section>
+<section id="cooperation-reduces-dependence-on-the-main-grid" class="level4">
+<h4 class="anchored" data-anchor-id="cooperation-reduces-dependence-on-the-main-grid">Cooperation reduces dependence on the main grid</h4>
+<p>For the microgrid with lower generation, bargaining reduces electricity purchased from the ISO by about:</p>
+<ul>
+<li><strong>3%</strong> in the low-renewable scenario, and</li>
+<li><strong>10%</strong> in the high-renewable scenario.</li>
+</ul>
+</section>
+<section id="battery-storage-makes-trading-more-flexible" class="level4">
+<h4 class="anchored" data-anchor-id="battery-storage-makes-trading-more-flexible">Battery storage makes trading more flexible</h4>
+<p>A microgrid can buy electricity when its nodal price is low, charge its battery, and later sell electricity when prices are higher.</p>
+<p>Storage therefore changes both the timing and economic value of electricity trading.</p>
+</section>
+<section id="nash-bargaining-improves-fairness" class="level4">
+<h4 class="anchored" data-anchor-id="nash-bargaining-improves-fairness">Nash bargaining improves fairness</h4>
+<p>The grand-coalition approach and the bargaining approach can produce a similar total cost reduction.</p>
+<p>But the distribution can be very different.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p001-matamala2025/figures/matamala2025/fig4_fairness.png" class="img-fluid figure-img" style="width:66.0%"></p>
+<figcaption>The grand coalition can give almost all of the benefit to one microgrid, while Nash bargaining distributes the benefit between participants. Source: Fig. 4 of Matamala et al.&nbsp;(2025).</figcaption>
+</figure>
+</div>
+<p>For the high-generation case reported in the paper:</p>
+<ul>
+<li>total cost reduction: about <strong>$1,788</strong>,</li>
+<li>grand coalition: the benefit is allocated to only one microgrid,</li>
+<li>Nash bargaining: about <strong>$884</strong> for one microgrid and <strong>$904</strong> for the other.</li>
+</ul>
+<p>This is the clearest result of the paper.</p>
+<p>The main value of Nash bargaining is therefore not necessarily a larger total saving.</p>
+<p>It is a <strong>more acceptable distribution of the saving</strong>.</p>
+<hr>
+</section>
+</section>
+<section id="what-this-paper-teaches" class="level3">
+<h3 class="anchored" data-anchor-id="what-this-paper-teaches">11. What this paper teaches</h3>
+<section id="lesson-1-minimum-total-cost-is-not-the-same-as-fair-cooperation" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-1-minimum-total-cost-is-not-the-same-as-fair-cooperation">Lesson 1 — Minimum total cost is not the same as fair cooperation</h4>
+<p>This is important in systems with independent owners.</p>
+<p>A mathematically optimal solution for the whole system may be unacceptable to an individual participant.</p>
+</section>
+<section id="lesson-2-the-baseline-matters" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-2-the-baseline-matters">Lesson 2 — The baseline matters</h4>
+<p>The disagreement point gives each participant a reference.</p>
+<p>The question is not only:</p>
+<blockquote class="blockquote">
+<p>Is the cooperative system cheaper?</p>
+</blockquote>
+<p>It is also:</p>
+<blockquote class="blockquote">
+<p>Is each participant better off than without cooperation?</p>
+</blockquote>
+</section>
+<section id="lesson-3-electricity-prices-should-not-always-be-treated-as-fixed-inputs" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-3-electricity-prices-should-not-always-be-treated-as-fixed-inputs">Lesson 3 — Electricity prices should not always be treated as fixed inputs</h4>
+<p>If distributed resources become large enough, their actions can affect grid dispatch and nodal prices.</p>
+<p>In that case, price and operation should be modeled together.</p>
+</section>
+<section id="lesson-4-storage-is-not-only-an-energy-balancing-device" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-4-storage-is-not-only-an-energy-balancing-device">Lesson 4 — Storage is not only an energy-balancing device</h4>
+<p>Battery storage also creates market flexibility.</p>
+<p>It allows a microgrid to move electricity across time and respond to price differences.</p>
+<hr>
+</section>
+</section>
+<section id="what-remains-unsolved" class="level3">
+<h3 class="anchored" data-anchor-id="what-remains-unsolved">12. What remains unsolved</h3>
+<section id="stated-by-the-authors" class="level4">
+<h4 class="anchored" data-anchor-id="stated-by-the-authors">Stated by the authors</h4>
+<p>The authors suggest studying <strong>oligopolistic behavior and market manipulation</strong>.</p>
+<p>For example, large microgrids may strategically change their interaction with the ISO to influence network prices.</p>
+<p>Mitigation strategies are therefore an important future topic.</p>
+</section>
+<section id="further-limitations-visible-from-the-model-setup" class="level4">
+<h4 class="anchored" data-anchor-id="further-limitations-visible-from-the-model-setup">Further limitations visible from the model setup</h4>
+<p>These are useful research questions that are not fully addressed in this paper:</p>
+<ul>
+<li>Renewable generation is tested through scenarios, but explicit forecast uncertainty is not modeled in the bargaining problem.</li>
+<li>The lower-level network uses DC-OPF, so voltage, reactive power, and detailed AC network behavior are not considered.</li>
+<li>The test systems contain only two or four microgrids.</li>
+<li>The optimization can still require hours to solve as the problem becomes larger.</li>
+<li>The framework assumes that microgrids can cooperate and exchange the information needed for joint bargaining.</li>
+<li>The model focuses on one market period structure rather than repeated strategic behavior over many market days.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="research-idea-triggers" class="level3">
+<h3 class="anchored" data-anchor-id="research-idea-triggers">13. Research idea triggers</h3>
+<section id="uncertainty" class="level4">
+<h4 class="anchored" data-anchor-id="uncertainty">Uncertainty</h4>
+<p>Can Nash bargaining be combined with:</p>
+<ul>
+<li>stochastic optimization,</li>
+<li>robust optimization, or</li>
+<li>chance constraints</li>
+</ul>
+<p>to handle renewable, load, and price uncertainty?</p>
+</section>
+<section id="scalability" class="level4">
+<h4 class="anchored" data-anchor-id="scalability">Scalability</h4>
+<p>Can the centralized model be replaced by a distributed or decomposition-based algorithm for tens or hundreds of microgrids?</p>
+</section>
+<section id="real-time-operation" class="level4">
+<h4 class="anchored" data-anchor-id="real-time-operation">Real-time operation</h4>
+<p>Can the same idea be used in rolling-horizon or real-time trading instead of solving a large day-ahead problem?</p>
+</section>
+<section id="network-model" class="level4">
+<h4 class="anchored" data-anchor-id="network-model">Network model</h4>
+<p>What changes if AC power flow, voltage constraints, or distribution-network constraints are included?</p>
+</section>
+<section id="market-power" class="level4">
+<h4 class="anchored" data-anchor-id="market-power">Market power</h4>
+<p>Can some microgrids manipulate the endogenous LMP?</p>
+<p>How should market power be detected or limited?</p>
+</section>
+<section id="fairness" class="level4">
+<h4 class="anchored" data-anchor-id="fairness">Fairness</h4>
+<p>How would the result change if another benefit-allocation rule were used instead of Nash bargaining?</p>
+</section>
+<section id="joint-planning-and-operation" class="level4">
+<h4 class="anchored" data-anchor-id="joint-planning-and-operation">Joint planning and operation</h4>
+<p>Can storage sizing, renewable sizing, and electricity trading be optimized together?</p>
+</section>
+<section id="multi-energy-systems" class="level4">
+<h4 class="anchored" data-anchor-id="multi-energy-systems">Multi-energy systems</h4>
+<p>Can the framework include heat, hydrogen, electric vehicles, or flexible loads?</p>
+<hr>
+</section>
+</section>
+<section id="problem-map-tags" class="level3">
+<h3 class="anchored" data-anchor-id="problem-map-tags">14. Problem-map tags</h3>
+<p><code>fairness</code><br>
+<code>multi-microgrid trading</code><br>
+<code>Nash bargaining</code><br>
+<code>bi-level optimization</code><br>
+<code>Stackelberg game</code><br>
+<code>endogenous electricity price</code><br>
+<code>locational marginal price</code><br>
+<code>battery flexibility</code><br>
+<code>renewable generation</code><br>
+<code>market power</code><br>
+<code>computational scalability</code></p>
+</section>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注记</span>[P002] Gao et al.&nbsp;(2023) — A Blockchain Peer-to-Peer Energy Trading System for Microgrids
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p><strong>Journal:</strong> IEEE Transactions on Smart Grid, 14(5), 3944–3960, 2023<br>
+<strong>DOI:</strong> 10.1109/TSG.2023.3237624<br>
+<strong>Main topics:</strong> blockchain; Peer-to-Peer (P2P) energy trading; security; privacy; energy theft; microgrids</p>
+<section id="quick-takeaway-1" class="level3">
+<h3 class="anchored" data-anchor-id="quick-takeaway-1">Quick takeaway</h3>
+<p>This paper focuses on <strong>how to make P2P energy trading secure and trustworthy</strong>.</p>
+<p>Its main concern is not how to optimize electricity prices or trading quantities. Instead, it asks:</p>
+<p><strong>How can prosumers trade electricity without relying on one central database, while protecting transaction data from tampering, privacy leakage, and attacks?</strong></p>
+<hr>
+</section>
+<section id="problem-addressed-1" class="level3">
+<h3 class="anchored" data-anchor-id="problem-addressed-1">1. Problem addressed</h3>
+<p>P2P energy trading requires frequent communication among prosumers and consumers.</p>
+<p>This creates several risks:</p>
+<ul>
+<li>transaction data may be changed or leaked;</li>
+<li>smart-meter data may be manipulated;</li>
+<li>users may collude or report false energy information;</li>
+<li>centralized trading platforms create a single point of failure.</li>
+</ul>
+<p>The paper therefore develops a blockchain-based trading platform with additional security and theft-detection mechanisms.</p>
+<hr>
+</section>
+<section id="proposed-solution" class="level3">
+<h3 class="anchored" data-anchor-id="proposed-solution">2. Proposed solution</h3>
+<p>The framework combines four main parts:</p>
+<ol type="1">
+<li><p><strong>Private Ethereum blockchain</strong><br>
+Trading records are stored in an immutable distributed ledger.</p></li>
+<li><p><strong>Certificateless Signcryption (CLSC)</strong><br>
+Encryption and digital signing are combined in one process to protect confidentiality, authenticity, and integrity.</p></li>
+<li><p><strong>Leader election and consensus</strong><br>
+Processing nodes elect a leader and use a consensus process to validate transactions before adding them to the blockchain.</p></li>
+<li><p><strong>Smart-contract energy theft detection</strong><br>
+Reported energy use is compared with supplied energy. Large mismatches are treated as possible energy theft.</p></li>
+</ol>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p002-gao2023/figures/gao2023/fig1_system_architecture.png" class="img-fluid figure-img" style="width:82.0%"></p>
+<figcaption>Main system architecture. Source: Fig. 1 of Gao et al.&nbsp;(2023).</figcaption>
+</figure>
+</div>
+<p>The main entities are prosumers/consumers, an Energy Request Aggregator, a Data Processing Center, and a trusted Certificate Authority (CA).</p>
+<hr>
+</section>
+<section id="how-trading-works" class="level3">
+<h3 class="anchored" data-anchor-id="how-trading-works">3. How trading works</h3>
+<p>A simplified process is:</p>
+<p><strong>energy request → request aggregation → buyer selects seller → encrypted/signed transaction → blockchain validation → payment and power transfer</strong></p>
+<p>The Energy Request Aggregator collects requests and displays trading information.</p>
+<p>The CA manages keys and authentication.</p>
+<p>The blockchain processing nodes validate transactions and store them after consensus.</p>
+<hr>
+</section>
+<section id="main-results" class="level3">
+<h3 class="anchored" data-anchor-id="main-results">4. Main results</h3>
+<p>The proposed signcryption scheme has low computational cost because it avoids expensive bilinear pairing operations.</p>
+<p>The reported execution times are:</p>
+<ul>
+<li>signcryption: <strong>1.94 ms</strong></li>
+<li>unsigncryption: <strong>3.88 ms</strong></li>
+</ul>
+<p>The authors report lower computation and communication costs than the four comparison schemes.</p>
+<p>Blockchain experiments were also carried out on the Ethereum Ropsten network.</p>
+<p>For leader election, <strong>UDP broadcast</strong> performs better than standard TCP and point-to-point UDP because fewer messages are needed.</p>
+<hr>
+</section>
+<section id="what-this-paper-teaches-1" class="level3">
+<h3 class="anchored" data-anchor-id="what-this-paper-teaches-1">5. What this paper teaches</h3>
+<p>The main lesson is:</p>
+<p><strong>P2P energy trading is not only an optimization problem. It is also a communication, trust, privacy, and cybersecurity problem.</strong></p>
+<p>Blockchain can provide a tamper-resistant transaction record, but blockchain alone is not enough. Authentication, encryption, consensus, and abnormal-energy-use detection are also required.</p>
+<p>This paper is therefore more about the <strong>digital infrastructure behind energy trading</strong> than the economic design of the market.</p>
+<hr>
+</section>
+<section id="what-remains-unsolved-1" class="level3">
+<h3 class="anchored" data-anchor-id="what-remains-unsolved-1">6. What remains unsolved</h3>
+<p>Important limitations are:</p>
+<ul>
+<li>The framework does not optimize trading prices or energy quantities.</li>
+<li>Power-flow and network operating constraints are not included in the trading mechanism.</li>
+<li>The system still relies on a fully trusted CA and an Energy Request Aggregator.</li>
+<li>Validation is mainly based on cryptographic analysis and blockchain/network simulation rather than a real microgrid deployment.</li>
+<li>Larger real-time systems may still face latency, throughput, and transaction-cost problems.</li>
+</ul>
+<hr>
+</section>
+<section id="research-idea-triggers-1" class="level3">
+<h3 class="anchored" data-anchor-id="research-idea-triggers-1">7. Research idea triggers</h3>
+<p>Possible extensions include:</p>
+<ul>
+<li>combining blockchain security with energy-market optimization or game theory;</li>
+<li>including power-flow constraints in blockchain-based P2P trading;</li>
+<li>designing a more decentralized identity and authentication mechanism;</li>
+<li>adding privacy-preserving market clearing;</li>
+<li>testing the platform with real microgrid and smart-meter data;</li>
+<li>combining cyberattack detection with physical power-system anomaly detection.</li>
+</ul>
+<p><strong>Problem-map tags:</strong> <code>P2P trading</code> · <code>blockchain</code> · <code>cybersecurity</code> · <code>privacy</code> · <code>energy theft</code> · <code>distributed market</code> · <code>microgrid</code></p>
+</section>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注记</span>[P003] Azim et al.&nbsp;(2023) — A Cooperative P2P Trading Framework: Developed and Validated Through Hardware-in-Loop
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p><strong>Journal:</strong> IEEE Transactions on Smart Grid, 14(4), 2999–3015, 2023<br>
+<strong>DOI:</strong> 10.1109/TSG.2022.3225520<br>
+<strong>Main topics:</strong> Peer-to-Peer (P2P) trading; cooperative game; network constraints; Shapley value; Software-in-the-Loop (SIL); Hardware-in-the-Loop (HIL)</p>
+<section id="quick-takeaway-2" class="level3">
+<h3 class="anchored" data-anchor-id="quick-takeaway-2">Quick takeaway</h3>
+<p>The paper addresses a practical gap in P2P trading:</p>
+<p><strong>A financially attractive trade may still be unsafe for the distribution network.</strong></p>
+<p>The proposed framework therefore links:</p>
+<ul>
+<li>a <strong>financial layer</strong> for P2P trading and benefit allocation;</li>
+<li>a <strong>physical network layer</strong> for checking voltage and branch-flow limits;</li>
+<li>a <strong>real-time validation layer</strong> using SIL and HIL.</li>
+</ul>
+<hr>
+</section>
+<section id="problem-addressed-2" class="level3">
+<h3 class="anchored" data-anchor-id="problem-addressed-2">1. Problem addressed</h3>
+<p>Most P2P studies mainly focus on one of two sides:</p>
+<ul>
+<li><strong>financial design</strong>: price, trading quantity, benefit allocation;</li>
+<li><strong>physical network operation</strong>: voltage, congestion, losses.</li>
+</ul>
+<p>The problem is that a trade can be economically attractive but create voltage violations or excessive power flow in a low-voltage network.</p>
+<p>A second gap is validation. Many network-aware P2P methods are only tested by numerical simulation, so their readiness for real implementation is unclear.</p>
+<hr>
+</section>
+<section id="why-existing-approaches-are-not-enough-1" class="level3">
+<h3 class="anchored" data-anchor-id="why-existing-approaches-are-not-enough-1">2. Why existing approaches are not enough</h3>
+<p>The paper groups existing work into three broad types:</p>
+<ol type="1">
+<li><p><strong>Financial-layer studies</strong><br>
+Good at market design, but often ignore physical network limits.</p></li>
+<li><p><strong>Network studies without full coordination</strong><br>
+They analyse network impacts after trading decisions are made.</p></li>
+<li><p><strong>Coordinated financial–network studies</strong><br>
+They consider both layers, but are usually validated only in software.</p></li>
+</ol>
+<p>The missing part is:</p>
+<p><strong>coordinated P2P trading + network safety + hardware-based validation.</strong></p>
+<hr>
+</section>
+<section id="overall-framework" class="level3">
+<h3 class="anchored" data-anchor-id="overall-framework">3. Overall framework</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p003-azim2023/figures/azim2023/fig1_hybrid_p2p_framework.png" class="img-fluid figure-img" style="width:78.0%"></p>
+<figcaption>Hybrid P2P framework linking financial trading and physical network checking. Source: Fig. 1 of Azim et al.&nbsp;(2023).</figcaption>
+</figure>
+</div>
+<p>The main logic is:</p>
+<ol type="1">
+<li>Prosumers decide intended P2P trading quantities.</li>
+<li>A <strong>P2P Market Operator (PMO)</strong> checks whether these quantities are compatible with the distribution network.</li>
+<li>If there is no violation, the trade is accepted.</li>
+<li>If there is a violation, the trading quantity is reduced and checked again.</li>
+<li>The final economic benefit is then evaluated and allocated.</li>
+</ol>
+<p>The financial decisions remain with the prosumers. The PMO only checks physical feasibility.</p>
+<hr>
+</section>
+<section id="financial-layer-cooperative-trading" class="level3">
+<h3 class="anchored" data-anchor-id="financial-layer-cooperative-trading">4. Financial layer: cooperative trading</h3>
+<p>The financial layer uses a <strong>Canonical Coalition Game (CCG)</strong>.</p>
+<p>All participating prosumers form a grand coalition and cooperate to reduce their total electricity cost.</p>
+<p>The model determines:</p>
+<ul>
+<li>P2P selling quantity;</li>
+<li>P2P buying quantity;</li>
+<li>P2P trading price;</li>
+<li>electricity exchanged with the grid.</li>
+</ul>
+<p>The P2P price is kept between the <strong>Feed-in Tariff (FiT)</strong> and the grid <strong>Time-of-Use (ToU)</strong> price.</p>
+<p>This creates an incentive for both sides:</p>
+<ul>
+<li>sellers earn more than the FiT;</li>
+<li>buyers pay less than the retail ToU price.</li>
+</ul>
+<hr>
+</section>
+<section id="benefit-allocation-shapley-value" class="level3">
+<h3 class="anchored" data-anchor-id="benefit-allocation-shapley-value">5. Benefit allocation: Shapley value</h3>
+<p>The total coalition benefit is not simply shared equally.</p>
+<p>The paper uses the <strong>Shapley value</strong>.</p>
+<p>The idea is:</p>
+<p><strong>a prosumer receives a benefit according to its marginal contribution to the coalition.</strong></p>
+<p>This is used to keep the coalition fair and stable.</p>
+<p>The authors also prove that the proposed coalition satisfies the required cooperative-game properties, including grand-coalition formation and stability.</p>
+<hr>
+</section>
+<section id="physical-network-constraint-checking" class="level3">
+<h3 class="anchored" data-anchor-id="physical-network-constraint-checking">6. Physical network constraint checking</h3>
+<p>The physical layer checks whether P2P power injections violate the distribution network.</p>
+<p>The main constraints are:</p>
+<ul>
+<li>bus voltage limits;</li>
+<li>branch power-flow limits.</li>
+</ul>
+<p>An AC network model is used for the actual validation.</p>
+<p>If a proposed P2P injection causes a violation, the framework reduces the trading quantity rather than completely blocking the prosumer.</p>
+<p>Example:</p>
+<ul>
+<li>intended injection: <strong>6.69 kW</strong></li>
+<li>voltage limit is violated;</li>
+<li>allowed injection after correction: <strong>5 kW</strong></li>
+<li>reduction: <strong>25.26%</strong></li>
+</ul>
+<p>This is a key practical idea of the paper:</p>
+<p><strong>find the maximum safe trading quantity instead of simply rejecting the trade.</strong></p>
+<hr>
+</section>
+<section id="sil-and-hil-validation" class="level3">
+<h3 class="anchored" data-anchor-id="sil-and-hil-validation">7. SIL and HIL validation</h3>
+<p>The authors validate the method using both:</p>
+<ul>
+<li><strong>Software-in-the-Loop (SIL)</strong>;</li>
+<li><strong>Hardware-in-the-Loop (HIL)</strong>.</li>
+</ul>
+<p>The platform combines MATLAB, RSCAD, and a <strong>Real-Time Digital Simulator (RTDS)</strong>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p003-azim2023/figures/azim2023/fig5_hil_setup.png" class="img-fluid figure-img" style="width:82.0%"></p>
+<figcaption>Hardware-in-the-Loop setup used for real-time validation. Source: Fig. 5 of Azim et al.&nbsp;(2023).</figcaption>
+</figure>
+</div>
+<p>The HIL setup includes:</p>
+<ul>
+<li>PV emulator;</li>
+<li>PV inverter;</li>
+<li>battery and inverter;</li>
+<li>programmable load;</li>
+<li>resistive load;</li>
+<li>power amplifier.</li>
+</ul>
+<p>The purpose is to check whether the P2P algorithm still behaves correctly when connected to realistic hardware.</p>
+<hr>
+</section>
+<section id="case-study-1" class="level3">
+<h3 class="anchored" data-anchor-id="case-study-1">8. Case study</h3>
+<p>The test system is a typical Australian low-voltage distribution network.</p>
+<p>Key settings:</p>
+<ul>
+<li>35 buses;</li>
+<li>102 residential customers;</li>
+<li>30 prosumers participate in P2P trading;</li>
+<li>ToU price: <strong>17–35 ¢/kWh</strong>;</li>
+<li>FiT: <strong>10 ¢/kWh</strong>.</li>
+</ul>
+<p>Different residential load types are also considered using ZIP load models.</p>
+<hr>
+</section>
+<section id="main-findings-1" class="level3">
+<h3 class="anchored" data-anchor-id="main-findings-1">9. Main findings</h3>
+<section id="network-safety" class="level4">
+<h4 class="anchored" data-anchor-id="network-safety">Network safety</h4>
+<p>The proposed framework keeps voltage and branch-flow limits within acceptable ranges by adjusting trading quantities when needed.</p>
+</section>
+<section id="sil-versus-hil" class="level4">
+<h4 class="anchored" data-anchor-id="sil-versus-hil">SIL versus HIL</h4>
+<p>The voltage difference between SIL and HIL results is reported to be <strong>less than 1%</strong>.</p>
+<p>This supports the practical validity of the simulation framework.</p>
+</section>
+<section id="economic-benefit" class="level4">
+<h4 class="anchored" data-anchor-id="economic-benefit">Economic benefit</h4>
+<p>All participating prosumers reduce their daily electricity costs compared with Business-as-Usual (BAU).</p>
+<p>Reported cost reductions range from:</p>
+<p><strong>9.65% to 47.03%</strong></p>
+<p>The proposed method also performs better than an existing CCG method that does not directly internalize the network constraints.</p>
+<hr>
+</section>
+</section>
+<section id="what-this-paper-teaches-2" class="level3">
+<h3 class="anchored" data-anchor-id="what-this-paper-teaches-2">10. What this paper teaches</h3>
+<section id="lesson-1-economic-feasibility-is-not-enough" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-1-economic-feasibility-is-not-enough">Lesson 1 — Economic feasibility is not enough</h4>
+<p>A P2P trade must also satisfy physical network limits.</p>
+</section>
+<section id="lesson-2-network-constraints-should-be-part-of-the-trading-process" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-2-network-constraints-should-be-part-of-the-trading-process">Lesson 2 — Network constraints should be part of the trading process</h4>
+<p>Checking the network only after finalizing the market decision can lead to infeasible trades.</p>
+</section>
+<section id="lesson-3-do-not-block-more-power-than-necessary" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-3-do-not-block-more-power-than-necessary">Lesson 3 — Do not block more power than necessary</h4>
+<p>If a trade causes a violation, reducing the quantity can be better than rejecting the trade completely.</p>
+</section>
+<section id="lesson-4-hil-is-an-important-step-toward-real-deployment" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-4-hil-is-an-important-step-toward-real-deployment">Lesson 4 — HIL is an important step toward real deployment</h4>
+<p>A useful research path is:</p>
+<p><strong>simulation → SIL → HIL → field test</strong></p>
+<hr>
+</section>
+</section>
+<section id="what-remains-unsolved-2" class="level3">
+<h3 class="anchored" data-anchor-id="what-remains-unsolved-2">11. What remains unsolved</h3>
+<p>The paper still leaves several open issues:</p>
+<ul>
+<li>battery dynamics are simplified within each simulation step;</li>
+<li>battery degradation is not modeled;</li>
+<li>privacy and data encryption are not fully developed;</li>
+<li>the PMO remains a centralized network-checking entity;</li>
+<li>uncertainty in PV, load, and prices is not deeply considered;</li>
+<li>scalability for very large numbers of prosumers is not studied in detail;</li>
+<li>HIL is closer to practice, but it is still not a full field deployment.</li>
+</ul>
+<hr>
+</section>
+<section id="research-idea-triggers-2" class="level3">
+<h3 class="anchored" data-anchor-id="research-idea-triggers-2">12. Research idea triggers</h3>
+<p>Possible extensions include:</p>
+<ul>
+<li>distributed network-feasibility checking without a central PMO;</li>
+<li>stochastic or robust P2P trading under PV/load uncertainty;</li>
+<li>battery degradation and inter-temporal battery constraints;</li>
+<li>privacy-preserving P2P trading;</li>
+<li>large-scale real-time coordination;</li>
+<li>blockchain + cooperative game + network constraints;</li>
+<li>HIL validation of more advanced P2P market designs.</li>
+</ul>
+<p><strong>Problem-map tags:</strong> <code>P2P trading</code> · <code>network constraints</code> · <code>cooperative game</code> · <code>Shapley value</code> · <code>voltage management</code> · <code>SIL</code> · <code>HIL</code> · <code>real-world implementation</code></p>
+</section>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注记</span>[P004] Zhang et al.&nbsp;(2023) — A Coordinated Multi-Energy Trading Framework for Strategic Hydrogen Provider in Electricity and Hydrogen Markets
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p><strong>Journal:</strong> IEEE Transactions on Smart Grid, 14(2), 1403–1417, 2023<br>
+<strong>DOI:</strong> 10.1109/TSG.2022.3154611<br>
+<strong>Main topics:</strong> hydrogen trading; electricity market; Stackelberg game; auction pricing; biomass electrolysis; stochastic optimization; ancillary services</p>
+<section id="quick-takeaway-3" class="level3">
+<h3 class="anchored" data-anchor-id="quick-takeaway-3">Quick takeaway</h3>
+<p>This paper studies a <strong>Hydrogen Provider (HP)</strong> that participates in both the hydrogen and electricity markets.</p>
+<p>The key question is:</p>
+<p><strong>How can an HP coordinate hydrogen production, hydrogen sales, and grid-support services so that it earns more while using renewable energy more efficiently?</strong></p>
+<p>The framework combines market trading, hydrogen production, storage, and ancillary services in one system.</p>
+<hr>
+</section>
+<section id="problem-addressed-3" class="level3">
+<h3 class="anchored" data-anchor-id="problem-addressed-3">1. Problem addressed</h3>
+<p>The paper targets three linked problems.</p>
+<section id="green-hydrogen-is-still-expensive" class="level4">
+<h4 class="anchored" data-anchor-id="green-hydrogen-is-still-expensive">Green hydrogen is still expensive</h4>
+<p>Conventional water electrolysis consumes a large amount of electricity. This reduces the economic value of renewable-to-hydrogen conversion.</p>
+</section>
+<section id="a-hydrogen-provider-may-not-fully-use-its-assets" class="level4">
+<h4 class="anchored" data-anchor-id="a-hydrogen-provider-may-not-fully-use-its-assets">A hydrogen provider may not fully use its assets</h4>
+<p>Hydrogen demand changes during the day. During low-demand periods, hydrogen storage and conversion equipment may be underused.</p>
+</section>
+<section id="fixed-hydrogen-prices-do-not-reflect-buyer-response" class="level4">
+<h4 class="anchored" data-anchor-id="fixed-hydrogen-prices-do-not-reflect-buyer-response">Fixed hydrogen prices do not reflect buyer response</h4>
+<p>Many hydrogen-trading studies use a fixed hydrogen price. This ignores how <strong>Hydrogen Fueling Stations (HFSs)</strong> change their purchase quantities when the price changes.</p>
+<p>The paper therefore tries to coordinate:</p>
+<p><strong>renewable energy → hydrogen production → hydrogen trading → electricity-market services</strong></p>
+<hr>
+</section>
+</section>
+<section id="why-existing-approaches-are-not-enough-2" class="level3">
+<h3 class="anchored" data-anchor-id="why-existing-approaches-are-not-enough-2">2. Why existing approaches are not enough</h3>
+<p>Previous studies often focus on only one part of the problem:</p>
+<ul>
+<li>green hydrogen production;</li>
+<li>hydrogen-market trading;</li>
+<li>strategic bidding;</li>
+<li>electricity-hydrogen coupling.</li>
+</ul>
+<p>The authors identify two important gaps:</p>
+<ol type="1">
+<li>hydrogen pricing often does not consider the buyers’ willingness to pay;</li>
+<li>the HP’s ability to earn from both hydrogen sales and electricity ancillary services is not fully used.</li>
+</ol>
+<p>The paper also argues that conventional water electrolysis has relatively low conversion efficiency, especially when renewable power fluctuates.</p>
+<hr>
+</section>
+<section id="overall-electricity-hydrogen-trading-framework" class="level3">
+<h3 class="anchored" data-anchor-id="overall-electricity-hydrogen-trading-framework">3. Overall electricity-hydrogen trading framework</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p004-zhang2023-hydrogen/figures/zhang2023_hydrogen/fig1_multi_energy_trading_framework.png" class="img-fluid figure-img" style="width:74.0%"></p>
+<figcaption>Coordinated electricity-hydrogen trading framework. Source: Fig. 1 of Zhang et al.&nbsp;(2023).</figcaption>
+</figure>
+</div>
+<p>The main participants are:</p>
+<ul>
+<li><strong>Hydrogen Provider (HP)</strong>;</li>
+<li><strong>Hydrogen Fueling Stations (HFSs)</strong>;</li>
+<li>hydrogen auctioneer;</li>
+<li>electricity market / Independent System Operator (ISO).</li>
+</ul>
+<p>The HP uses wind, solar, and biomass to produce green hydrogen.</p>
+<p>The produced hydrogen can be:</p>
+<ul>
+<li>sold to HFSs;</li>
+<li>stored for later use;</li>
+<li>converted back to electricity through a fuel cell;</li>
+<li>used indirectly to provide reserve services to the power grid.</li>
+</ul>
+<p>The electricity and hydrogen markets are cleared separately, but the HP coordinates its operation across both markets.</p>
+<hr>
+</section>
+<section id="hydrogen-pricing-auction-stackelberg-game" class="level3">
+<h3 class="anchored" data-anchor-id="hydrogen-pricing-auction-stackelberg-game">4. Hydrogen pricing: auction + Stackelberg game</h3>
+<p>The hydrogen price is not fixed.</p>
+<p>The paper develops a <strong>Vickrey auction-based pricing mechanism</strong> to screen eligible buyers and define a reasonable price range.</p>
+<p>Then a <strong>single-leader-multiple-follower Stackelberg game</strong> is used.</p>
+<ul>
+<li><strong>Leader:</strong> hydrogen auctioneer;</li>
+<li><strong>Followers:</strong> HFSs.</li>
+</ul>
+<p>The logic is simple:</p>
+<ol type="1">
+<li>the auctioneer announces a hydrogen price;</li>
+<li>each HFS chooses how much hydrogen to buy;</li>
+<li>the auctioneer updates the price;</li>
+<li>the process continues until no player wants to change its decision.</li>
+</ol>
+<p>The final point is the <strong>Stackelberg Equilibrium (SE)</strong>.</p>
+<p>This allows the hydrogen price and trading amount to reflect buyer demand instead of being imposed as fixed values.</p>
+<hr>
+</section>
+<section id="how-the-hp-makes-stacked-profit" class="level3">
+<h3 class="anchored" data-anchor-id="how-the-hp-makes-stacked-profit">5. How the HP makes stacked profit</h3>
+<p>The HP has two main income sources.</p>
+<section id="hydrogen-market" class="level4">
+<h4 class="anchored" data-anchor-id="hydrogen-market">Hydrogen market</h4>
+<p>It sells green hydrogen to HFSs.</p>
+</section>
+<section id="electricity-market" class="level4">
+<h4 class="anchored" data-anchor-id="electricity-market">Electricity market</h4>
+<p>It provides <strong>ancillary services</strong>, mainly operating reserves.</p>
+<p>Typical operation is:</p>
+<ul>
+<li>during high H2 demand, hydrogen is mainly sold to HFSs;</li>
+<li>during low H2 demand, stored hydrogen and spare equipment capacity can be used for electricity-market services.</li>
+</ul>
+<p>For <strong>up-reserve</strong>, stored hydrogen can be converted to electricity through a fuel cell.</p>
+<p>For <strong>down-reserve</strong>, the electrolyzer can absorb additional electricity and convert it to hydrogen when spare hydrogen-storage capacity is available.</p>
+<p>The main idea is to use the same assets in more than one market.</p>
+<hr>
+</section>
+</section>
+<section id="hybrid-renewable-to-hydrogen-production" class="level3">
+<h3 class="anchored" data-anchor-id="hybrid-renewable-to-hydrogen-production">6. Hybrid renewable-to-hydrogen production</h3>
+<p>The paper does not use only conventional water electrolysis.</p>
+<p>It considers <strong>biomass electrolysis</strong>.</p>
+<p>The key idea is to replace the difficult oxygen-evolution reaction in water electrolysis with biomass oxidation.</p>
+<p>This can reduce the required electrolysis voltage and improve hydrogen-production efficiency.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p004-zhang2023-hydrogen/figures/zhang2023_hydrogen/fig4_hybrid_renewable_h2_operation.png" class="img-fluid figure-img" style="width:76.0%"></p>
+<figcaption>Internal operation of the hybrid renewable-to-hydrogen provider. Source: Fig. 4 of Zhang et al.&nbsp;(2023).</figcaption>
+</figure>
+</div>
+<p>The HP includes:</p>
+<ul>
+<li>Wind Turbine (WT);</li>
+<li>Photovoltaic-Thermal unit (PVT);</li>
+<li>electrolyzer;</li>
+<li>Hydrogen Storage Tank (HST);</li>
+<li>battery;</li>
+<li>fuel cell;</li>
+<li>electric boiler.</li>
+</ul>
+<p>Solar thermal energy and recovered heat are also used to raise the electrolyzer temperature and improve the hydrogen-production process.</p>
+<hr>
+</section>
+<section id="role-of-the-battery-and-hydrogen-storage" class="level3">
+<h3 class="anchored" data-anchor-id="role-of-the-battery-and-hydrogen-storage">7. Role of the battery and hydrogen storage</h3>
+<p>The <strong>Hydrogen Storage Tank (HST)</strong> shifts hydrogen between different time periods.</p>
+<p>This allows the HP to:</p>
+<ul>
+<li>store excess hydrogen;</li>
+<li>meet later HFS demand;</li>
+<li>keep hydrogen available for electricity-market services.</li>
+</ul>
+<p>The battery has a different role.</p>
+<p>Renewable power can change quickly. Large current fluctuations can accelerate electrolyzer degradation.</p>
+<p>The battery therefore helps smooth the electrolyzer current.</p>
+<p>So the two storage devices have different functions:</p>
+<p><strong>HST → energy shifting and market flexibility</strong></p>
+<p><strong>Battery → fast power smoothing and electrolyzer protection</strong></p>
+<hr>
+</section>
+<section id="uncertainty-and-optimization" class="level3">
+<h3 class="anchored" data-anchor-id="uncertainty-and-optimization">8. Uncertainty and optimization</h3>
+<p>The paper considers uncertainty in:</p>
+<ul>
+<li>wind generation;</li>
+<li>solar generation;</li>
+<li>HFS demand-related utility parameters.</li>
+</ul>
+<p>A <strong>scenario-based stochastic programming</strong> method is used.</p>
+<p>The study first generates <strong>10,000 scenarios</strong> and then reduces them to <strong>100 representative scenarios</strong> to lower the computational burden.</p>
+<p>The optimization maximizes the HP’s expected daily profit while considering:</p>
+<ul>
+<li>hydrogen sales revenue;</li>
+<li>up/down reserve revenue;</li>
+<li>battery degradation cost;</li>
+<li>electrolyzer operation and degradation cost;</li>
+<li>hydrogen storage limits;</li>
+<li>battery limits;</li>
+<li>electrolyzer temperature/current limits;</li>
+<li>hydrogen-pipeline constraints.</li>
+</ul>
+<hr>
+</section>
+<section id="case-study-2" class="level3">
+<h3 class="anchored" data-anchor-id="case-study-2">9. Case study</h3>
+<p>The test system contains:</p>
+<ul>
+<li>one HP;</li>
+<li>four HFSs;</li>
+<li>3 MW wind capacity;</li>
+<li>3.5 MW PVT capacity;</li>
+<li>a hydrogen storage tank;</li>
+<li>battery, electrolyzer, fuel cell, and boiler.</li>
+</ul>
+<p>A 24-hour day-ahead operation is studied.</p>
+<p>Four schemes are compared:</p>
+<ol type="1">
+<li>proposed coordinated framework;</li>
+<li>hydrogen trading only;</li>
+<li>fixed hydrogen price;</li>
+<li>conventional alkaline water electrolysis-based Power-to-Gas (P2G).</li>
+</ol>
+<hr>
+</section>
+<section id="main-findings-2" class="level3">
+<h3 class="anchored" data-anchor-id="main-findings-2">10. Main findings</h3>
+<section id="multi-market-participation-increases-profit" class="level4">
+<h4 class="anchored" data-anchor-id="multi-market-participation-increases-profit">Multi-market participation increases profit</h4>
+<p>Compared with hydrogen trading only, the proposed framework increases the HP’s daily profit by:</p>
+<p><strong>22.05%</strong></p>
+<p>The reason is that the HP also earns from electricity reserve services.</p>
+</section>
+<section id="auction-pricing-improves-hydrogen-trading" class="level4">
+<h4 class="anchored" data-anchor-id="auction-pricing-improves-hydrogen-trading">Auction pricing improves hydrogen trading</h4>
+<p>Compared with the fixed-price method, hydrogen sales revenue increases by:</p>
+<p><strong>2.25%</strong></p>
+<p>The auction-based mechanism also improves the combined utility of the HFSs.</p>
+</section>
+<section id="biomass-electrolysis-improves-renewable-utilization" class="level4">
+<h4 class="anchored" data-anchor-id="biomass-electrolysis-improves-renewable-utilization">Biomass electrolysis improves renewable utilization</h4>
+<p>Compared with the conventional Alkaline Electrolysis (AEL)-based P2G method:</p>
+<ul>
+<li>average electrolysis efficiency improves by <strong>25.87%</strong>;</li>
+<li>wind-solar accommodation improves by <strong>8.17%</strong>.</li>
+</ul>
+</section>
+<section id="the-iterative-game-is-reasonably-scalable" class="level4">
+<h4 class="anchored" data-anchor-id="the-iterative-game-is-reasonably-scalable">The iterative game is reasonably scalable</h4>
+<p>For <strong>4 to 40 HFSs</strong>, the proposed Stackelberg-game algorithm converges within at most <strong>37 iterations</strong> in the reported tests.</p>
+<hr>
+</section>
+</section>
+<section id="what-this-paper-teaches-3" class="level3">
+<h3 class="anchored" data-anchor-id="what-this-paper-teaches-3">11. What this paper teaches</h3>
+<section id="lesson-1-one-energy-asset-can-participate-in-several-markets" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-1-one-energy-asset-can-participate-in-several-markets">Lesson 1 — One energy asset can participate in several markets</h4>
+<p>Hydrogen equipment does not need to earn money only by selling hydrogen.</p>
+<p>The same system can also provide flexibility to the electricity market.</p>
+</section>
+<section id="lesson-2-price-and-demand-should-interact" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-2-price-and-demand-should-interact">Lesson 2 — Price and demand should interact</h4>
+<p>A fixed hydrogen price misses an important market response:</p>
+<p><strong>price changes demand, and demand should influence price.</strong></p>
+</section>
+<section id="lesson-3-storage-technologies-can-have-different-roles" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-3-storage-technologies-can-have-different-roles">Lesson 3 — Storage technologies can have different roles</h4>
+<p>Battery storage and hydrogen storage are not interchangeable.</p>
+<p>They operate on different time scales and solve different problems.</p>
+</section>
+<section id="lesson-4-production-technology-affects-market-performance" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-4-production-technology-affects-market-performance">Lesson 4 — Production technology affects market performance</h4>
+<p>The market model and the physical hydrogen-production model are connected.</p>
+<p>Higher conversion efficiency changes how much renewable energy can be used and how profitable the trading strategy becomes.</p>
+<hr>
+</section>
+</section>
+<section id="what-remains-unsolved-3" class="level3">
+<h3 class="anchored" data-anchor-id="what-remains-unsolved-3">12. What remains unsolved</h3>
+<p>Several assumptions leave room for further research:</p>
+<ul>
+<li>only one strategic HP is considered;</li>
+<li>the HP is assumed to be a price-taker in the electricity market;</li>
+<li>electricity and hydrogen markets are cleared independently;</li>
+<li>hydrogen delivery is based on pipeline transport assumptions;</li>
+<li>larger competitive hydrogen markets are not modeled;</li>
+<li>uncertainty is handled by scenarios, which can become computationally expensive;</li>
+<li>practical deployment and experimental validation are not included.</li>
+</ul>
+<p>The authors specifically identify <strong>multiple competing HPs and HFSs</strong> as an important future direction.</p>
+<hr>
+</section>
+<section id="research-idea-triggers-3" class="level3">
+<h3 class="anchored" data-anchor-id="research-idea-triggers-3">13. Research idea triggers</h3>
+<p>Possible extensions include:</p>
+<ul>
+<li>multiple competing HPs using game theory or equilibrium models;</li>
+<li>coordinated clearing of electricity and hydrogen markets;</li>
+<li>market power of large hydrogen providers;</li>
+<li>robust or distributionally robust optimization instead of scenario-based stochastic programming;</li>
+<li>detailed hydrogen-network dynamics and compressor operation;</li>
+<li>long-term sizing plus short-term market operation;</li>
+<li>battery and electrolyzer degradation-aware trading;</li>
+<li>real-time or rolling-horizon hydrogen trading;</li>
+<li>carbon pricing and green-hydrogen certification;</li>
+<li>HIL or pilot-scale validation of electricity-hydrogen market coordination.</li>
+</ul>
+<p><strong>Problem-map tags:</strong> <code>hydrogen market</code> · <code>electricity-hydrogen coupling</code> · <code>Stackelberg game</code> · <code>auction pricing</code> · <code>ancillary services</code> · <code>biomass electrolysis</code> · <code>stochastic optimization</code> · <code>multi-market revenue</code></p>
+</section>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注记</span>[P005] Chakraborty et al.&nbsp;(2023) — A Cost Optimized-Reliable-Resilient-Realtime-Rule-Based Energy Management Scheme for a SPV-BES-Based Microgrid for Smart Building Applications
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p><strong>Journal:</strong> IEEE Transactions on Smart Grid, 14(4), 2572–2581, 2023<br>
+<strong>DOI:</strong> 10.1109/TSG.2022.3232283<br>
+<strong>Main topics:</strong> smart building; microgrid; Solar Photovoltaic (SPV); Battery Energy Storage (BES); Energy Management Scheme (EMS); real-time tariff; peak demand; power quality</p>
+<section id="quick-takeaway-4" class="level3">
+<h3 class="anchored" data-anchor-id="quick-takeaway-4">Quick takeaway</h3>
+<p>This paper develops a <strong>real-time rule-based Energy Management Scheme (EMS)</strong> for a grid-connected smart building with solar PV and battery storage.</p>
+<p>The main idea is simple:</p>
+<p><strong>charge the battery when grid electricity is cheap, avoid excessive grid demand, and use or sell stored energy when electricity is expensive.</strong></p>
+<p>Unlike Model Predictive Control (MPC) or mathematical optimization, the EMS does not require load/PV forecasts or repeated online optimization.</p>
+<p>The paper also adds a separate converter-control method to improve grid-side power quality.</p>
+<hr>
+</section>
+<section id="problem-addressed-4" class="level3">
+<h3 class="anchored" data-anchor-id="problem-addressed-4">1. Problem addressed</h3>
+<p>The paper tries to solve four practical problems at the same time:</p>
+<ol type="1">
+<li>reduce the building’s electricity cost;</li>
+<li>avoid <strong>Maximum Demand Charges (MDC)</strong> caused by excessive grid power;</li>
+<li>keep backup energy available and improve microgrid reliability;</li>
+<li>maintain good grid-side <strong>Power Quality (PQ)</strong> under nonlinear loads and distorted grid voltage.</li>
+</ol>
+<p>The key challenge is to achieve these functions in real time without a computationally heavy optimizer.</p>
+<hr>
+</section>
+<section id="why-existing-approaches-are-not-enough-3" class="level3">
+<h3 class="anchored" data-anchor-id="why-existing-approaches-are-not-enough-3">2. Why existing approaches are not enough</h3>
+<p>The authors point out several limitations of existing EMS methods.</p>
+<section id="mpc-and-optimization-based-ems" class="level4">
+<h4 class="anchored" data-anchor-id="mpc-and-optimization-based-ems">MPC and optimization-based EMS</h4>
+<p>They can produce good schedules, but often require:</p>
+<ul>
+<li>forecasts of PV and load;</li>
+<li>accurate future electricity prices;</li>
+<li>repeated online optimization;</li>
+<li>higher computation time.</li>
+</ul>
+<p>Forecast errors can also reduce the quality of the scheduled solution.</p>
+</section>
+<section id="existing-rule-based-ems" class="level4">
+<h4 class="anchored" data-anchor-id="existing-rule-based-ems">Existing rule-based EMS</h4>
+<p>Rule-based methods are much simpler, but many do not explicitly consider:</p>
+<ul>
+<li>real-time tariff changes;</li>
+<li>maximum demand limits;</li>
+<li>peak-demand management;</li>
+<li>power quality.</li>
+</ul>
+<p>The proposed method tries to keep the simplicity of rule-based control while adding these practical functions.</p>
+<hr>
+</section>
+</section>
+<section id="microgrid-structure" class="level3">
+<h3 class="anchored" data-anchor-id="microgrid-structure">3. Microgrid structure</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p005-chakraborty2023/figures/chakraborty2023/fig1_microgrid_layout.png" class="img-fluid figure-img" style="width:76.0%"></p>
+<figcaption>Smart-building microgrid with SPV, BES, grid connection, local loads, EMS, and converter control. Source: Fig. 1 of Chakraborty et al.&nbsp;(2023).</figcaption>
+</figure>
+</div>
+<p>The system contains:</p>
+<ul>
+<li>rooftop SPV;</li>
+<li>Battery Energy Storage (BES);</li>
+<li>local smart-building loads;</li>
+<li>utility grid;</li>
+<li>bidirectional battery converter;</li>
+<li>Voltage Source Converter (VSC).</li>
+</ul>
+<p>The EMS mainly decides how much power should come from the grid and how the battery should charge or discharge.</p>
+<hr>
+</section>
+<section id="core-idea-real-time-rule-based-ems" class="level3">
+<h3 class="anchored" data-anchor-id="core-idea-real-time-rule-based-ems">4. Core idea: real-time rule-based EMS</h3>
+<p>The EMS uses only current system information.</p>
+<p>Main inputs are:</p>
+<ul>
+<li>load demand <span class="math inline">\(P_L\)</span>;</li>
+<li>PV generation <span class="math inline">\(P_{PV}\)</span>;</li>
+<li>battery State of Charge (SOC);</li>
+<li>real-time grid tariff <span class="math inline">\(C_g(t)\)</span>;</li>
+<li>maximum allowed grid power <span class="math inline">\(P_{GMAX}\)</span>.</li>
+</ul>
+<p>The control decision is therefore based on:</p>
+<p><strong>current tariff + current load/PV balance + current battery SOC</strong></p>
+<p>rather than a forecasted future trajectory.</p>
+<hr>
+</section>
+<section id="three-tariff-periods-and-their-control-logic" class="level3">
+<h3 class="anchored" data-anchor-id="three-tariff-periods-and-their-control-logic">5. Three tariff periods and their control logic</h3>
+<p>The electricity price is divided into three conditions.</p>
+<section id="off-peak-period" class="level4">
+<h4 class="anchored" data-anchor-id="off-peak-period">Off-peak period</h4>
+<p>Grid electricity is cheap.</p>
+<p>Main action:</p>
+<p><strong>charge the battery from the grid</strong>, provided the battery has enough remaining capacity.</p>
+<p>The purpose is to store cheap electricity for later use.</p>
+</section>
+<section id="normal-price-period" class="level4">
+<h4 class="anchored" data-anchor-id="normal-price-period">Normal-price period</h4>
+<p>The battery normally remains in a floating state.</p>
+<p>PV is first used for the local load. Surplus PV can be exported.</p>
+<p>If grid demand approaches the maximum limit, the battery can provide power leveling.</p>
+</section>
+<section id="peak-price-period" class="level4">
+<h4 class="anchored" data-anchor-id="peak-price-period">Peak-price period</h4>
+<p>Grid electricity is expensive.</p>
+<p>Main action:</p>
+<p><strong>discharge the battery to reduce grid purchase or export power to the grid.</strong></p>
+<p>This allows the building to benefit from high electricity prices.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="papers/p005-chakraborty2023/figures/chakraborty2023/fig5_rule_based_ems.png" class="img-fluid figure-img" style="width:78.0%"></p>
+<figcaption>Main rule tree of the real-time EMS. Source: Fig. 5 of Chakraborty et al.&nbsp;(2023).</figcaption>
+</figure>
+</div>
+<hr>
+</section>
+</section>
+<section id="peak-demand-and-maximum-demand-charge" class="level3">
+<h3 class="anchored" data-anchor-id="peak-demand-and-maximum-demand-charge">6. Peak demand and maximum demand charge</h3>
+<p>The EMS does not only follow electricity price.</p>
+<p>It also enforces a grid-power limit:</p>
+<p><span class="math display">\[
+-P_{GMAX} &lt; P_G &lt; P_{GMAX}
+\]</span></p>
+<p>If the building demand would push grid power above the allowed limit, the battery discharges to reduce the grid demand.</p>
+<p>This helps avoid the <strong>Maximum Demand Charge (MDC)</strong>.</p>
+<p>If the battery SOC is already too low and the grid limit would still be exceeded, the original rule set may require <strong>load shedding</strong>.</p>
+<p>This is an important practical limitation of the method.</p>
+<hr>
+</section>
+<section id="role-of-the-battery" class="level3">
+<h3 class="anchored" data-anchor-id="role-of-the-battery">7. Role of the battery</h3>
+<p>The battery has several functions:</p>
+<ul>
+<li>store cheap off-peak electricity;</li>
+<li>store excess PV generation;</li>
+<li>discharge during high-price periods;</li>
+<li>reduce peak grid demand;</li>
+<li>provide short-term backup during disturbances.</li>
+</ul>
+<p>The battery is therefore used for both:</p>
+<p><strong>energy-cost arbitrage</strong> and <strong>power-leveling support</strong>.</p>
+<p>Its charging/discharging rate and SOC are limited for safe operation.</p>
+<hr>
+</section>
+<section id="power-quality-control-vgesogi-fll" class="level3">
+<h3 class="anchored" data-anchor-id="power-quality-control-vgesogi-fll">8. Power quality control: VGESOGI-FLL</h3>
+<p>The EMS handles energy and cost.</p>
+<p>A second control layer handles power quality.</p>
+<p>The paper proposes a <strong>Variable Gain Enhanced Second-Order Generalized Integrator Frequency-Locked Loop (VGESOGI-FLL)</strong> for the VSC.</p>
+<p>Its purpose is to:</p>
+<ul>
+<li>remove dominant current harmonics;</li>
+<li>reject DC offsets;</li>
+<li>track grid-frequency changes;</li>
+<li>keep grid currents balanced and nearly sinusoidal;</li>
+<li>provide reactive-power support;</li>
+<li>operate the grid side close to unity power factor.</li>
+</ul>
+<p>The controller changes its filter gains during dynamic conditions to obtain faster response.</p>
+<hr>
+</section>
+<section id="simulation-and-hardware-validation" class="level3">
+<h3 class="anchored" data-anchor-id="simulation-and-hardware-validation">9. Simulation and hardware validation</h3>
+<p>The method is tested in both simulation and laboratory hardware.</p>
+<p>The studies include:</p>
+<ul>
+<li>summer and winter operating profiles;</li>
+<li>distorted grid voltage;</li>
+<li>load unbalance;</li>
+<li>a 5 Hz grid-frequency jump;</li>
+<li>voltage sag;</li>
+<li>nonlinear loads.</li>
+</ul>
+<p>For the 5 Hz frequency jump, the Frequency-Locked Loop (FLL) tracks the new frequency within about <strong>40 ms</strong>.</p>
+<p>The hardware prototype uses a solar simulator, BES, bidirectional converter, VSC, and a dSPACE 1103 controller.</p>
+<hr>
+</section>
+<section id="main-findings-3" class="level3">
+<h3 class="anchored" data-anchor-id="main-findings-3">10. Main findings</h3>
+<section id="energy-management" class="level4">
+<h4 class="anchored" data-anchor-id="energy-management">Energy management</h4>
+<p>In both summer and winter comparisons, the proposed EMS has:</p>
+<ul>
+<li>the lowest net energy absorbed from the grid;</li>
+<li>the highest reported net profit/cost saving among the compared EMS schemes.</li>
+</ul>
+<p>For the summer case, the reported values are:</p>
+<ul>
+<li>net average grid energy: <strong>2 kWh/day</strong>;</li>
+<li>net average profit plus cost saving: <strong>Rs 540/day</strong>.</li>
+</ul>
+</section>
+<section id="power-quality" class="level4">
+<h4 class="anchored" data-anchor-id="power-quality">Power quality</h4>
+<p>In hardware tests, one grid-voltage phase has a Total Harmonic Distortion (THD) of <strong>8.91%</strong>.</p>
+<p>The VSC control keeps the grid-current THD within the <strong>5% limit</strong> referenced from IEEE Std 519.</p>
+<hr>
+</section>
+</section>
+<section id="what-this-paper-teaches-4" class="level3">
+<h3 class="anchored" data-anchor-id="what-this-paper-teaches-4">11. What this paper teaches</h3>
+<section id="lesson-1-simple-rules-can-be-useful-when-fast-real-time-decisions-are-needed" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-1-simple-rules-can-be-useful-when-fast-real-time-decisions-are-needed">Lesson 1 — Simple rules can be useful when fast real-time decisions are needed</h4>
+<p>Not every EMS needs MPC, Mixed-Integer Linear Programming (MILP), or another heavy optimizer.</p>
+<p>A rule-based controller can be attractive when:</p>
+<ul>
+<li>computation must be very fast;</li>
+<li>forecasts are poor or unavailable;</li>
+<li>the operating logic is easy to define.</li>
+</ul>
+</section>
+<section id="lesson-2-tariff-arbitrage-and-peak-demand-management-are-different-objectives" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-2-tariff-arbitrage-and-peak-demand-management-are-different-objectives">Lesson 2 — Tariff arbitrage and peak-demand management are different objectives</h4>
+<p>A battery can earn value by shifting energy across tariff periods, but it can also reduce maximum grid demand and avoid demand penalties.</p>
+</section>
+<section id="lesson-3-energy-management-and-power-quality-are-separate-control-problems" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-3-energy-management-and-power-quality-are-separate-control-problems">Lesson 3 — Energy management and power quality are separate control problems</h4>
+<p>The EMS determines <strong>how much power should flow</strong>.</p>
+<p>The VSC controller determines <strong>how that power should be exchanged with acceptable waveform quality</strong>.</p>
+<p>This distinction is useful when designing smart-building microgrids.</p>
+<hr>
+</section>
+</section>
+<section id="limitations" class="level3">
+<h3 class="anchored" data-anchor-id="limitations">12. Limitations</h3>
+<p>The paper itself identifies several limitations:</p>
+<ul>
+<li>decisions depend strongly on accurate real-time tariff information;</li>
+<li>battery SOC estimation must be accurate;</li>
+<li>communication or estimation delays can lead to wrong EMS decisions;</li>
+<li>some operating states require load shedding.</li>
+</ul>
+<p>Additional limitations visible from the framework are:</p>
+<ul>
+<li>the EMS follows predefined rules rather than solving a future-horizon optimization problem;</li>
+<li>future PV, load, and price information is intentionally not used;</li>
+<li>battery degradation is not explicitly included in the economic objective;</li>
+<li>the paper does not study uncertainty in a formal stochastic or robust framework.</li>
+</ul>
+<p>So the method gains <strong>simplicity and speed</strong>, but gives up some of the future-looking capability of predictive optimization.</p>
+<hr>
+</section>
+<section id="research-idea-triggers-4" class="level3">
+<h3 class="anchored" data-anchor-id="research-idea-triggers-4">13. Research idea triggers</h3>
+<p>Possible extensions include:</p>
+<ul>
+<li>adaptive rules that update automatically from historical operation;</li>
+<li>MPC or Economic MPC (EMPC) using the rule-based EMS as a benchmark;</li>
+<li>battery degradation-aware tariff control;</li>
+<li>stochastic or robust control under PV/load uncertainty;</li>
+<li>demand-response flexibility instead of load shedding;</li>
+<li>real-time electricity pricing instead of predefined tariff bands;</li>
+<li>coordinated building thermal loads, EVs, and battery storage;</li>
+<li>learning-based EMS with hard safety constraints;</li>
+<li>combining economic EMS and power-quality objectives in one coordinated framework.</li>
+</ul>
+<p><strong>Problem-map tags:</strong> <code>smart building</code> · <code>rule-based EMS</code> · <code>real-time tariff</code> · <code>battery arbitrage</code> · <code>maximum demand charge</code> · <code>peak shaving</code> · <code>power quality</code> · <code>hardware validation</code></p>
+</section>
+</div>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "已复制");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "已复制");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,51 @@
+:root {
+  --review-ink: #20344a;
+  --review-muted: #617285;
+  --review-line: #dce5ec;
+}
+
+body { color: var(--review-ink); background: #f8fafc; }
+#quarto-content { max-width: 1120px; margin: auto; }
+main.content { padding-bottom: 4rem; }
+#title-block-header { margin: 2.5rem 0 1.5rem; }
+#title-block-header .title { font-weight: 700; }
+.subtitle, .collection-intro { color: var(--review-muted); }
+.collection-intro { margin-bottom: 2rem; }
+div.callout { background: white; border: 1px solid var(--review-line); border-left: 4px solid #397597; border-radius: 10px; margin: 1.5rem 0; box-shadow: 0 3px 14px #20344a06; }
+div.callout-note.callout-style-default > .callout-header { background: #edf3f7; padding: 1rem 1.15rem; border-radius: 7px; }
+.callout-title-container { font-size: 1.05rem; line-height: 1.65; font-weight: 600; }
+div.callout.callout-style-default .callout-body { font-size: 1rem; line-height: 1.85; }
+.callout-body-container { padding: 1.2rem 1.4rem; }
+.callout-body h3 {
+  margin-top: 2.2rem;
+  padding: .55rem .8rem;
+  border-left: 4px solid #285a91;
+  border-radius: 0 5px 5px 0;
+  background: #edf3fa;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #244f80;
+}
+.callout-body h4 {
+  margin-top: 1.6rem;
+  margin-bottom: .7rem;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: #08736d;
+}
+.callout-body h5, .callout-body h6 { color: #08736d; font-weight: 700; }
+.callout-body strong { color: #925020; font-weight: 700; }
+.callout-body h3 strong, .callout-body h4 strong,
+.callout-body h5 strong, .callout-body h6 strong { color: inherit; }
+.callout-body li::marker { color: #08736d; font-weight: 700; }
+.callout-body li { margin-bottom: .35rem; }
+.callout-body hr { border-color: var(--review-line); margin: 2rem 0; opacity: 1; }
+.callout-body figure { margin: 2rem auto; text-align: center; }
+.callout-body img { max-width: 100%; height: auto; }
+.callout-body figcaption { color: var(--review-muted); font-size: .88rem; text-align: left; line-height: 1.6; }
+.callout-body blockquote { border-left-color: #8aafc4; background: #f8fafc; padding: .6rem 1rem; }
+@media (max-width: 640px) {
+  .callout-body-container { padding: .7rem; }
+  .callout-title-container { font-size: .95rem; }
+  .callout-body figure img { width: 100%; }
+}
