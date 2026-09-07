@@ -1,0 +1,322 @@
+::: {.callout-note collapse="true" icon=false}
+## [P004] Zhang et al. (2023) — A Coordinated Multi-Energy Trading Framework for Strategic Hydrogen Provider in Electricity and Hydrogen Markets
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1403–1417, 2023  
+**DOI:** 10.1109/TSG.2022.3154611  
+**Main topics:** hydrogen trading; electricity market; Stackelberg game; auction pricing; biomass electrolysis; stochastic optimization; ancillary services
+
+### Quick takeaway
+
+This paper studies a **Hydrogen Provider (HP)** that participates in both the hydrogen and electricity markets.
+
+The key question is:
+
+**How can an HP coordinate hydrogen production, hydrogen sales, and grid-support services so that it earns more while using renewable energy more efficiently?**
+
+The framework combines market trading, hydrogen production, storage, and ancillary services in one system.
+
+---
+
+### 1. Problem addressed
+
+The paper targets three linked problems.
+
+#### Green hydrogen is still expensive
+
+Conventional water electrolysis consumes a large amount of electricity. This reduces the economic value of renewable-to-hydrogen conversion.
+
+#### A hydrogen provider may not fully use its assets
+
+Hydrogen demand changes during the day. During low-demand periods, hydrogen storage and conversion equipment may be underused.
+
+#### Fixed hydrogen prices do not reflect buyer response
+
+Many hydrogen-trading studies use a fixed hydrogen price. This ignores how **Hydrogen Fueling Stations (HFSs)** change their purchase quantities when the price changes.
+
+The paper therefore tries to coordinate:
+
+**renewable energy → hydrogen production → hydrogen trading → electricity-market services**
+
+---
+
+### 2. Why existing approaches are not enough
+
+Previous studies often focus on only one part of the problem:
+
+- green hydrogen production;
+- hydrogen-market trading;
+- strategic bidding;
+- electricity-hydrogen coupling.
+
+The authors identify two important gaps:
+
+1. hydrogen pricing often does not consider the buyers' willingness to pay;
+2. the HP's ability to earn from both hydrogen sales and electricity ancillary services is not fully used.
+
+The paper also argues that conventional water electrolysis has relatively low conversion efficiency, especially when renewable power fluctuates.
+
+---
+
+### 3. Overall electricity-hydrogen trading framework
+
+![Coordinated electricity-hydrogen trading framework. Source: Fig. 1 of Zhang et al. (2023).](papers/p004-zhang2023-hydrogen/figures/zhang2023_hydrogen/fig1_multi_energy_trading_framework.png){width=74%}
+
+The main participants are:
+
+- **Hydrogen Provider (HP)**;
+- **Hydrogen Fueling Stations (HFSs)**;
+- hydrogen auctioneer;
+- electricity market / Independent System Operator (ISO).
+
+The HP uses wind, solar, and biomass to produce green hydrogen.
+
+The produced hydrogen can be:
+
+- sold to HFSs;
+- stored for later use;
+- converted back to electricity through a fuel cell;
+- used indirectly to provide reserve services to the power grid.
+
+The electricity and hydrogen markets are cleared separately, but the HP coordinates its operation across both markets.
+
+---
+
+### 4. Hydrogen pricing: auction + Stackelberg game
+
+The hydrogen price is not fixed.
+
+The paper develops a **Vickrey auction-based pricing mechanism** to screen eligible buyers and define a reasonable price range.
+
+Then a **single-leader-multiple-follower Stackelberg game** is used.
+
+- **Leader:** hydrogen auctioneer;
+- **Followers:** HFSs.
+
+The logic is simple:
+
+1. the auctioneer announces a hydrogen price;
+2. each HFS chooses how much hydrogen to buy;
+3. the auctioneer updates the price;
+4. the process continues until no player wants to change its decision.
+
+The final point is the **Stackelberg Equilibrium (SE)**.
+
+This allows the hydrogen price and trading amount to reflect buyer demand instead of being imposed as fixed values.
+
+---
+
+### 5. How the HP makes stacked profit
+
+The HP has two main income sources.
+
+#### Hydrogen market
+
+It sells green hydrogen to HFSs.
+
+#### Electricity market
+
+It provides **ancillary services**, mainly operating reserves.
+
+Typical operation is:
+
+- during high H2 demand, hydrogen is mainly sold to HFSs;
+- during low H2 demand, stored hydrogen and spare equipment capacity can be used for electricity-market services.
+
+For **up-reserve**, stored hydrogen can be converted to electricity through a fuel cell.
+
+For **down-reserve**, the electrolyzer can absorb additional electricity and convert it to hydrogen when spare hydrogen-storage capacity is available.
+
+The main idea is to use the same assets in more than one market.
+
+---
+
+### 6. Hybrid renewable-to-hydrogen production
+
+The paper does not use only conventional water electrolysis.
+
+It considers **biomass electrolysis**.
+
+The key idea is to replace the difficult oxygen-evolution reaction in water electrolysis with biomass oxidation.
+
+This can reduce the required electrolysis voltage and improve hydrogen-production efficiency.
+
+![Internal operation of the hybrid renewable-to-hydrogen provider. Source: Fig. 4 of Zhang et al. (2023).](papers/p004-zhang2023-hydrogen/figures/zhang2023_hydrogen/fig4_hybrid_renewable_h2_operation.png){width=76%}
+
+The HP includes:
+
+- Wind Turbine (WT);
+- Photovoltaic-Thermal unit (PVT);
+- electrolyzer;
+- Hydrogen Storage Tank (HST);
+- battery;
+- fuel cell;
+- electric boiler.
+
+Solar thermal energy and recovered heat are also used to raise the electrolyzer temperature and improve the hydrogen-production process.
+
+---
+
+### 7. Role of the battery and hydrogen storage
+
+The **Hydrogen Storage Tank (HST)** shifts hydrogen between different time periods.
+
+This allows the HP to:
+
+- store excess hydrogen;
+- meet later HFS demand;
+- keep hydrogen available for electricity-market services.
+
+The battery has a different role.
+
+Renewable power can change quickly. Large current fluctuations can accelerate electrolyzer degradation.
+
+The battery therefore helps smooth the electrolyzer current.
+
+So the two storage devices have different functions:
+
+**HST → energy shifting and market flexibility**
+
+**Battery → fast power smoothing and electrolyzer protection**
+
+---
+
+### 8. Uncertainty and optimization
+
+The paper considers uncertainty in:
+
+- wind generation;
+- solar generation;
+- HFS demand-related utility parameters.
+
+A **scenario-based stochastic programming** method is used.
+
+The study first generates **10,000 scenarios** and then reduces them to **100 representative scenarios** to lower the computational burden.
+
+The optimization maximizes the HP's expected daily profit while considering:
+
+- hydrogen sales revenue;
+- up/down reserve revenue;
+- battery degradation cost;
+- electrolyzer operation and degradation cost;
+- hydrogen storage limits;
+- battery limits;
+- electrolyzer temperature/current limits;
+- hydrogen-pipeline constraints.
+
+---
+
+### 9. Case study
+
+The test system contains:
+
+- one HP;
+- four HFSs;
+- 3 MW wind capacity;
+- 3.5 MW PVT capacity;
+- a hydrogen storage tank;
+- battery, electrolyzer, fuel cell, and boiler.
+
+A 24-hour day-ahead operation is studied.
+
+Four schemes are compared:
+
+1. proposed coordinated framework;
+2. hydrogen trading only;
+3. fixed hydrogen price;
+4. conventional alkaline water electrolysis-based Power-to-Gas (P2G).
+
+---
+
+### 10. Main findings
+
+#### Multi-market participation increases profit
+
+Compared with hydrogen trading only, the proposed framework increases the HP's daily profit by:
+
+**22.05%**
+
+The reason is that the HP also earns from electricity reserve services.
+
+#### Auction pricing improves hydrogen trading
+
+Compared with the fixed-price method, hydrogen sales revenue increases by:
+
+**2.25%**
+
+The auction-based mechanism also improves the combined utility of the HFSs.
+
+#### Biomass electrolysis improves renewable utilization
+
+Compared with the conventional Alkaline Electrolysis (AEL)-based P2G method:
+
+- average electrolysis efficiency improves by **25.87%**;
+- wind-solar accommodation improves by **8.17%**.
+
+#### The iterative game is reasonably scalable
+
+For **4 to 40 HFSs**, the proposed Stackelberg-game algorithm converges within at most **37 iterations** in the reported tests.
+
+---
+
+### 11. What this paper teaches
+
+#### Lesson 1 — One energy asset can participate in several markets
+
+Hydrogen equipment does not need to earn money only by selling hydrogen.
+
+The same system can also provide flexibility to the electricity market.
+
+#### Lesson 2 — Price and demand should interact
+
+A fixed hydrogen price misses an important market response:
+
+**price changes demand, and demand should influence price.**
+
+#### Lesson 3 — Storage technologies can have different roles
+
+Battery storage and hydrogen storage are not interchangeable.
+
+They operate on different time scales and solve different problems.
+
+#### Lesson 4 — Production technology affects market performance
+
+The market model and the physical hydrogen-production model are connected.
+
+Higher conversion efficiency changes how much renewable energy can be used and how profitable the trading strategy becomes.
+
+---
+
+### 12. What remains unsolved
+
+Several assumptions leave room for further research:
+
+- only one strategic HP is considered;
+- the HP is assumed to be a price-taker in the electricity market;
+- electricity and hydrogen markets are cleared independently;
+- hydrogen delivery is based on pipeline transport assumptions;
+- larger competitive hydrogen markets are not modeled;
+- uncertainty is handled by scenarios, which can become computationally expensive;
+- practical deployment and experimental validation are not included.
+
+The authors specifically identify **multiple competing HPs and HFSs** as an important future direction.
+
+---
+
+### 13. Research idea triggers
+
+Possible extensions include:
+
+- multiple competing HPs using game theory or equilibrium models;
+- coordinated clearing of electricity and hydrogen markets;
+- market power of large hydrogen providers;
+- robust or distributionally robust optimization instead of scenario-based stochastic programming;
+- detailed hydrogen-network dynamics and compressor operation;
+- long-term sizing plus short-term market operation;
+- battery and electrolyzer degradation-aware trading;
+- real-time or rolling-horizon hydrogen trading;
+- carbon pricing and green-hydrogen certification;
+- HIL or pilot-scale validation of electricity-hydrogen market coordination.
+
+**Problem-map tags:** `hydrogen market` · `electricity-hydrogen coupling` · `Stackelberg game` · `auction pricing` · `ancillary services` · `biomass electrolysis` · `stochastic optimization` · `multi-market revenue`
+
+:::

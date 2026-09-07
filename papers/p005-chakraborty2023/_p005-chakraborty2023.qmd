@@ -1,0 +1,298 @@
+::: {.callout-note collapse="true" icon=false}
+## [P005] Chakraborty et al. (2023) — A Cost Optimized-Reliable-Resilient-Realtime-Rule-Based Energy Management Scheme for a SPV-BES-Based Microgrid for Smart Building Applications
+
+**Journal:** IEEE Transactions on Smart Grid, 14(4), 2572–2581, 2023  
+**DOI:** 10.1109/TSG.2022.3232283  
+**Main topics:** smart building; microgrid; Solar Photovoltaic (SPV); Battery Energy Storage (BES); Energy Management Scheme (EMS); real-time tariff; peak demand; power quality
+
+### Quick takeaway
+
+This paper develops a **real-time rule-based Energy Management Scheme (EMS)** for a grid-connected smart building with solar PV and battery storage.
+
+The main idea is simple:
+
+**charge the battery when grid electricity is cheap, avoid excessive grid demand, and use or sell stored energy when electricity is expensive.**
+
+Unlike Model Predictive Control (MPC) or mathematical optimization, the EMS does not require load/PV forecasts or repeated online optimization.
+
+The paper also adds a separate converter-control method to improve grid-side power quality.
+
+---
+
+### 1. Problem addressed
+
+The paper tries to solve four practical problems at the same time:
+
+1. reduce the building's electricity cost;
+2. avoid **Maximum Demand Charges (MDC)** caused by excessive grid power;
+3. keep backup energy available and improve microgrid reliability;
+4. maintain good grid-side **Power Quality (PQ)** under nonlinear loads and distorted grid voltage.
+
+The key challenge is to achieve these functions in real time without a computationally heavy optimizer.
+
+---
+
+### 2. Why existing approaches are not enough
+
+The authors point out several limitations of existing EMS methods.
+
+#### MPC and optimization-based EMS
+
+They can produce good schedules, but often require:
+
+- forecasts of PV and load;
+- accurate future electricity prices;
+- repeated online optimization;
+- higher computation time.
+
+Forecast errors can also reduce the quality of the scheduled solution.
+
+#### Existing rule-based EMS
+
+Rule-based methods are much simpler, but many do not explicitly consider:
+
+- real-time tariff changes;
+- maximum demand limits;
+- peak-demand management;
+- power quality.
+
+The proposed method tries to keep the simplicity of rule-based control while adding these practical functions.
+
+---
+
+### 3. Microgrid structure
+
+![Smart-building microgrid with SPV, BES, grid connection, local loads, EMS, and converter control. Source: Fig. 1 of Chakraborty et al. (2023).](papers/p005-chakraborty2023/figures/chakraborty2023/fig1_microgrid_layout.png){width=76%}
+
+The system contains:
+
+- rooftop SPV;
+- Battery Energy Storage (BES);
+- local smart-building loads;
+- utility grid;
+- bidirectional battery converter;
+- Voltage Source Converter (VSC).
+
+The EMS mainly decides how much power should come from the grid and how the battery should charge or discharge.
+
+---
+
+### 4. Core idea: real-time rule-based EMS
+
+The EMS uses only current system information.
+
+Main inputs are:
+
+- load demand \(P_L\);
+- PV generation \(P_{PV}\);
+- battery State of Charge (SOC);
+- real-time grid tariff \(C_g(t)\);
+- maximum allowed grid power \(P_{GMAX}\).
+
+The control decision is therefore based on:
+
+**current tariff + current load/PV balance + current battery SOC**
+
+rather than a forecasted future trajectory.
+
+---
+
+### 5. Three tariff periods and their control logic
+
+The electricity price is divided into three conditions.
+
+#### Off-peak period
+
+Grid electricity is cheap.
+
+Main action:
+
+**charge the battery from the grid**, provided the battery has enough remaining capacity.
+
+The purpose is to store cheap electricity for later use.
+
+#### Normal-price period
+
+The battery normally remains in a floating state.
+
+PV is first used for the local load. Surplus PV can be exported.
+
+If grid demand approaches the maximum limit, the battery can provide power leveling.
+
+#### Peak-price period
+
+Grid electricity is expensive.
+
+Main action:
+
+**discharge the battery to reduce grid purchase or export power to the grid.**
+
+This allows the building to benefit from high electricity prices.
+
+![Main rule tree of the real-time EMS. Source: Fig. 5 of Chakraborty et al. (2023).](papers/p005-chakraborty2023/figures/chakraborty2023/fig5_rule_based_ems.png){width=78%}
+
+---
+
+### 6. Peak demand and maximum demand charge
+
+The EMS does not only follow electricity price.
+
+It also enforces a grid-power limit:
+
+\[
+-P_{GMAX} < P_G < P_{GMAX}
+\]
+
+If the building demand would push grid power above the allowed limit, the battery discharges to reduce the grid demand.
+
+This helps avoid the **Maximum Demand Charge (MDC)**.
+
+If the battery SOC is already too low and the grid limit would still be exceeded, the original rule set may require **load shedding**.
+
+This is an important practical limitation of the method.
+
+---
+
+### 7. Role of the battery
+
+The battery has several functions:
+
+- store cheap off-peak electricity;
+- store excess PV generation;
+- discharge during high-price periods;
+- reduce peak grid demand;
+- provide short-term backup during disturbances.
+
+The battery is therefore used for both:
+
+**energy-cost arbitrage** and **power-leveling support**.
+
+Its charging/discharging rate and SOC are limited for safe operation.
+
+---
+
+### 8. Power quality control: VGESOGI-FLL
+
+The EMS handles energy and cost.
+
+A second control layer handles power quality.
+
+The paper proposes a **Variable Gain Enhanced Second-Order Generalized Integrator Frequency-Locked Loop (VGESOGI-FLL)** for the VSC.
+
+Its purpose is to:
+
+- remove dominant current harmonics;
+- reject DC offsets;
+- track grid-frequency changes;
+- keep grid currents balanced and nearly sinusoidal;
+- provide reactive-power support;
+- operate the grid side close to unity power factor.
+
+The controller changes its filter gains during dynamic conditions to obtain faster response.
+
+---
+
+### 9. Simulation and hardware validation
+
+The method is tested in both simulation and laboratory hardware.
+
+The studies include:
+
+- summer and winter operating profiles;
+- distorted grid voltage;
+- load unbalance;
+- a 5 Hz grid-frequency jump;
+- voltage sag;
+- nonlinear loads.
+
+For the 5 Hz frequency jump, the Frequency-Locked Loop (FLL) tracks the new frequency within about **40 ms**.
+
+The hardware prototype uses a solar simulator, BES, bidirectional converter, VSC, and a dSPACE 1103 controller.
+
+---
+
+### 10. Main findings
+
+#### Energy management
+
+In both summer and winter comparisons, the proposed EMS has:
+
+- the lowest net energy absorbed from the grid;
+- the highest reported net profit/cost saving among the compared EMS schemes.
+
+For the summer case, the reported values are:
+
+- net average grid energy: **2 kWh/day**;
+- net average profit plus cost saving: **Rs 540/day**.
+
+#### Power quality
+
+In hardware tests, one grid-voltage phase has a Total Harmonic Distortion (THD) of **8.91%**.
+
+The VSC control keeps the grid-current THD within the **5% limit** referenced from IEEE Std 519.
+
+---
+
+### 11. What this paper teaches
+
+#### Lesson 1 — Simple rules can be useful when fast real-time decisions are needed
+
+Not every EMS needs MPC, Mixed-Integer Linear Programming (MILP), or another heavy optimizer.
+
+A rule-based controller can be attractive when:
+
+- computation must be very fast;
+- forecasts are poor or unavailable;
+- the operating logic is easy to define.
+
+#### Lesson 2 — Tariff arbitrage and peak-demand management are different objectives
+
+A battery can earn value by shifting energy across tariff periods, but it can also reduce maximum grid demand and avoid demand penalties.
+
+#### Lesson 3 — Energy management and power quality are separate control problems
+
+The EMS determines **how much power should flow**.
+
+The VSC controller determines **how that power should be exchanged with acceptable waveform quality**.
+
+This distinction is useful when designing smart-building microgrids.
+
+---
+
+### 12. Limitations
+
+The paper itself identifies several limitations:
+
+- decisions depend strongly on accurate real-time tariff information;
+- battery SOC estimation must be accurate;
+- communication or estimation delays can lead to wrong EMS decisions;
+- some operating states require load shedding.
+
+Additional limitations visible from the framework are:
+
+- the EMS follows predefined rules rather than solving a future-horizon optimization problem;
+- future PV, load, and price information is intentionally not used;
+- battery degradation is not explicitly included in the economic objective;
+- the paper does not study uncertainty in a formal stochastic or robust framework.
+
+So the method gains **simplicity and speed**, but gives up some of the future-looking capability of predictive optimization.
+
+---
+
+### 13. Research idea triggers
+
+Possible extensions include:
+
+- adaptive rules that update automatically from historical operation;
+- MPC or Economic MPC (EMPC) using the rule-based EMS as a benchmark;
+- battery degradation-aware tariff control;
+- stochastic or robust control under PV/load uncertainty;
+- demand-response flexibility instead of load shedding;
+- real-time electricity pricing instead of predefined tariff bands;
+- coordinated building thermal loads, EVs, and battery storage;
+- learning-based EMS with hard safety constraints;
+- combining economic EMS and power-quality objectives in one coordinated framework.
+
+**Problem-map tags:** `smart building` · `rule-based EMS` · `real-time tariff` · `battery arbitrage` · `maximum demand charge` · `peak shaving` · `power quality` · `hardware validation`
+
+:::

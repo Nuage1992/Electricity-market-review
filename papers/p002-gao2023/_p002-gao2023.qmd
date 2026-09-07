@@ -1,0 +1,123 @@
+::: {.callout-note collapse="true" icon=false}
+## [P002] Gao et al. (2023) — A Blockchain Peer-to-Peer Energy Trading System for Microgrids
+
+**Journal:** IEEE Transactions on Smart Grid, 14(5), 3944–3960, 2023  
+**DOI:** 10.1109/TSG.2023.3237624  
+**Main topics:** blockchain; Peer-to-Peer (P2P) energy trading; security; privacy; energy theft; microgrids
+
+### Quick takeaway
+
+This paper focuses on **how to make P2P energy trading secure and trustworthy**.
+
+Its main concern is not how to optimize electricity prices or trading quantities. Instead, it asks:
+
+**How can prosumers trade electricity without relying on one central database, while protecting transaction data from tampering, privacy leakage, and attacks?**
+
+---
+
+### 1. Problem addressed
+
+P2P energy trading requires frequent communication among prosumers and consumers.
+
+This creates several risks:
+
+- transaction data may be changed or leaked;
+- smart-meter data may be manipulated;
+- users may collude or report false energy information;
+- centralized trading platforms create a single point of failure.
+
+The paper therefore develops a blockchain-based trading platform with additional security and theft-detection mechanisms.
+
+---
+
+### 2. Proposed solution
+
+The framework combines four main parts:
+
+1. **Private Ethereum blockchain**  
+   Trading records are stored in an immutable distributed ledger.
+
+2. **Certificateless Signcryption (CLSC)**  
+   Encryption and digital signing are combined in one process to protect confidentiality, authenticity, and integrity.
+
+3. **Leader election and consensus**  
+   Processing nodes elect a leader and use a consensus process to validate transactions before adding them to the blockchain.
+
+4. **Smart-contract energy theft detection**  
+   Reported energy use is compared with supplied energy. Large mismatches are treated as possible energy theft.
+
+![Main system architecture. Source: Fig. 1 of Gao et al. (2023).](papers/p002-gao2023/figures/gao2023/fig1_system_architecture.png){width=82%}
+
+The main entities are prosumers/consumers, an Energy Request Aggregator, a Data Processing Center, and a trusted Certificate Authority (CA).
+
+---
+
+### 3. How trading works
+
+A simplified process is:
+
+**energy request → request aggregation → buyer selects seller → encrypted/signed transaction → blockchain validation → payment and power transfer**
+
+The Energy Request Aggregator collects requests and displays trading information.
+
+The CA manages keys and authentication.
+
+The blockchain processing nodes validate transactions and store them after consensus.
+
+---
+
+### 4. Main results
+
+The proposed signcryption scheme has low computational cost because it avoids expensive bilinear pairing operations.
+
+The reported execution times are:
+
+- signcryption: **1.94 ms**
+- unsigncryption: **3.88 ms**
+
+The authors report lower computation and communication costs than the four comparison schemes.
+
+Blockchain experiments were also carried out on the Ethereum Ropsten network.
+
+For leader election, **UDP broadcast** performs better than standard TCP and point-to-point UDP because fewer messages are needed.
+
+---
+
+### 5. What this paper teaches
+
+The main lesson is:
+
+**P2P energy trading is not only an optimization problem. It is also a communication, trust, privacy, and cybersecurity problem.**
+
+Blockchain can provide a tamper-resistant transaction record, but blockchain alone is not enough. Authentication, encryption, consensus, and abnormal-energy-use detection are also required.
+
+This paper is therefore more about the **digital infrastructure behind energy trading** than the economic design of the market.
+
+---
+
+### 6. What remains unsolved
+
+Important limitations are:
+
+- The framework does not optimize trading prices or energy quantities.
+- Power-flow and network operating constraints are not included in the trading mechanism.
+- The system still relies on a fully trusted CA and an Energy Request Aggregator.
+- Validation is mainly based on cryptographic analysis and blockchain/network simulation rather than a real microgrid deployment.
+- Larger real-time systems may still face latency, throughput, and transaction-cost problems.
+
+---
+
+### 7. Research idea triggers
+
+Possible extensions include:
+
+- combining blockchain security with energy-market optimization or game theory;
+- including power-flow constraints in blockchain-based P2P trading;
+- designing a more decentralized identity and authentication mechanism;
+- adding privacy-preserving market clearing;
+- testing the platform with real microgrid and smart-meter data;
+- combining cyberattack detection with physical power-system anomaly detection.
+
+**Problem-map tags:** `P2P trading` · `blockchain` · `cybersecurity` · `privacy` · `energy theft` · `distributed market` · `microgrid`
+
+:::

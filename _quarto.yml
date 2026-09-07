@@ -1,0 +1,32 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+
+website:
+  title: "Electricity Market Review"
+  comments:
+    hypothesis:
+      theme: clean
+      openSidebar: false
+  search: true
+  navbar:
+    background: light
+    left:
+      - href: index.qmd
+        text: Literature review
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: false
+    lang: zh-CN
+    title-block-banner: false
+    html-math-method: mathjax
+    from: markdown+tex_math_single_backslash
+    smooth-scroll: true
+
+execute:
+  enabled: false

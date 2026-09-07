@@ -1,0 +1,248 @@
+::: {.callout-note collapse="true" icon=false}
+## [P003] Azim et al. (2023) — A Cooperative P2P Trading Framework: Developed and Validated Through Hardware-in-Loop
+
+**Journal:** IEEE Transactions on Smart Grid, 14(4), 2999–3015, 2023  
+**DOI:** 10.1109/TSG.2022.3225520  
+**Main topics:** Peer-to-Peer (P2P) trading; cooperative game; network constraints; Shapley value; Software-in-the-Loop (SIL); Hardware-in-the-Loop (HIL)
+
+### Quick takeaway
+
+The paper addresses a practical gap in P2P trading:
+
+**A financially attractive trade may still be unsafe for the distribution network.**
+
+The proposed framework therefore links:
+
+- a **financial layer** for P2P trading and benefit allocation;
+- a **physical network layer** for checking voltage and branch-flow limits;
+- a **real-time validation layer** using SIL and HIL.
+
+---
+
+### 1. Problem addressed
+
+Most P2P studies mainly focus on one of two sides:
+
+- **financial design**: price, trading quantity, benefit allocation;
+- **physical network operation**: voltage, congestion, losses.
+
+The problem is that a trade can be economically attractive but create voltage violations or excessive power flow in a low-voltage network.
+
+A second gap is validation. Many network-aware P2P methods are only tested by numerical simulation, so their readiness for real implementation is unclear.
+
+---
+
+### 2. Why existing approaches are not enough
+
+The paper groups existing work into three broad types:
+
+1. **Financial-layer studies**  
+   Good at market design, but often ignore physical network limits.
+
+2. **Network studies without full coordination**  
+   They analyse network impacts after trading decisions are made.
+
+3. **Coordinated financial–network studies**  
+   They consider both layers, but are usually validated only in software.
+
+The missing part is:
+
+**coordinated P2P trading + network safety + hardware-based validation.**
+
+---
+
+### 3. Overall framework
+
+![Hybrid P2P framework linking financial trading and physical network checking. Source: Fig. 1 of Azim et al. (2023).](papers/p003-azim2023/figures/azim2023/fig1_hybrid_p2p_framework.png){width=78%}
+
+The main logic is:
+
+1. Prosumers decide intended P2P trading quantities.
+2. A **P2P Market Operator (PMO)** checks whether these quantities are compatible with the distribution network.
+3. If there is no violation, the trade is accepted.
+4. If there is a violation, the trading quantity is reduced and checked again.
+5. The final economic benefit is then evaluated and allocated.
+
+The financial decisions remain with the prosumers. The PMO only checks physical feasibility.
+
+---
+
+### 4. Financial layer: cooperative trading
+
+The financial layer uses a **Canonical Coalition Game (CCG)**.
+
+All participating prosumers form a grand coalition and cooperate to reduce their total electricity cost.
+
+The model determines:
+
+- P2P selling quantity;
+- P2P buying quantity;
+- P2P trading price;
+- electricity exchanged with the grid.
+
+The P2P price is kept between the **Feed-in Tariff (FiT)** and the grid **Time-of-Use (ToU)** price.
+
+This creates an incentive for both sides:
+
+- sellers earn more than the FiT;
+- buyers pay less than the retail ToU price.
+
+---
+
+### 5. Benefit allocation: Shapley value
+
+The total coalition benefit is not simply shared equally.
+
+The paper uses the **Shapley value**.
+
+The idea is:
+
+**a prosumer receives a benefit according to its marginal contribution to the coalition.**
+
+This is used to keep the coalition fair and stable.
+
+The authors also prove that the proposed coalition satisfies the required cooperative-game properties, including grand-coalition formation and stability.
+
+---
+
+### 6. Physical network constraint checking
+
+The physical layer checks whether P2P power injections violate the distribution network.
+
+The main constraints are:
+
+- bus voltage limits;
+- branch power-flow limits.
+
+An AC network model is used for the actual validation.
+
+If a proposed P2P injection causes a violation, the framework reduces the trading quantity rather than completely blocking the prosumer.
+
+Example:
+
+- intended injection: **6.69 kW**
+- voltage limit is violated;
+- allowed injection after correction: **5 kW**
+- reduction: **25.26%**
+
+This is a key practical idea of the paper:
+
+**find the maximum safe trading quantity instead of simply rejecting the trade.**
+
+---
+
+### 7. SIL and HIL validation
+
+The authors validate the method using both:
+
+- **Software-in-the-Loop (SIL)**;
+- **Hardware-in-the-Loop (HIL)**.
+
+The platform combines MATLAB, RSCAD, and a **Real-Time Digital Simulator (RTDS)**.
+
+![Hardware-in-the-Loop setup used for real-time validation. Source: Fig. 5 of Azim et al. (2023).](papers/p003-azim2023/figures/azim2023/fig5_hil_setup.png){width=82%}
+
+The HIL setup includes:
+
+- PV emulator;
+- PV inverter;
+- battery and inverter;
+- programmable load;
+- resistive load;
+- power amplifier.
+
+The purpose is to check whether the P2P algorithm still behaves correctly when connected to realistic hardware.
+
+---
+
+### 8. Case study
+
+The test system is a typical Australian low-voltage distribution network.
+
+Key settings:
+
+- 35 buses;
+- 102 residential customers;
+- 30 prosumers participate in P2P trading;
+- ToU price: **17–35 ¢/kWh**;
+- FiT: **10 ¢/kWh**.
+
+Different residential load types are also considered using ZIP load models.
+
+---
+
+### 9. Main findings
+
+#### Network safety
+
+The proposed framework keeps voltage and branch-flow limits within acceptable ranges by adjusting trading quantities when needed.
+
+#### SIL versus HIL
+
+The voltage difference between SIL and HIL results is reported to be **less than 1%**.
+
+This supports the practical validity of the simulation framework.
+
+#### Economic benefit
+
+All participating prosumers reduce their daily electricity costs compared with Business-as-Usual (BAU).
+
+Reported cost reductions range from:
+
+**9.65% to 47.03%**
+
+The proposed method also performs better than an existing CCG method that does not directly internalize the network constraints.
+
+---
+
+### 10. What this paper teaches
+
+#### Lesson 1 — Economic feasibility is not enough
+
+A P2P trade must also satisfy physical network limits.
+
+#### Lesson 2 — Network constraints should be part of the trading process
+
+Checking the network only after finalizing the market decision can lead to infeasible trades.
+
+#### Lesson 3 — Do not block more power than necessary
+
+If a trade causes a violation, reducing the quantity can be better than rejecting the trade completely.
+
+#### Lesson 4 — HIL is an important step toward real deployment
+
+A useful research path is:
+
+**simulation → SIL → HIL → field test**
+
+---
+
+### 11. What remains unsolved
+
+The paper still leaves several open issues:
+
+- battery dynamics are simplified within each simulation step;
+- battery degradation is not modeled;
+- privacy and data encryption are not fully developed;
+- the PMO remains a centralized network-checking entity;
+- uncertainty in PV, load, and prices is not deeply considered;
+- scalability for very large numbers of prosumers is not studied in detail;
+- HIL is closer to practice, but it is still not a full field deployment.
+
+---
+
+### 12. Research idea triggers
+
+Possible extensions include:
+
+- distributed network-feasibility checking without a central PMO;
+- stochastic or robust P2P trading under PV/load uncertainty;
+- battery degradation and inter-temporal battery constraints;
+- privacy-preserving P2P trading;
+- large-scale real-time coordination;
+- blockchain + cooperative game + network constraints;
+- HIL validation of more advanced P2P market designs.
+
+**Problem-map tags:** `P2P trading` · `network constraints` · `cooperative game` · `Shapley value` · `voltage management` · `SIL` · `HIL` · `real-world implementation`
+
+:::

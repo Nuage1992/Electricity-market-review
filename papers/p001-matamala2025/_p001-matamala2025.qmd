@@ -1,0 +1,412 @@
+::: {.callout-note collapse="true" icon=false}
+## [P001] Matamala et al. (2025) — A Bi-Level Nash Bargaining Model for Electricity Trading Among Microgrids With Endogenous Nodal Prices
+
+**Paper:** Yolanda Matamala, Kevin A. Melendez, and Felipe Feijoo  
+**Journal:** IEEE Transactions on Smart Grid, 16(4), 3113–3124, 2025  
+**DOI:** 10.1109/TSG.2025.3570964  
+
+**Main topics:** multi-microgrid trading; Nash bargaining; Stackelberg game; endogenous prices; locational marginal price; battery flexibility; renewable generation
+
+### Quick takeaway
+
+This paper asks a simple but important question:
+
+**If several microgrids trade electricity with each other, how can they set a fair trading price when their actions also change electricity prices in the main grid?**
+
+The paper combines two ideas:
+
+1. A **Nash Bargaining Solution (NBS)** is used to share the economic benefit fairly among microgrids.
+2. A **Stackelberg game** is used to model the interaction between the microgrids and the **Independent System Operator (ISO)**.
+
+The key point is that both the trading price among microgrids and the grid's **Locational Marginal Price (LMP)** are treated as **endogenous prices**. They are determined by the model instead of being fixed inputs.
+
+---
+
+### 1. Problem addressed
+
+There are two linked problems.
+
+#### Problem A — Cooperation may reduce total cost but still be unfair
+
+A group of microgrids can cooperate and minimize their total operating cost.
+
+However, this does **not** mean every microgrid benefits.
+
+One microgrid may receive most or all of the cost reduction, while another microgrid receives little or no benefit. If a microgrid cannot benefit individually, it has little reason to join the trading scheme.
+
+#### Problem B — Grid prices are affected by microgrid decisions
+
+Many trading models treat the electricity price from the main grid as a fixed input.
+
+This paper argues that this is incomplete.
+
+When microgrids buy from or sell to the main grid, they change the net demand seen by the grid. This changes generator dispatch and congestion. As a result, the LMP can also change.
+
+Therefore:
+
+**microgrid trading decisions affect grid prices, and grid prices affect microgrid trading decisions.**
+
+The two sides need to be solved together.
+
+---
+
+### 2. Why existing approaches are not enough
+
+The paper highlights two common approaches.
+
+#### Total-cost or social-welfare optimization
+
+This can find a low-cost solution for the whole group.
+
+The weakness is that it does not guarantee a fair distribution of the benefit among individual microgrids.
+
+#### Nash bargaining models
+
+Nash bargaining can improve fairness.
+
+However, many previous bargaining studies do not fully capture the feedback between:
+
+- trading prices among microgrids,
+- LMPs in the main grid,
+- buying and selling decisions,
+- storage operation, and
+- renewable generation.
+
+This paper tries to connect all of these decisions in one model.
+
+---
+
+### 3. Core idea
+
+The proposed framework has two levels.
+
+![Main model structure: microgrids bargain at the upper level, while the ISO clears the grid at the lower level. Source: Fig. 1 of Matamala et al. (2025).](papers/p001-matamala2025/figures/matamala2025/fig1_framework.png){width=72%}
+
+#### Upper level — Microgrids
+
+The microgrids cooperate with each other.
+
+They decide:
+
+- how much electricity to buy or sell,
+- how to use renewable generation,
+- how to charge or discharge batteries,
+- how much electricity to exchange with the main grid, and
+- the trading price among microgrids.
+
+The trading relationship is modeled using the **Nash Bargaining Solution (NBS)**.
+
+#### Lower level — Main grid
+
+The **Independent System Operator (ISO)** operates the main grid.
+
+The ISO solves a **Direct Current Optimal Power Flow (DC-OPF)** problem.
+
+Its objective includes:
+
+- electricity generation cost, and
+- the **Social Cost of Carbon (SCC)** associated with generator emissions.
+
+The lower-level model produces the **Locational Marginal Price (LMP)** at each grid node.
+
+---
+
+### 4. Why this is a bi-level problem
+
+The microgrids are treated as the leaders.
+
+The ISO is treated as the follower.
+
+The logic is:
+
+1. Microgrids make trading and operating decisions.
+2. These decisions change the power injected into or withdrawn from the grid.
+3. The ISO redispatches generation.
+4. The LMP changes.
+5. The new LMP changes the cost of buying or selling electricity for the microgrids.
+
+So the upper and lower levels are strongly connected.
+
+This is the main reason for using a Stackelberg bi-level model.
+
+---
+
+### 5. What does “endogenous price” mean here?
+
+An **endogenous price** is a price calculated inside the model.
+
+It is not given in advance.
+
+This paper has two important endogenous prices:
+
+- the trading price among microgrids, and
+- the LMP from the main grid.
+
+This is one of the main contributions of the paper.
+
+It allows the model to study how renewable generation, storage, electricity trading, and grid operation jointly affect prices.
+
+---
+
+### 6. How fairness is defined
+
+The most useful concept in this paper is the **disagreement point**.
+
+The disagreement point is the cost of a microgrid when cooperation or peer trading is not available.
+
+For microgrid \(m\):
+
+- \(d_m\): disagreement-point cost,
+- \(z_m\): cost after cooperation.
+
+The benefit from cooperation is therefore:
+
+\[
+d_m-z_m
+\]
+
+If this value is positive, the microgrid saves money by cooperating.
+
+The basic Nash bargaining idea is to maximize the product of these benefits:
+
+\[
+\max \prod_m (d_m-z_m)
+\]
+
+This is different from only minimizing:
+
+\[
+\sum_m z_m
+\]
+
+The first expression cares about how the benefit is distributed.
+
+The second mainly cares about the total cost.
+
+This difference explains why Nash bargaining can produce a fairer result.
+
+---
+
+### 7. How the disagreement point is obtained
+
+The disagreement point is not assumed.
+
+The authors calculate it by solving the market when microgrids do **not** trade electricity with each other.
+
+This non-cooperative case is formulated as an **Equilibrium Problem with Equilibrium Constraints (EPEC)**.
+
+The resulting cost for each microgrid becomes its disagreement point.
+
+This gives the bargaining model a clear baseline:
+
+**A microgrid should not accept cooperation if it performs worse than it would without cooperation.**
+
+---
+
+### 8. Model solution
+
+The original bi-level model is difficult to solve directly.
+
+The authors convert it into a **Mathematical Program with Equilibrium Constraints (MPEC)**.
+
+The lower-level DC-OPF is replaced by its **Karush-Kuhn-Tucker (KKT)** optimality conditions.
+
+This creates complementarity constraints and nonlinear terms.
+
+Several techniques are then used to improve solution performance:
+
+- **Special Ordered Set Type 1 (SOS1)** for complementarity constraints,
+- **Second-Order Cone (SOC)** reformulation for the Nash bargaining objective,
+- strong duality for some bilinear terms, and
+- a valid inequality to improve the optimization bound.
+
+The numerical results show that SOS1 performs much better than a standard Big-M formulation for the tested cases.
+
+---
+
+### 9. Case study
+
+The model is tested on:
+
+- a PJM 5-bus system with two microgrids, and
+- an IEEE 14-bus system with four microgrids.
+
+The time horizon is 24 hours.
+
+The microgrids include:
+
+- electricity demand,
+- wind and solar generation,
+- battery storage, and
+- connection to the main grid.
+
+Different renewable-generation levels and battery capacities are tested.
+
+---
+
+### 10. Main findings
+
+#### Renewable generation reduces market prices
+
+When renewable generation increases, the microgrids need less electricity from fossil-fuel generators in the main grid.
+
+In the high-renewable scenario:
+
+- the nodal price decreases by about **1.53%**, and
+- the trading price among microgrids decreases by about **1.27%**.
+
+This shows an important feedback:
+
+**more local renewable generation can influence not only microgrid operation but also the market price seen by the microgrids.**
+
+#### Cooperation reduces dependence on the main grid
+
+For the microgrid with lower generation, bargaining reduces electricity purchased from the ISO by about:
+
+- **3%** in the low-renewable scenario, and
+- **10%** in the high-renewable scenario.
+
+#### Battery storage makes trading more flexible
+
+A microgrid can buy electricity when its nodal price is low, charge its battery, and later sell electricity when prices are higher.
+
+Storage therefore changes both the timing and economic value of electricity trading.
+
+#### Nash bargaining improves fairness
+
+The grand-coalition approach and the bargaining approach can produce a similar total cost reduction.
+
+But the distribution can be very different.
+
+![The grand coalition can give almost all of the benefit to one microgrid, while Nash bargaining distributes the benefit between participants. Source: Fig. 4 of Matamala et al. (2025).](papers/p001-matamala2025/figures/matamala2025/fig4_fairness.png){width=66%}
+
+For the high-generation case reported in the paper:
+
+- total cost reduction: about **$1,788**,
+- grand coalition: the benefit is allocated to only one microgrid,
+- Nash bargaining: about **$884** for one microgrid and **$904** for the other.
+
+This is the clearest result of the paper.
+
+The main value of Nash bargaining is therefore not necessarily a larger total saving.
+
+It is a **more acceptable distribution of the saving**.
+
+---
+
+### 11. What this paper teaches
+
+#### Lesson 1 — Minimum total cost is not the same as fair cooperation
+
+This is important in systems with independent owners.
+
+A mathematically optimal solution for the whole system may be unacceptable to an individual participant.
+
+#### Lesson 2 — The baseline matters
+
+The disagreement point gives each participant a reference.
+
+The question is not only:
+
+> Is the cooperative system cheaper?
+
+It is also:
+
+> Is each participant better off than without cooperation?
+
+#### Lesson 3 — Electricity prices should not always be treated as fixed inputs
+
+If distributed resources become large enough, their actions can affect grid dispatch and nodal prices.
+
+In that case, price and operation should be modeled together.
+
+#### Lesson 4 — Storage is not only an energy-balancing device
+
+Battery storage also creates market flexibility.
+
+It allows a microgrid to move electricity across time and respond to price differences.
+
+---
+
+### 12. What remains unsolved
+
+#### Stated by the authors
+
+The authors suggest studying **oligopolistic behavior and market manipulation**.
+
+For example, large microgrids may strategically change their interaction with the ISO to influence network prices.
+
+Mitigation strategies are therefore an important future topic.
+
+#### Further limitations visible from the model setup
+
+These are useful research questions that are not fully addressed in this paper:
+
+- Renewable generation is tested through scenarios, but explicit forecast uncertainty is not modeled in the bargaining problem.
+- The lower-level network uses DC-OPF, so voltage, reactive power, and detailed AC network behavior are not considered.
+- The test systems contain only two or four microgrids.
+- The optimization can still require hours to solve as the problem becomes larger.
+- The framework assumes that microgrids can cooperate and exchange the information needed for joint bargaining.
+- The model focuses on one market period structure rather than repeated strategic behavior over many market days.
+
+---
+
+### 13. Research idea triggers
+
+#### Uncertainty
+
+Can Nash bargaining be combined with:
+
+- stochastic optimization,
+- robust optimization, or
+- chance constraints
+
+to handle renewable, load, and price uncertainty?
+
+#### Scalability
+
+Can the centralized model be replaced by a distributed or decomposition-based algorithm for tens or hundreds of microgrids?
+
+#### Real-time operation
+
+Can the same idea be used in rolling-horizon or real-time trading instead of solving a large day-ahead problem?
+
+#### Network model
+
+What changes if AC power flow, voltage constraints, or distribution-network constraints are included?
+
+#### Market power
+
+Can some microgrids manipulate the endogenous LMP?
+
+How should market power be detected or limited?
+
+#### Fairness
+
+How would the result change if another benefit-allocation rule were used instead of Nash bargaining?
+
+#### Joint planning and operation
+
+Can storage sizing, renewable sizing, and electricity trading be optimized together?
+
+#### Multi-energy systems
+
+Can the framework include heat, hydrogen, electric vehicles, or flexible loads?
+
+---
+
+### 14. Problem-map tags
+
+`fairness`  
+`multi-microgrid trading`  
+`Nash bargaining`  
+`bi-level optimization`  
+`Stackelberg game`  
+`endogenous electricity price`  
+`locational marginal price`  
+`battery flexibility`  
+`renewable generation`  
+`market power`  
+`computational scalability`
+
+:::

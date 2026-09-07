@@ -1,0 +1,17 @@
+---
+title: "Electricity Market Review"
+---
+
+::: {.collection-intro}
+Click on the title of the document to expand or collapse the full text. Subsequent documents will be continuously compiled on this page.
+:::
+
+{{< include papers/p001-matamala2025/_p001-matamala2025.qmd >}}
+
+{{< include papers/p002-gao2023/_p002-gao2023.qmd >}}
+
+{{< include papers/p003-azim2023/_p003-azim2023.qmd >}}
+
+{{< include papers/p004-zhang2023-hydrogen/_p004-zhang2023-hydrogen.qmd >}}
+
+{{< include papers/p005-chakraborty2023/_p005-chakraborty2023.qmd >}}
