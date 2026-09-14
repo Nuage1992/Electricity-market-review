@@ -1,0 +1,680 @@
+::: {.callout-note collapse="true" icon=false}
+## [P022] Wang et al. (2023) — Day-Ahead Optimal Bidding for a Retailer With Flexible Participation of Electric Vehicles
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1482–1494, 2023  
+**DOI:** 10.1109/TSG.2022.3208093  
+**Main topics:** electric vehicles (EVs); distribution-level day-ahead energy market (DAEM); retailer bidding; incentive mechanism for charging (IMC); incentive mechanism for discharging (IMD); vehicle-to-grid (V2G); step bidding curves; conditional value at risk (CVaR); battery degradation; stochastic price scenarios
+
+### Quick takeaway
+
+This paper studies how a distribution-level electricity retailer should construct **day-ahead bidding curves** when a large population of electric vehicles can flexibly shift charging and, for some users, discharge energy back to the grid.
+
+The central problem is:
+
+**How can a retailer translate heterogeneous EV flexibility, user willingness, battery degradation, and uncertain day-ahead/real-time electricity prices into practical price-power bidding curves while controlling financial risk?**
+
+The paper combines four main ideas:
+
+- an **extended three-day investigating period** to capture EVs whose plug-in and plug-out times cross calendar-day boundaries;
+- separate **incentive mechanisms for charging (IMC)** and **discharging (IMD)**;
+- an explicit **step bidding-curve formulation** embedded in the retailer optimization problem;
+- **CVaR-based risk aversion** under uncertain day-ahead and real-time prices.
+
+The main message is that EV flexibility should not be treated simply as an aggregated fixed battery. Its market value depends on **when vehicles are connected, whether users are willing to participate, what compensation is required for battery degradation, and how the retailer bids into the market**.
+
+---
+
+### 1. Problem addressed
+
+A retailer participates in a distribution-level day-ahead energy market by submitting a price-power bidding curve for each trading period of the next day.
+
+The retailer serves two broad groups:
+
+- **inflexible end users**, whose demand is assumed predictable;
+- **flexible EV users**, whose charging and discharging behavior changes with prices and incentives.
+
+The retailer therefore faces a more difficult problem than conventional demand forecasting:
+
+**market prices affect EV behavior, and EV behavior affects the retailer's optimal market bid.**
+
+This creates a feedback chain:
+
+**market-price scenario → EV participation → charging/discharging schedule → retailer demand → bidding curve → market profit and imbalance risk**
+
+---
+
+### 2. Distribution-level day-ahead market framework
+
+![Distribution-level DAEM framework in which retailers submit price-power bids to the independent system operator while serving inflexible and EV loads. Source: Fig. 1 of Wang et al. (2023).](papers/p022-wang2023-ev-day-ahead-bidding/figures/wang2023_ev_day_ahead_bidding/fig1_daem_framework.png){width=72%}
+
+The retailer is modeled as a **price taker**.
+
+Its trading volume is assumed too small to influence the market-clearing price.
+
+Before the operation day, the retailer submits bidding curves to the day-ahead market. The independent system operator clears the market and determines:
+
+- day-ahead purchase price;
+- day-ahead traded power.
+
+During real-time operation, deviations between actual load and day-ahead procurement are settled in the real-time market and may also incur imbalance penalties.
+
+So the retailer earns money by selling electricity to end users, but pays for:
+
+- day-ahead energy;
+- real-time balancing energy;
+- EV discharging compensation;
+- imbalance penalties.
+
+---
+
+### 3. Why EVs complicate day-ahead bidding
+
+EVs differ from conventional demand in several ways.
+
+#### Temporal availability
+
+An EV can only be controlled while plugged in.
+
+#### Energy requirement
+
+The vehicle must reach a required SOC before departure.
+
+#### Bidirectional flexibility
+
+If V2G is enabled and the user agrees, the EV can both charge and discharge.
+
+#### User heterogeneity
+
+Not every user is willing to delay charging or allow battery discharge.
+
+#### Battery degradation
+
+Discharging creates additional battery wear and therefore requires compensation.
+
+#### Price responsiveness
+
+The EV user's willingness to participate changes with potential savings or compensation.
+
+The retailer therefore cannot assume that all connected EVs are fully controllable.
+
+---
+
+### 4. Three-stage uncertainty structure
+
+![Three-stage scenario tree representing the bidding decision, day-ahead price realizations, and real-time price realizations. Source: Fig. 2 of Wang et al. (2023).](papers/p022-wang2023-ev-day-ahead-bidding/figures/wang2023_ev_day_ahead_bidding/fig2_three_stage_scenario_tree.png){width=67%}
+
+The paper organizes uncertainty using a three-stage scenario tree.
+
+#### Stage 1 — before day-ahead clearing
+
+The retailer determines the **bidding curve**.
+
+#### Stage 2 — day-ahead price realization
+
+A day-ahead price scenario is realized.
+
+This price affects:
+
+- retail selling prices;
+- EV charging participation;
+- EV charging schedule;
+- aggregated EV demand.
+
+#### Stage 3 — real-time price realization
+
+A real-time price scenario is realized.
+
+The retailer settles deviations between actual demand and day-ahead purchased energy.
+
+This allows the optimization to represent both:
+
+**day-ahead bidding uncertainty + real-time imbalance uncertainty.**
+
+---
+
+### 5. A key modeling idea: the bidding horizon is not just one day
+
+A major contribution is the treatment of EV temporal distribution.
+
+For bidding on day \(n+1\), some EVs may already be connected on day \(n\), while others remain connected into day \(n+2\).
+
+The paper therefore defines three EV types.
+
+#### Type 1
+
+Plug in on day \(n\), plug out on day \(n+1\).
+
+#### Type 2
+
+Plug in and plug out during day \(n+1\).
+
+#### Type 3
+
+Plug in on day \(n+1\), plug out on day \(n+2\).
+
+![Three EV connection types and the resulting three-day investigating period for day-ahead bidding. Source: Fig. 3 of Wang et al. (2023).](papers/p022-wang2023-ev-day-ahead-bidding/figures/wang2023_ev_day_ahead_bidding/fig3_ev_temporal_distribution.png){width=70%}
+
+Hence the optimization horizon spans:
+
+**day \(n\) + day \(n+1\) + day \(n+2\)**
+
+rather than treating each calendar day independently.
+
+This is important because charging can be shifted across midnight.
+
+---
+
+### 6. Why the extended three-day period matters
+
+Suppose an EV plugs in at 22:00 on day \(n\) and departs at 07:00 on day \(n+1\).
+
+Its charging decision during the target day is already influenced by what happened before midnight.
+
+Likewise, an EV plugging in at 20:00 on day \(n+1\) may postpone charging until early day \(n+2\).
+
+A one-day model can therefore artificially truncate EV flexibility.
+
+The paper avoids this boundary problem by explicitly extending the modeling horizon.
+
+This is a useful general lesson for EV, thermal-load, storage, and other intertemporal flexibility models:
+
+> **the optimization horizon should cover the physical flexibility window, not simply follow the market calendar.**
+
+---
+
+### 7. Incentive mechanism for charging (IMC)
+
+The first flexibility mechanism concerns **charging-time shifting**.
+
+After the day-ahead market is cleared, the retailer broadcasts time-varying selling prices.
+
+The retail selling price is modeled as:
+
+\[
+\lambda^S_\omega(k)=\lambda^D_\omega(k)+\lambda^M_\omega(k)
+\]
+
+where:
+
+- \(\lambda^D\): day-ahead electricity price;
+- \(\lambda^M\): retailer's margin;
+- \(\lambda^S\): selling price to EV users.
+
+An EV user may enroll in the **Incentive Mechanism for Charging (IMC)**.
+
+If enrolled:
+
+> the retailer may shift charging within the available plug-in period to minimize the EV user's charging cost.
+
+If not enrolled:
+
+> the EV is charged immediately after plug-in until its required SOC is reached.
+
+---
+
+### 8. Charging participation is based on user willingness
+
+The paper does not assume 100% participation.
+
+The participation rate is represented as:
+
+\[
+\rho^{IMC}_\omega=f^{IMC}(\Delta\lambda^S_\omega)
+\]
+
+where \(\Delta\lambda^S\) is the peak-to-off-peak selling-price difference.
+
+A larger price difference gives users more potential savings from delayed charging and therefore increases participation.
+
+The relationship is obtained from **social-survey data**.
+
+This is an important feature because the technically available flexibility of EVs is different from the **behaviorally available flexibility**.
+
+---
+
+### 9. Operation region of an individual EV
+
+![Feasible SOC operation region of an EV considering charging, discharging, minimum/maximum SOC, and required departure SOC. Source: Fig. 4 of Wang et al. (2023).](papers/p022-wang2023-ev-day-ahead-bidding/figures/wang2023_ev_day_ahead_bidding/fig4_individual_ev_operation_area.png){width=58%}
+
+The paper defines a feasible SOC region during each EV's connection period.
+
+The upper boundary represents the fastest possible charging trajectory.
+
+The lower boundary allows discharging down to the minimum SOC, followed by forced charging so that the EV still reaches the required departure SOC.
+
+The actual EV trajectory must stay inside this feasible region.
+
+This ensures that market participation never violates:
+
+- battery SOC limits;
+- charger power limits;
+- required travel energy at departure.
+
+---
+
+### 10. Minimum required charging time
+
+The minimum number of charging intervals is calculated from:
+
+\[
+k_i^{a0}
+=
+\left\lceil
+\frac{Q_i(S_i^d-S_i^c)}{\eta_i^c P_i^{cr}\Delta k}
+\right\rceil
+\]
+
+where:
+
+- \(Q_i\): battery capacity;
+- \(S_i^c\): initial SOC;
+- \(S_i^d\): required departure SOC;
+- \(P_i^{cr}\): rated charging power;
+- \(\eta_i^c\): charging efficiency.
+
+Without participation in the incentive mechanism, the EV is only considered controllable over this minimum charging period.
+
+With participation, the available scheduling period can expand to the full connection period.
+
+---
+
+### 11. Incentive mechanism for discharging (IMD)
+
+The second mechanism allows V2G discharging.
+
+The paper recognizes that users are generally less willing to participate in discharging than in simple charging shifting because V2G introduces battery degradation.
+
+The retailer therefore pays a compensation price:
+
+\[
+\lambda^C=\pi^0+\lambda^I
+\]
+
+where:
+
+- \(\pi^0\): estimated unit battery degradation cost;
+- \(\lambda^I\): additional incentive payment.
+
+The total compensation must therefore cover battery wear plus an incentive that makes participation attractive.
+
+---
+
+### 12. Battery degradation is monetized
+
+The paper estimates battery degradation from the relationship between:
+
+- depth of discharge (DOD);
+- battery cycle life.
+
+For a given DOD, the lifetime processed energy is estimated.
+
+An average lifetime throughput is then used to convert battery purchase cost into an approximate degradation cost per unit of discharged energy.
+
+The result is a simplified linear unit cost:
+
+\[
+\pi_i^0 \propto
+\frac{\text{battery purchase cost}}
+{\text{lifetime processed energy}}
+\]
+
+This makes battery degradation directly usable in the market-bidding optimization.
+
+---
+
+### 13. IMC and IMD are behaviorally linked
+
+The paper assumes that users who already join IMC are more motivated by economic benefits and are therefore more likely to join IMD.
+
+The two participation mechanisms are consequently not treated as fully independent populations.
+
+If the IMD participation rate is lower than the IMC participation rate:
+
+> discharging participants are selected from IMC participants.
+
+If IMD participation is higher:
+
+> all IMC participants are assumed eligible, with additional participants included as needed.
+
+This is a simple way to introduce correlation between users' willingness to shift charging and willingness to discharge.
+
+---
+
+### 14. EV users are guaranteed their minimum charging cost
+
+A subtle but important idea is that flexible market scheduling should not make participating users worse off.
+
+The paper first solves an **optimal charging model** to calculate the minimum charging cost that EV users could achieve under the incentive mechanism.
+
+This minimum cost becomes the retailer's baseline selling income from EV users.
+
+Then, in the retailer bidding model, EV charging/discharging may be further rearranged to improve market profit.
+
+If this market-oriented rearrangement would increase the EV user's charging cost, the retailer is assumed to compensate for the difference.
+
+So the retailer captures flexibility only while preserving the user's economic benefit.
+
+---
+
+### 15. Retailer's market-profit formulation
+
+The retailer's profit contains the following major components:
+
+**Revenue**
+
+- energy-selling income from EVs;
+- energy-selling income from inflexible users.
+
+**Costs**
+
+- day-ahead energy purchase;
+- real-time balancing energy;
+- EV discharging compensation;
+- imbalance penalties.
+
+The retailer therefore makes money by optimally coordinating:
+
+**EV charging flexibility + V2G flexibility + DA procurement + RT correction.**
+
+---
+
+### 16. Step bidding curve is optimized directly
+
+![Step price-power bidding curve used by the retailer in the day-ahead market. Source: Fig. 5 of Wang et al. (2023).](papers/p022-wang2023-ev-day-ahead-bidding/figures/wang2023_ev_day_ahead_bidding/fig5_step_bidding_curve.png){width=55%}
+
+Rather than assuming a bidding curve externally, the paper embeds the curve itself in the optimization model.
+
+The bidding curve consists of nodes:
+
+\[
+(P_1,\lambda_1),\ldots,(P_G,\lambda_G)
+\]
+
+with:
+
+\[
+P_1\ge P_2\ge\cdots\ge P_G
+\]
+
+and increasing price levels.
+
+Thus:
+
+- lower market prices correspond to larger desired purchase volumes;
+- higher prices correspond to smaller desired purchase volumes.
+
+This makes the optimization output directly usable as a practical market bid.
+
+---
+
+### 17. Why the bidding curve matters
+
+A single optimal power value is not enough in a day-ahead market because the actual clearing price is not known when the bid is submitted.
+
+The step bidding curve tells the market:
+
+> **if the clearing price is low, I want this much energy; if the price is high, I want less.**
+
+EV flexibility changes the shape of this demand-side bidding curve.
+
+For example, if EV charging can be shifted away from expensive periods, the retailer can reduce its bid at high-price hours while increasing purchases during low-price hours.
+
+---
+
+### 18. Real-time imbalance and penalty cost
+
+The actual EV demand may differ from the day-ahead purchase.
+
+The retailer then uses the real-time market to balance the mismatch.
+
+The model additionally applies penalties when imbalance exceeds specified thresholds.
+
+This discourages a retailer from exploiting real-time balancing without adequately managing its day-ahead commitment.
+
+Thus EV flexibility is valuable not only for energy arbitrage but also for:
+
+**reducing day-ahead / real-time imbalance exposure.**
+
+---
+
+### 19. Why CVaR is introduced
+
+Maximizing expected profit alone can produce aggressive bids that perform badly under unfavorable price scenarios.
+
+The paper therefore uses **Conditional Value at Risk (CVaR)**.
+
+At confidence level \(\alpha\), CVaR represents the expected profit in the worst \((1-\alpha)\times100\%\) scenarios.
+
+The final objective combines:
+
+\[
+\text{Expected Profit}
++
+\beta\times\text{CVaR}
+\]
+
+where \(\beta\) is the risk factor.
+
+A larger \(\beta\) makes the retailer more risk averse.
+
+---
+
+### 20. Scenario construction in the case study
+
+The paper uses historical NYISO data from June-August 2016-2020.
+
+A total of 460 day-ahead and real-time price profiles are used.
+
+The day-ahead profiles are reduced to:
+
+**20 day-ahead price scenarios**
+
+using k-means clustering.
+
+For each day-ahead scenario, three real-time residual-price scenarios are generated.
+
+Hence the final uncertainty set contains:
+
+\[
+20\times3=60
+\]
+
+price scenarios.
+
+The test system contains **1,000 EVs** with heterogeneous connection times, SOCs, capacities, and charging parameters.
+
+---
+
+### 21. IMC changes the retailer's hourly bid
+
+When only charging flexibility is enabled, the retailer shifts EV charging from expensive hours to cheaper hours.
+
+For the reported example, relative to the reference case with no IMC participation, the retailer tends to:
+
+- bid **more energy around hours 4-6**;
+- bid **less energy from approximately hour 13 onward**.
+
+This reflects the intended behavior:
+
+**high-price charging → low-price charging.**
+
+The value of EV flexibility is therefore visible directly in the day-ahead bidding curve.
+
+---
+
+### 22. Risk-aversion result
+
+The paper varies the CVaR risk factor from 0 to 1.
+
+Reported behavior:
+
+- expected bidding profit decreases only slightly;
+- bidding CVaR increases substantially.
+
+Specifically, the paper reports that as the risk factor rises from 0 to 1:
+
+- expected bidding profit decreases by about **$2.89**;
+- bidding CVaR increases by about **$35.26**.
+
+After the risk factor reaches roughly **0.4**, further changes in expected profit, CVaR, and the bidding curve become small.
+
+This suggests that moderate risk aversion can substantially improve downside protection at relatively low expected-profit cost.
+
+---
+
+### 23. IMD has an economically optimal compensation range
+
+Discharging compensation creates a non-monotonic trade-off.
+
+If compensation is too low:
+
+> users do not participate because battery degradation is not adequately covered.
+
+If compensation is too high:
+
+> V2G becomes too expensive for the retailer.
+
+Therefore, there is an intermediate compensation range that maximizes retailer profit.
+
+In the tested case, the highest reported profit occurs around a **$30/MWh compensation level** under the low battery-cost condition used in the simulation.
+
+![Expected bidding profit under different compensation-price and battery-cost assumptions. Source: Fig. 10 of Wang et al. (2023).](papers/p022-wang2023-ev-day-ahead-bidding/figures/wang2023_ev_day_ahead_bidding/fig10_compensation_battery_profit.png){width=63%}
+
+---
+
+### 24. Better battery durability increases market value
+
+As battery cycle life increases:
+
+- unit degradation cost decreases;
+- more users are willing to participate in IMD;
+- V2G flexibility increases;
+- retailer bidding profit increases.
+
+The paper reports that profit grows strongly as cycle life increases from about **10,000 to 50,000 cycles**.
+
+At very high cycle life, additional gains become small because participation becomes limited by other factors such as compensation willingness rather than battery degradation alone.
+
+This shows that battery technology can directly change the economic value of EV participation in electricity markets.
+
+---
+
+### 25. More compensation does not necessarily mean more discharged energy
+
+An interesting result appears in the compensation sensitivity analysis.
+
+As compensation rises from low values:
+
+- more users become willing to participate;
+- retailer profit can initially increase.
+
+But the retailer activates V2G only when the market-price spread is large enough to justify the compensation payment.
+
+Therefore, with higher compensation:
+
+> V2G may be economically attractive in fewer scenarios.
+
+The paper reports that expected discharged energy decreases as the compensation price rises in the tested range, even while expected profit initially increases.
+
+![Expected retailer profit and aggregate discharged energy under different compensation prices. Source: Fig. 12 of Wang et al. (2023).](papers/p022-wang2023-ev-day-ahead-bidding/figures/wang2023_ev_day_ahead_bidding/fig12_profit_discharge_compensation.png){width=63%}
+
+---
+
+### 26. What this paper teaches
+
+#### Lesson 1 — EV flexibility is fundamentally intertemporal
+
+The correct modeling horizon should cover full plug-in intervals, including those crossing midnight.
+
+#### Lesson 2 — Technical flexibility and participating flexibility are different
+
+An EV may physically be able to shift or discharge but the user may refuse.
+
+Survey-based participation functions are therefore used to convert technical flexibility into behaviorally available flexibility.
+
+#### Lesson 3 — Charging and discharging require different incentive designs
+
+Simple charging delay primarily depends on electricity-price savings.
+
+V2G additionally requires compensation for battery degradation and user inconvenience.
+
+#### Lesson 4 — A practical market study should optimize the bidding curve itself
+
+The paper does not stop at an optimal EV charging schedule.
+
+It converts EV flexibility into an actual **day-ahead step bidding curve**.
+
+#### Lesson 5 — Risk management changes the bidding curve
+
+CVaR does not merely change a scalar profit metric.
+
+It changes how much energy the retailer is willing to bid at different price levels.
+
+#### Lesson 6 — Better batteries increase the market value of V2G
+
+Longer cycle life lowers degradation cost and increases economically usable discharging flexibility.
+
+---
+
+### 27. Limitations
+
+Important limitations include:
+
+- the retailer is assumed to be a **price taker**;
+- uncertainties in individual EV battery capacity, plug-in time, and charging rate are assumed predictable and their aggregate prediction error is neglected;
+- user participation functions are derived from survey relationships and are not learned dynamically from actual repeated behavior;
+- battery degradation is represented by a simplified unit-energy cost based mainly on DOD and cycle life;
+- network constraints inside the distribution system are not the central focus of the retailer bidding model;
+- EV user comfort, inconvenience, and mobility uncertainty are simplified into participation and SOC constraints;
+- only day-ahead/real-time energy-market interactions are modeled rather than joint energy-reserve-ancillary-service participation;
+- the study is scenario-based and depends on historical NYISO summer price data;
+- the allocation of aggregate retailer profit back to individual EVs is not solved.
+
+The authors explicitly identify **profit allocation among heterogeneous EVs according to contribution and uncertainty** as future work.
+
+---
+
+### 28. Critical reading notes
+
+#### Battery-cost unit reporting should be checked carefully
+
+The text discusses EV battery costs in the range of approximately **$200/kWh to $1260/kWh**, while parts of the simulation discussion/figures use a battery-cost axis or description in **$/MWh**.
+
+Before reproducing the degradation-cost calculation, the unit convention should therefore be verified carefully from the equations, source data, and implementation.
+
+#### Participation is exogenous to the optimization
+
+The functions \(f^{IMC}(\cdot)\) and \(f^{IMD}(\cdot)\) are obtained from survey relationships.
+
+This means the retailer optimizes *given* a behavioral participation model, rather than jointly learning behavior online.
+
+#### Aggregation removes some individual uncertainty
+
+The paper assumes that prediction errors in EV parameters can be ignored for a sufficiently large EV population.
+
+This is convenient but may be optimistic in cases with correlated travel behavior, weather events, holidays, or concentrated charging demand.
+
+---
+
+### 29. Research idea triggers
+
+Possible extensions include:
+
+- online learning of IMC/IMD participation probabilities from actual customer responses;
+- distributionally robust bidding under uncertain plug-in times, SOC, and participation;
+- joint day-ahead energy + reserve + frequency-regulation bidding of EV aggregators;
+- bi-level or game-theoretic bidding when the retailer is no longer a price taker;
+- network-constrained bidding using DLMPs;
+- fairness-aware allocation of V2G revenue among EV users;
+- degradation-aware stochastic MPC for EV aggregation;
+- personalized incentives rather than one common compensation price;
+- dynamic contracts that distinguish high-flexibility and low-flexibility EV users;
+- battery-health-aware participation using SOH estimation;
+- learning-based bidding curves using historical market clearing data;
+- coupling EV bidding with carbon prices or carbon-intensity signals;
+- multi-retailer competition for EV flexibility;
+- rolling day-ahead/intraday bidding instead of one-shot DA bidding.
+
+**Problem-map tags:** `EV aggregator` · `day-ahead bidding` · `retailer` · `IMC` · `IMD` · `V2G` · `battery degradation` · `step bidding curve` · `CVaR` · `stochastic optimization` · `user participation` · `distribution-level electricity market`
+
+:::

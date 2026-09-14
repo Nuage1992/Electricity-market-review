@@ -1,0 +1,1072 @@
+::: {.callout-note collapse="true" icon=false}
+## [P024] Wang et al. (2025) — EV scheduling with strategic siting, battery-aging compensation, and participation-aware dispatch
+
+## Citation / Paper information
+
+- **Title:** *Electric Vehicle Scheduling Model With Strategic Siting and Incentive Pricing Considering Participation Willingness*
+- **Authors:** Yanjia Wang, Da Xie, Chenghong Gu, Pengfei Zhao, and Xitian Wang
+- **Journal:** *IEEE Transactions on Smart Grid*, Vol. 16, No. 6
+- **Year:** 2025 (November issue; published online 16 July 2025)
+- **Pages:** 5230–5245
+- **DOI:** `10.1109/TSG.2025.3589616`
+- **Main topic:** Participation-aware VPP dispatch of EVs through charging-station siting, battery-aging compensation, charging-station-centered distributed scheduling, and iterative incentive pricing
+- **Market level:** VPP/grid-dispatch interface. The paper uses grid demand/generation conditions and incentive prices, but it does **not** formulate a standard wholesale market-clearing or bidding problem.
+- **Main methods:** three-step weighted K-means; DBI-based partition-number assessment; Gaussian-Copula Monte Carlo uncertainty analysis; battery-degradation-based compensation; station responsiveness ranking; distributed/sequential dispatch; dynamic occupancy pricing and distance-price redirection; iterative incentive price adjustment
+
+## Quick takeaway
+
+This paper addresses a practical bottleneck in large-scale EV participation in VPP dispatch: even if EVs are technically available, owners may not respond because the dispatch requires additional travel, exposes the battery to degradation, or broadcasts requests to far more vehicles than are ultimately needed. The paper therefore treats **participation willingness as a system-design variable**, not merely an exogenous behavioral parameter.
+
+Its main contribution is a coordinated chain of three mechanisms. First, charging-station locations are planned with a grid-state/SOC-aware weighted clustering method so that the EVs most useful to the grid are geographically closer to charging stations. Second, the dispatch incentive includes a battery-aging compensation term. Third, charging stations are ranked and activated sequentially so that fewer EVs need to be notified, thereby improving the response-realization rate and the modeled willingness to respond. The framework is validated with Chicago taxi-trip and charging-station data.
+
+> **One-sentence takeaway:** The paper improves EV willingness to participate in VPP dispatch by jointly reducing response travel, compensating battery wear, and replacing broadcast dispatch with charging-station-centered sequential scheduling.
+
+## 1. Problem addressed
+
+### Existing problem
+
+EVs are attractive VPP resources because they are numerous, mobile, and capable of both charging and discharging. However, the paper argues that existing EV scheduling studies mainly emphasize grid stability, charging cost, or aggregator/operator profit, while practical participation is constrained by EV owners' willingness to respond.
+
+Two willingness barriers are emphasized:
+
+1. **Range anxiety:** responding to a dispatch request may require additional travel to a charging/discharging point.
+2. **Battery-aging anxiety:** repeated charging/discharging can accelerate battery degradation, but conventional settlement may compensate only the delivered energy.
+
+A third operational issue appears in large fleets: if a VPP broadcasts dispatch commands to all online EVs, the number of notified users can greatly exceed the number actually required. The resulting low **response realization rate** reduces the modeled willingness to participate.
+
+### Research gap
+
+The paper identifies three gaps that are normally treated separately:
+
+```text
+Charging-station siting
+        +
+Battery-aging compensation
+        +
+Participation-aware dispatch
+        ↓
+Need to be coordinated around EV willingness
+```
+
+Conventional charging-station planning mainly minimizes charging distance. This paper argues that VPP operation needs a different objective because the desirable EV type changes with grid condition: low/medium-SOC vehicles are useful for absorbing surplus generation, while high/medium-SOC vehicles are useful for discharging during shortages.
+
+Similarly, conventional EV pricing often emphasizes operator economics, whereas this study explicitly adds compensation for battery aging from the EV-user perspective. Finally, it replaces fleet-wide broadcast dispatch with station-centered sequential scheduling.
+
+### Practical significance
+
+The practical objective is not merely to make EVs technically schedulable. It is to make them **more likely to accept and complete dispatch requests at a lower incentive price**. In the case study, the combined strategy reduces travel distance, increases modeled willingness, and allows the 5.2 MWh response target to be achieved at a lower final incentive price than the baseline.
+
+## 2. Overall framework
+
+![](papers/p024-wang2025-ev-scheduling/figures/paper_024_wang2025_ev_scheduling/fig1_overall_framework.png){fig-alt="Overview of the EV scheduling model from the original paper." width=95%}
+
+The paper's architecture can be read as two data streams feeding three linked mechanisms.
+
+```text
+Historical data
+    ↓
+EV locations + historical grid condition
+    ↓
+3-step weighted K-means
+    ↓
+Charging-station planning result
+
+Real-time data
+    ↓
+Grid condition + EV information + regular electricity price
+    ↓
+Battery-aging compensation + station responsiveness ranking
+    ↓
+Sequential / distributed scheduling
+    ↓
+Complete VPP dispatch
+```
+
+The logic is:
+
+**Input**
+→ historical EV spatial/temporal data, historical grid generation/load data, real-time grid demand, EV SOC/location, charging-station availability, and reference electricity price.
+
+**Participants**
+→ grid/VPP dispatch side, VPP operator or dispatch center, EV users, dispatch-participating charging stations, and nearby non-dispatch charging stations used for redirection.
+
+**Market / optimization layer**
+→ this is not a conventional bid-clearing market. The paper instead constructs an **incentive-and-dispatch mechanism**: grid state determines which SOC group is useful; station siting is optimized accordingly; battery wear is monetized; charging stations are ranked; capacity is reserved; and the incentive price is increased iteratively if response is insufficient.
+
+**Information exchange**
+→ EV SOC and location are transmitted to the dispatch center; the paper assumes public cellular networks support real-time dispatch commands and response collection.
+
+**Output**
+→ charging-station locations, station dispatch order, selected dispatch stations, EV charging/discharging actions, redirection decisions for regular charging EVs, and the final incentive price required to satisfy the dispatch target.
+
+## 3. Key models / mechanisms
+
+### 3.1 Grid-state and SOC classification
+
+The paper divides the power system into three operating states:
+
+- **Power surplus:** generation exceeds load.
+- **Power shortage:** generation is below load.
+- **Power equilibrium:** generation and load are balanced.
+
+EVs are divided by SOC:
+
+- low SOC: `0% ≤ SOC < 40%`
+- medium SOC: `40% ≤ SOC ≤ 60%`
+- high SOC: `60% < SOC ≤ 100%`
+
+The core planning logic is not simply “all EVs should be close to a charger.” Instead:
+
+```text
+Grid surplus
+→ prioritize medium + low SOC EVs near stations
+→ encourage charging / absorb surplus energy
+
+Grid shortage
+→ prioritize high + medium SOC EVs near stations
+→ encourage discharging / support the grid
+
+Grid equilibrium
+→ conventional charging convenience dominates
+```
+
+A notable feature is the treatment of **low-SOC EVs during shortage periods**. The paper assigns them a negative clustering weight so that they are relatively farther from the planned station center, with the intention of discouraging charging when the grid is short of power. The authors describe this as flexible guidance rather than a mandatory restriction.
+
+### 3.2 Three-step weighted K-means for charging-station siting
+
+![](papers/p024-wang2025-ev-scheduling/figures/paper_024_wang2025_ev_scheduling/fig2_three_step_weighted_kmeans.png){fig-alt="Three-step weighted K-means clustering method from the original paper." width=98%}
+
+The siting method is designed for a very large EV data set and therefore decomposes clustering into three stages.
+
+#### Step 1 — Clustering partition
+
+All EV location samples are first partitioned geographically with K-means using **Manhattan distance**, motivated by the geometry of vehicle travel. The Davies-Bouldin Index (DBI) is used to assess candidate values of the number of partitions.
+
+Purpose:
+
+- reduce the number of points handled in subsequent weighted clustering;
+- preserve broad spatial structure;
+- make the later grid-state/SOC-specific clustering computationally tractable.
+
+Input:
+
+- all EV location samples.
+
+Output:
+
+- spatial partitions used independently in Step 2.
+
+#### Step 2 — Grid-state/SOC weighted clustering
+
+Within each partition, the paper applies a weighted distance:
+
+```math
+d_{ij}=\beta_i\|x_i-\mu_j\|_1.
+```
+
+The weight `β_i` depends jointly on grid state and EV SOC. In the numerical implementation the effective values are `1`, `0`, or `-1`.
+
+Interpretation:
+
+- `β = 1`: the sample attracts the cluster center;
+- `β = 0`: the sample does not influence the center;
+- `β = -1`: the formulation is intended to push the center away from that sample.
+
+The updated center is a weighted mean of assigned samples. Thus the clustering is not merely identifying dense EV regions; it attempts to move station locations toward EVs that are **useful for the current grid state**.
+
+#### Step 3 — Integrated clustering
+
+The grid-surplus, grid-shortage, and grid-equilibrium layer results are merged. Each intermediate cluster center is weighted by the total weight/number of samples it represents, and a final weighted clustering produces the charging-station plan.
+
+The final objective reported in the paper is a weighted sum of squared distances between intermediate centers and final centers.
+
+#### Computational role
+
+The paper reports approximate total time complexity as
+
+```text
+O(N(KT1 + kT2))
+```
+
+after treating the Step-3 center set as relatively small. The point of the three-step structure is therefore as much **computational decomposition** as physical siting logic.
+
+### 3.3 Uncertainty model for EV location, time, and SOC
+
+The paper acknowledges that EV spatial location, appearance time, and SOC are uncertain and correlated. It therefore applies a **Gaussian Copula-based Monte Carlo** procedure to a four-dimensional data matrix containing:
+
+```text
+longitude
+latitude
+charging / appearance time
+SOC
+```
+
+The intended flow is:
+
+```text
+observed EV data
+↓
+Z-score normalization
+↓
+empirical marginal transformation to pseudo-observations
+↓
+4-D Gaussian Copula for dependence
+↓
+Monte Carlo sampling
+↓
+synthetic EV behavior samples
+↓
+re-evaluate distance to nearest planned station
+```
+
+This is used as a **post-planning robustness test** rather than embedding uncertainty directly inside the siting optimization.
+
+### 3.4 Priority adjustment for practical station retrofitting
+
+Because a real city already has charging infrastructure, the paper introduces a priority index for deciding which proposed stations should be adjusted toward existing sites.
+
+The priority combines:
+
+- the number of EVs around the proposed station;
+- the Manhattan distance to the nearest existing station;
+- a coefficient `λ` controlling how strongly adjustment distance matters.
+
+The smaller the priority index, the higher the adjustment priority. This creates a practical “how much of the existing network should be modified?” layer on top of the ideal siting plan.
+
+### 3.5 SOC estimation from taxi driving distance
+
+The Chicago taxi data do not directly provide SOC. The paper therefore estimates SOC from cumulative passenger-carrying and empty-trip distance:
+
+```text
+SOC at time t
+= 1
+- (energy consumption per km / battery capacity)
+  × cumulative travelled distance before t
+```
+
+Purpose:
+
+- reconstruct a time-dependent SOC proxy from travel trajectories.
+
+Important assumption:
+
+- SOC is inferred rather than observed; the paper does not explicitly model intermediate charging events inside this reconstruction equation.
+
+### 3.6 Battery-aging compensation price
+
+The paper defines the EV incentive price as:
+
+```text
+incentive price
+=
+conventional dispatch price
++
+battery-aging compensation
+```
+
+Battery aging is related to:
+
+- depth of discharge (DOD);
+- equivalent cycle life;
+- battery replacement cost;
+- dispatched energy relative to rated battery capacity.
+
+The economic interpretation is straightforward: if a VPP asks an EV to discharge, the owner should receive a monetary amount representing the incremental battery-life loss caused by the dispatch.
+
+The paper intentionally keeps this model simple so that the compensation mechanism can be transparent to EV users.
+
+### 3.7 Response realization rate and willingness
+
+Response realization rate is defined as:
+
+```math
+RaR=\frac{\text{actual EVs dispatched}}{\text{EVs notified for scheduling}}.
+```
+
+The paper then uses a consumer-psychology response model from Ref. [43] to map `RaR` to willingness to respond.
+
+Mechanism:
+
+```text
+Notify too many EVs
+↓
+low realization rate
+↓
+low modeled willingness
+
+Notify only the most responsive stations / EV groups
+↓
+higher realization rate
+↓
+higher modeled willingness
+```
+
+This is why the station-centered sequential scheduling strategy matters: it is not only a capacity-allocation algorithm; it is part of the behavioral model.
+
+### 3.8 Charging-station responsiveness index
+
+For each charging station, the paper calculates a responsiveness index `RcI` from:
+
+- number of high-, medium-, and low-SOC EVs around the station;
+- their average distance to the station;
+- SOC-specific weights;
+- a distance coefficient `η_DAl`.
+
+During power shortage, high- and medium-SOC EVs increase a station's ranking, while low-SOC EVs decrease it. During surplus, medium- and low-SOC EVs dominate.
+
+Output:
+
+- a real-time ordering of charging stations from most to least suitable for dispatch.
+
+### 3.9 Reserved capacity, occupancy control, and redirection
+
+Each dispatch station reserves a fraction `η_Sta` of its allowable charging/discharging capacity for the VPP task. The remaining capacity can serve normal charging demand.
+
+If regular charging consumes too much of the non-dispatch capacity, the charging price is dynamically increased. An EV that rejects the higher price, or arrives when no residual capacity remains, is redirected to another non-dispatch station by minimizing a weighted distance-price cost:
+
+```text
+distance cost
++
+charging-price cost
+```
+
+This mechanism separates two objectives:
+
+```text
+protect dispatch capacity
+        +
+still accommodate ordinary charging demand
+```
+
+### 3.10 Flexible incentive-price adjustment
+
+If the initial incentive price does not attract enough EV response, the price is increased by a fixed increment:
+
+```text
+M(k+1) = M(k) + ΔM
+```
+
+until total response satisfies:
+
+```text
+response energy ≥ dispatch demand + dispatch margin.
+```
+
+Thus the paper does not solve an equilibrium price analytically. It uses a **feedback-like iterative price adjustment** until the required response is secured.
+
+## 4. Optimization problem
+
+This paper is important to read correctly: it does **not** present one unified optimization problem with a single objective and one set of decision variables. It is a chain of coupled subproblems and decision rules.
+
+### Objective
+
+The effective objectives are:
+
+1. **Charging-station siting:** reduce distance between dispatch-relevant EVs and stations under different grid/SOC states, while relatively discouraging unfavorable charging behavior during shortages.
+2. **Final clustering:** minimize a weighted center-to-center distance objective.
+3. **Dispatch station selection:** minimize the number of activated stations while satisfying required dispatch energy plus a margin.
+4. **Regular-EV redirection:** minimize a weighted distance-price cost.
+5. **Flexible pricing:** increase the incentive price until aggregate response meets the dispatch requirement.
+
+There is no explicit system-wide objective such as “minimize total VPP cost” or “maximize social welfare” combining all five mechanisms.
+
+### Decision variables
+
+Depending on the subproblem, the decisions include:
+
+- spatial cluster centers / proposed charging-station locations;
+- number of clusters allocated to each partition;
+- final integrated station centers;
+- priority for adapting proposed sites to existing infrastructure;
+- station dispatch order based on `RcI`;
+- number of stations `N_All` activated for the dispatch task;
+- available/reserved station capacity;
+- charging price for regular EVs at dispatch-participating stations;
+- redirection station `j*` for a regular EV;
+- iterative EV dispatch incentive price.
+
+The paper does **not** formulate individual EV charging/discharging powers as one large optimization vector across a multi-period horizon.
+
+### Main constraints
+
+The main constraints/mechanisms are:
+
+- SOC category definitions;
+- grid-state-specific weighting rules;
+- charging-station capacity reservation through `η_Sta`;
+- dispatch requirement:
+
+```text
+sum of selected station capacities
+≥ VPP dispatch demand + ε0
+```
+
+- residual capacity available for ordinary charging;
+- redirection when residual capacity is non-positive or the EV rejects the dynamic price;
+- flexible incentive price iteration terminates only when response reaches demand plus margin.
+
+### Uncertainty treatment
+
+The paper uses two different uncertainty treatments:
+
+**1. EV-behavior uncertainty**
+
+- Gaussian Copula + Monte Carlo;
+- applied to location, time, and SOC;
+- 10,000 synthetic EV samples are generated for robustness evaluation.
+
+**2. Dispatch non-compliance / communication uncertainty**
+
+- represented by a deterministic reserve margin `ε0`;
+- intended to cover communication failures and EV non-compliance;
+- `ε0` should be calibrated using historical default rates.
+
+The paper does **not** formulate a stochastic, robust, chance-constrained, or distributionally robust optimization problem for the complete dispatch process.
+
+## 5. Market / pricing / game mechanism
+
+### Market type
+
+The paper is best classified as a **VPP incentive dispatch mechanism** rather than a full electricity-market design paper.
+
+It considers a VPP responding to grid demand and repeatedly refers to “electricity market demand,” but it does not model:
+
+- generator bids;
+- supply-demand market clearing;
+- LMP/DLMP formation;
+- reserve clearing;
+- auction equilibrium;
+- strategic bidding by the VPP.
+
+### Participant interaction
+
+```text
+Grid condition / dispatch requirement
+          ↓
+         VPP
+          ↓
+select responsive charging stations
+          ↓
+EV users receive incentive signal
+          ↓
+accept / reject / charge / discharge
+          ↓
+aggregate response returned to VPP/grid
+```
+
+### Incentive price formation
+
+The initial price contains:
+
+```text
+reference dispatch price
++
+battery-aging compensation
+```
+
+If this is not enough, the price is raised by a fixed increment until aggregate response reaches the target.
+
+Therefore, price is **response-driven**, not obtained from marginal system cost or a formal equilibrium.
+
+### Settlement
+
+The paper states that battery-aging compensation is incorporated into the incentive price. It does not provide a detailed market settlement architecture among grid, VPP, charging station, and individual EV beyond this compensation logic.
+
+### Charging price for non-dispatch EVs
+
+At dispatch-participating charging stations, ordinary charging users may face a dynamic surcharge when free capacity becomes scarce. This price is a congestion/resource-occupancy signal used to protect dispatch capacity, not the main VPP dispatch incentive price.
+
+### Game mechanism
+
+No game-theoretic equilibrium is formulated. EV heterogeneity enters through the response model and iterative price adjustment rather than explicit strategic utility maximization.
+
+## 6. Solution method
+
+![](papers/p024-wang2025-ev-scheduling/figures/paper_024_wang2025_ev_scheduling/fig3_algorithm_implementation.png){fig-alt="Overall algorithm implementation flow from the original paper." width=95%}
+
+The solution architecture is algorithmic and sequential rather than based on MILP/NLP decomposition.
+
+### Why three-step clustering is needed
+
+The Chicago data contain roughly four million samples. Directly applying weighted clustering to all points would be computationally heavy. Step 1 therefore compresses the problem spatially, Step 2 introduces grid/SOC preference within each partition, and Step 3 merges the partial solutions.
+
+```text
+Large data set
+↓
+partition first
+↓
+weighted clustering within smaller regions
+↓
+merge cluster centers
+↓
+final station plan
+```
+
+### Why distributed / station-centered scheduling is needed
+
+A fleet-wide broadcast can notify far more EVs than needed. The paper instead aggregates information around charging stations, ranks station responsiveness, and activates only enough top-ranked stations to satisfy the response target.
+
+This has two intended advantages:
+
+- lower communication/notification burden;
+- higher response-realization rate and hence higher modeled willingness.
+
+### Why iterative incentive pricing is needed
+
+EV acceptance is heterogeneous and uncertain. A fixed price may not attract enough participants. Instead of predicting the exact willingness-price curve in one optimization step, the paper uses a simple repeated adjustment:
+
+```text
+initial price
+↓
+predict / observe response
+↓
+insufficient?
+   yes → add ΔM → repeat
+   no  → stop
+```
+
+This is easy to implement, although it does not guarantee an economically optimal price in a formal market-design sense.
+
+## 7. Case-study design
+
+### Test system and data
+
+- **Geographic area:** Chicago, USA
+- **Mobility data:** Chicago taxi-trip data, 2014–2022
+- **Number of mobility samples used for siting:** about 4 million sample points
+- **Existing/planning station count used for comparison:** 292 charging stations
+- **Grid demand/generation data period:** 2019–2022
+- **Grid-state statistical source as stated by paper:** PJM-related demand/generation analysis, cited to Ref. [45]
+- **Software:** MATLAB
+
+### Time representation
+
+The paper divides a day into fixed historical grid-state windows:
+
+| Time | Grid condition in case study |
+|---|---|
+| 20:00–03:00 | power surplus |
+| 06:00–08:00 | power shortage |
+| 04:00–05:00 and 09:00–19:00 | power equilibrium |
+
+The paper does **not** state a conventional optimization time resolution such as 5 min, 15 min, or 1 h for the entire dispatch formulation.
+
+### Clustering design
+
+- candidate Step-1 partition counts: 3–32;
+- DBI minimum occurs at 3 partitions: `0.5276`;
+- selected partition count: **26**, DBI `0.5579`, because it substantially reduces subsequent computation while retaining similar clustering quality;
+- final number of charging-station centers: **292**.
+
+### Weight matrix used in simulation
+
+The implemented grid-state/SOC weights are effectively:
+
+```text
+Power shortage:   high = 1, medium = 1, low = -1
+Power equilibrium:high = 1, medium = 1, low = 1
+Power surplus:    high = 0, medium = 1, low = 1
+```
+
+### Uncertainty test
+
+- **10,000** synthetic EV samples generated;
+- variables include location, time, and SOC;
+- station-distance results are recalculated across scenarios.
+
+### Battery-aging / price parameters
+
+- battery example: 2018 EU version of BAIC Motor;
+- battery capacity: **45 kWh**;
+- cycle life: about **1,200** charge/discharge cycles;
+- battery cost: about **USD 3,184**;
+- `k_p = 1`;
+- dispatched battery energy: **30 kWh**;
+- paper reports compensation increment: **0.1474** added to the reference price.
+
+### Dispatch case
+
+- grid generation: **71,176 MWh**;
+- grid electricity requirement: **71,297 MWh**;
+- VPP dispatch task: **5 MWh**;
+- dispatch margin: **200 kWh**;
+- response target including margin: **5.2 MWh**;
+- charging-station allowable energy parameter: `P_e = 2 MWh`;
+- station coefficient: `η_Sta = 0.7`;
+- dispatchable amount per selected station: `1.4 MWh`;
+- required number of stations: **4**;
+- responsiveness distance coefficient: `η_DAl = 0.01`;
+- average online EVs: **162,945 per hour**;
+- flexible-price initial value: **1.1474 USD/kWh**;
+- price increment: **0.20 USD/kWh per iteration**.
+
+### Comparison cases
+
+For charging-station planning, the proposed method is compared with:
+
+- existing Chicago charging stations;
+- planning based on station cost + user economic loss [17];
+- stochastic dynamic equilibrium planning [46];
+- flow capture location planning [47].
+
+For dispatch pricing, the main comparison is:
+
+```text
+Proposed
+= optimized station layout + distributed/station-centered dispatch
+
+Baseline
+= original station layout + broadcast dispatch to all online EVs
+```
+
+## 8. Key quantitative results
+
+### 8.1 Grid-state/SOC-specific clustering effect
+
+The weighted clustering behaves as designed.
+
+During **power surplus**:
+
+- medium-SOC distance to station: **0.0641 km**
+- low-SOC distance: **0.0673 km**
+- high-SOC distance: **2.413 km**
+
+During **power shortage**:
+
+- medium-SOC distance: **0.1070 km**
+- high-SOC distance: **0.0991 km**
+- low-SOC distance: **3.848 km**
+
+Thus, the clustering centers move toward the SOC groups that the VPP wants to schedule and away from the group whose behavior would worsen the current grid imbalance.
+
+### 8.2 Final siting versus existing Chicago stations
+
+![](papers/p024-wang2025-ev-scheduling/figures/paper_024_wang2025_ev_scheduling/fig6_charging_station_distance_comparison.png){fig-alt="Distance distribution from EVs to nearest charging stations for existing and proposed siting." width=80%}
+
+The paper reports:
+
+- proposed plan: **95%** of EVs can reach a station within about **0.8 km**;
+- existing Chicago plan: about **2 km** is required for 95% coverage;
+- proposed all-sample average nearest-station distance: **0.3155 km**;
+- existing all-sample average: **0.5035 km**;
+- reduction: **0.188 km**, which is the value highlighted in the abstract and conclusion.
+
+### 8.3 Comparison with alternative planning methods
+
+| Planning method | Participation-scheduling distance (km) | 95% radius (km) |
+|---|---:|---:|
+| Proposed | **0.2995** | **0.7342** |
+| Existing Chicago stations | 0.5413 | 2.1916 |
+| Cost + user economic loss [17] | 0.3043 | 0.8643 |
+| Stochastic dynamic equilibrium [46] | 0.3987 | 1.3115 |
+| Flow capture location [47] | 0.3670 | 1.2856 |
+
+Relative to the three alternative planning algorithms [17], [46], and [47], the paper reports participation-response distance reductions of:
+
+- **1.59%**
+- **24.88%**
+- **18.39%**
+
+respectively.
+
+A subtle but important result is that during power shortage, the proposed method intentionally leaves low-SOC EVs relatively farther from charging stations than high-SOC EVs. The aim is not simply minimum travel for everyone, but **state-dependent guidance compatible with grid needs**.
+
+### 8.4 95% coverage result
+
+The paper separately states that under the proposed strategy, **95% of participating EVs are within 0.73 km**, the smallest among the compared methods.
+
+### 8.5 Uncertainty analysis
+
+With 10,000 synthetic EV samples, the paper reports an overall mean nearest-station distance of:
+
+- **0.3262 km**
+- **95% CI: 0.3165–0.3359 km**
+
+Scenario-specific mean distances in Table III range approximately from **0.2906 km** to **0.3771 km**. The authors therefore conclude that the siting performance is relatively insensitive to the tested uncertainty in EV location/time/SOC.
+
+### 8.6 Practical retrofit workload
+
+![](papers/p024-wang2025-ev-scheduling/figures/paper_024_wang2025_ev_scheduling/fig7_station_improvement_sensitivity.png){fig-alt="Charging-station improvement ratio sensitivity from the original paper." width=72%}
+
+The paper finds that the **largest growth rate of optimization benefit occurs when about 10% of stations are improved**. Beyond 10%, the siting effect continues to improve but with lower marginal growth. The practical recommendation is therefore to prioritize the first 10% of station improvements.
+
+### 8.7 Charging-station ranking in the dispatch example
+
+The top four selected charging stations are:
+
+| Rank | Station | RcI |
+|---:|---:|---:|
+| 1 | 14 | **298.6425** |
+| 2 | 114 | **93.1178** |
+| 3 | 116 | **80.5819** |
+| 4 | 118 | **74.2038** |
+
+An interesting detail is that Station 114 ranks above Station 116 even though it has fewer high-SOC EVs (103 vs 129), because its high-SOC EVs are much closer on average (**0.2667 km vs 0.4542 km**) and it has fewer low-SOC EVs (1 vs 7). Thus the ranking is genuinely multi-factor rather than a simple EV-count ranking.
+
+### 8.8 Dispatch-station occupancy control
+
+The occupancy mechanism reduces regular charging usage at dispatch-participating stations. Examples:
+
+| Station | Regular occupancy | Dispatch-period occupancy |
+|---:|---:|---:|
+| 14 | 0.65 | **0.30** |
+| 114 | 0.14 | **0.12** |
+| 116 | 0.45 | **0.28** |
+| 118 | 0.38 | **0.25** |
+
+This is consistent with the setting `η_Sta = 0.7`, which reserves about 70% of the station capability for the dispatch task.
+
+### 8.9 Schedulability versus alternative siting methods
+
+For the top four selected stations, the sum of the responsiveness indices is:
+
+| Siting method | Sum of top-4 RcI |
+|---|---:|
+| Proposed | **546.54** |
+| [17] | 404.93 |
+| [45] as labeled in Table VI | 389.79 |
+| [46] as labeled in Table VI | 434.28 |
+
+The paper interprets the higher total RcI as evidence that the proposed siting method creates charging-station locations with more favorable dispatchable EV composition and distance.
+
+### 8.10 Participation willingness
+
+![](papers/p024-wang2025-ev-scheduling/figures/paper_024_wang2025_ev_scheduling/fig8_response_willingness.png){fig-alt="EV response willingness versus response realization rate from the original paper." width=72%}
+
+The main willingness result is:
+
+- broadcast dispatch to all EVs: **0.0664**
+- proposed distributed dispatch: **0.3907**
+- absolute increase: **0.3243**
+
+This is one of the two headline numerical results in the abstract/conclusion.
+
+### 8.11 Flexible incentive price
+
+The dispatch target including margin is **5.2 MWh**.
+
+| Iteration | Price (USD/kWh) | Proposed response (MWh) | Baseline response (MWh) |
+|---:|---:|---:|---:|
+| 0 | 1.1474 | 4.83 | 4.68 |
+| 1 | 1.3474 | 5.04 | 4.92 |
+| 2 | 1.5474 | **5.34** | 5.13 |
+| 3 | 1.7474 | — | **5.37** |
+
+The proposed strategy reaches the target at **1.5474 USD/kWh**, whereas the baseline requires **1.7474 USD/kWh**. Therefore, the proposed system meets the same response requirement at a final incentive price that is **0.20 USD/kWh lower**.
+
+The paper describes this as lower dispatch cost, although it does not explicitly calculate the total dollar dispatch expenditure for the two strategies.
+
+## 9. What this paper teaches
+
+### 1. Participation should be designed into the dispatch architecture
+
+A useful conceptual shift is:
+
+```text
+EV availability ≠ EV participation
+```
+
+A resource may be technically available but still unusable if owners dislike the travel distance, battery wear, or low realization rate of repeated dispatch invitations.
+
+### 2. Infrastructure planning and operational dispatch should not be separated completely
+
+The desired charging-station location depends on what the VPP will ask EVs to do later. This paper therefore makes siting **dispatch-aware** rather than treating station location as a static convenience problem.
+
+### 3. “Minimum distance” is not always the right planning objective
+
+During shortage periods, making low-SOC EVs extremely convenient to charge can conflict with grid needs. The paper therefore introduces differentiated spatial guidance by SOC and grid condition.
+
+### 4. Compensation should reflect the asset cost borne by the participant
+
+Battery degradation is not a system-side energy cost, but it matters directly to the EV owner. Converting degradation into a visible monetary compensation is a reusable idea for other flexible resources with wear costs, such as batteries, heat pumps, industrial equipment, or flexible electrolysers.
+
+### 5. Dispatch selectivity can itself be an incentive mechanism
+
+The paper improves willingness partly by **not contacting everyone**. More selective dispatch increases the response realization rate, which the behavioral model associates with higher willingness.
+
+### 6. A simple adaptive price can be operationally useful even without a full equilibrium model
+
+The iterative price update is conceptually simple:
+
+```text
+not enough response
+→ raise incentive
+→ re-evaluate
+→ stop when target is met
+```
+
+This can be attractive where exact participant utility functions are unavailable, although it sacrifices formal optimality.
+
+## 10. Limitations
+
+The following limitations are supported by the paper's own formulation, assumptions, or stated future work.
+
+### 1. SOC is reconstructed rather than measured
+
+The taxi data do not contain SOC. SOC is inferred from cumulative distance using assumed energy consumption and rated battery capacity. The paper does not explicitly model observed charging events or direct battery telemetry in that reconstruction.
+
+### 2. Taxi trajectories are used as a proxy for EV mobility
+
+The case study is built on Chicago taxi trips. The paper uses these trajectories to represent EV spatial behavior, but no EV-specific revealed-preference data are reported for participation decisions.
+
+### 3. Willingness is not directly calibrated from Chicago EV-user surveys
+
+The willingness-response relationship is adopted from a consumer psychology model [43]. The paper does not report local survey estimation of the willingness curve for the Chicago case.
+
+### 4. Battery aging is simplified
+
+The degradation model focuses on DOD and equivalent cycle life and explicitly excludes some other sources of battery life loss, including the travel-to-station effect. Temperature, C-rate, calendar aging, SOH heterogeneity, and chemistry-specific electrochemical effects are not modeled.
+
+### 5. Grid-state periods are historically classified rather than dynamically forecast
+
+The case study assigns fixed time windows to surplus/shortage/equilibrium based on historical probability. A rolling real-time forecast of renewable generation, load, and market prices is not integrated with the siting/scheduling loop.
+
+### 6. Dispatch uncertainty is handled mainly through a fixed margin
+
+Communication failure and user non-compliance are represented by `ε0`. The authors explicitly identify more detailed robust scheduling under large-scale communication failures or extreme scenarios as future work.
+
+### 7. No explicit network-constrained electricity-market clearing
+
+The model does not include distribution power flow, voltage constraints, LMP/DLMP, feeder congestion, or a wholesale bid-clearing process. The “market” element is primarily the VPP incentive price and response mechanism.
+
+### 8. No unified social-welfare or VPP-profit objective
+
+Siting, station selection, redirection, degradation compensation, and price adjustment are linked sequentially. Their economic trade-offs are not optimized in one integrated objective.
+
+### 9. Some algorithmic safeguards are not discussed
+
+The weighted clustering permits negative weights. The paper does not describe what happens if the sum of weights in a cluster becomes zero or nearly zero when computing the weighted center.
+
+## 11. Critical reading notes
+
+Several reporting or mathematical points deserve attention. They should be recorded rather than silently corrected.
+
+### 1. Equation (6): convergence-distance expression appears internally problematic
+
+The paper prints the cluster-center change as a square root containing a difference between longitude and latitude increments rather than a standard nonnegative norm. Under a literal reading, the quantity can become negative inside the square root. This also differs from the Manhattan-distance formulation used elsewhere in Step 1.
+
+**Note:** the present literature note does not “repair” the equation; the issue is preserved as reported.
+
+### 2. Equation (7): DBI denominator uses a sum of cluster centers
+
+The printed DBI expression uses a denominator of the form `||μ_i + μ_j||`. Since the surrounding text describes separation between cluster centers, this is difficult to reconcile with the stated distance interpretation. A center-separation term would ordinarily depend on a difference, but the paper itself prints a plus sign.
+
+### 3. Equations (30)–(32): marginal reconstruction after the Gaussian Copula is unclear
+
+The method states that empirical distributions transform normalized variables into pseudo-observations and that a Gaussian Copula captures dependence. However, the final reconstruction is printed as a linear transformation `x = uσ + μ`. The paper does not show an inverse empirical-CDF step, so it is unclear how the original non-Gaussian marginals are restored.
+
+### 4. Battery-aging compensation value in Eq. (54) is not transparently reproducible from Eqs. (39)–(40)
+
+Using the paper's stated parameters literally:
+
+```text
+Mbattery = 3184 USD
+Nbattery_DOD100 = 1200
+Pdis = 30 kWh
+Em = 45 kWh
+kp = 1
+```
+
+Eq. (39) gives approximately:
+
+```text
+(3184/1200) × (30/45)^2 ≈ 1.179
+```
+
+whereas Eq. (54) reports an increment of **0.1474** added to the electricity price. The paper does not show the additional normalization or unit conversion needed to reconcile these numbers. Because Eq. (40) directly adds the degradation term to a price, the unit basis of the compensation term should be clarified.
+
+### 5. Data-source attribution around Ref. [45] is inconsistent
+
+The case-study text describes 2019–2022 grid demand/generation data as being published by PJM and cites Ref. [45]. In the reference list, Ref. [45] is **U.S. Energy Information Administration (EIA), Open Data**, not a PJM publication. This is a source-attribution inconsistency within the paper.
+
+### 6. Table VI reference labels are difficult to reconcile with the preceding comparison description
+
+Immediately before Table VI, the text states that the proposed method is compared with planning methods [17], [46], and [47]. However, Table VI labels the four columns as the paper, [17], [45], and [46]. This suggests a possible case/reference-label inconsistency.
+
+### 7. Selected partition number is not the DBI optimum
+
+This is not an error, but it is worth recording. The lowest DBI is reported at 3 partitions (`0.5276`), while 26 partitions (`0.5579`) are selected to reduce later computation more substantially. Thus the selected partition count is a **computational trade-off**, not the pure DBI optimum.
+
+### 8. Abstract/conclusion headline values are internally consistent
+
+The reported distance reduction `0.188 km` matches `0.5035 - 0.3155`, and the willingness improvement `0.3243` matches `0.3907 - 0.0664`.
+
+## 12. Research idea triggers
+
+### Participation model
+
+```text
+Original paper
+RaR → willingness via an adopted consumer-psychology curve
+
+→ Possible extension
+Survey-calibrated discrete-choice / latent-utility model with heterogeneity by trip purpose, income, SOC, urgency, and compensation level
+```
+
+### Static siting
+
+```text
+Original paper
+Charging-station location optimized mainly from EV spatial data + grid-state/SOC weights
+
+→ Possible extension
+Joint siting-capacity planning with distribution-network constraints, feeder congestion, voltage, transformer loading, and charger investment cost
+```
+
+### Historical grid-state windows
+
+```text
+Original paper
+Fixed surplus / shortage / equilibrium time blocks derived from historical probabilities
+
+→ Possible extension
+Rolling forecast or MPC using real-time renewable generation, load, price, traffic, and EV availability forecasts
+```
+
+### Dispatch margin
+
+```text
+Original paper
+Fixed ε0 reserve for communication failure and user non-compliance
+
+→ Possible extension
+Chance-constrained / robust / Wasserstein-DRO dispatch calibrated from empirical response-default and communication-failure distributions
+```
+
+### Battery-aging compensation
+
+```text
+Original paper
+Simple DOD/cycle-life compensation
+
+→ Possible extension
+SOH-, temperature-, C-rate-, chemistry-, and calendar-aging-aware marginal degradation price
+```
+
+### Uniform iterative incentive
+
+```text
+Original paper
+One incentive price raised in fixed increments until response is sufficient
+
+→ Possible extension
+Personalized menu of contracts / mechanism design / inverse demand estimation with minimum-cost procurement of EV flexibility
+```
+
+### VPP dispatch only
+
+```text
+Original paper
+VPP receives a dispatch task and recruits EV response
+
+→ Possible extension
+Day-ahead + real-time co-optimization of energy, reserve, regulation, and V2G bids with settlement and imbalance penalties
+```
+
+### Energy-only participation signal
+
+```text
+Original paper
+Grid energy balance + EV flexibility
+
+→ Possible extension
+Energy + carbon + flexibility co-optimization, where the EV incentive reflects both grid balancing value and time-varying carbon intensity
+```
+
+### Centralized data collection
+
+```text
+Original paper
+Real-time EV SOC/location sent to dispatch center
+
+→ Possible extension
+Privacy-preserving / federated station-level aggregation so the VPP can rank flexibility without receiving all individual mobility traces
+```
+
+### Hand-designed clustering weights
+
+```text
+Original paper
+β ∈ {-1, 0, 1} selected from grid-state/SOC logic
+
+→ Possible extension
+Learn the attraction/repulsion weights from observed participation and dispatch success, while retaining physical constraints and interpretability
+```
+
+## 13. Connections to previous papers
+
+### Connection to P016 — demand-side market signals versus participation signals
+
+P016 focused on a **bi-level demand-side carbon market**, where energy consumption, carbon responsibility, customized carbon prices, and user-to-user carbon trading form a market mechanism. P024 is different: it does not build a formal market-clearing architecture. Instead, it uses a VPP incentive signal to recruit EV flexibility.
+
+The useful conceptual connection is:
+
+```text
+P016
+price signal changes demand because carbon responsibility is monetized
+
+P024
+price + travel + degradation + realization rate change flexibility participation
+```
+
+Together they suggest a broader research direction in which flexible demand/EVs respond not only to electricity price but to a stack of signals:
+
+```text
+energy price
++
+carbon price
++
+asset degradation compensation
++
+network / congestion value
++
+participation convenience
+```
+
+P024 also complements market papers that optimize bidding or clearing: it addresses a lower-level question that those papers often abstract away — **whether the physical EV fleet will actually show up and respond after the market has procured flexibility**.
+
+## 14. Problem-map tags
+
+```text
+Electricity Market / VPP Flexibility
+│
+├── Electric vehicles as distributed flexibility
+├── V2G / G2V scheduling
+├── Participation willingness                         ← core
+│   ├── Range anxiety                                 ← core
+│   ├── Battery-aging anxiety                         ← core
+│   └── Response realization rate                     ← core
+│
+├── Charging infrastructure planning
+│   ├── 3-step weighted K-means                       ← core
+│   ├── Grid-state-aware siting                       ← core
+│   ├── SOC-aware siting                              ← core
+│   └── Existing-station retrofit priority
+│
+├── VPP dispatch
+│   ├── Charging-station responsiveness index         ← core
+│   ├── Sequential / distributed dispatch             ← core
+│   ├── Dispatch reserve margin
+│   └── Charging-station occupancy control
+│
+├── Pricing
+│   ├── Battery-aging compensation                    ← core
+│   ├── Flexible incentive-price adjustment           ← core
+│   ├── Dynamic congestion / occupancy price
+│   └── Distance-price EV redirection
+│
+├── Uncertainty
+│   ├── Gaussian Copula
+│   ├── Monte Carlo sampling
+│   └── Communication / non-compliance margin
+│
+└── Case study
+    ├── Chicago taxi trajectories
+    ├── 292 charging stations
+    ├── ~4 million mobility samples
+    └── 5.2 MWh dispatch target including margin
+```
+
+**Tags:** `EV`, `V2G`, `G2V`, `VPP`, `participation willingness`, `range anxiety`, `battery degradation`, `battery-aging compensation`, `charging-station siting`, `weighted K-means`, `Gaussian Copula`, `Monte Carlo`, `distributed dispatch`, `station ranking`, `incentive pricing`, `flexible pricing`, `demand response`, `mobility data`, `Chicago`, `grid balancing`, `response realization rate`
+
+:::

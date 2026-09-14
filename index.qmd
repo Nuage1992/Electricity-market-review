@@ -47,3 +47,9 @@ Click on the title of the document to expand or collapse the full text. Subseque
 {{< include papers/p020-he2026-tmcs-lrh-vfa/_p020-he2026-tmcs-lrh-vfa.qmd >}}
 
 {{< include papers/p021-tao2023-customer-centered-nilm/_p021-tao2023-customer-centered-nilm.qmd >}}
+
+{{< include papers/p022-wang2023-ev-day-ahead-bidding/_p022-wang2023-ev-day-ahead-bidding.qmd >}}
+
+{{< include papers/p023-zhao2023-dlmp-uncertainty-coordination/_p023-zhao2023-dlmp-uncertainty-coordination.qmd >}}
+
+{{< include papers/p024-wang2025-ev-scheduling/_p024-wang2025-ev-scheduling.qmd >}}

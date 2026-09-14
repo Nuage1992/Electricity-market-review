@@ -1,0 +1,967 @@
+::: {.callout-note collapse="true" icon=false}
+## [P023] Zhao et al. (2023) — Distribution Locational Marginal Pricing Under Uncertainty Considering Coordination of Distribution and Wholesale Markets
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1590–1606, 2023  
+**DOI:** 10.1109/TSG.2022.3200704  
+**Main topics:** distribution locational marginal pricing (DLMP); uncertainty pricing; uncertainty DLMP; transmission-distribution coordination; wholesale electricity market; robust optimization; distributed energy resources (DERs); reserve; heterogeneous decomposition (HGD); voltage; congestion; network loss
+
+### Quick takeaway
+
+This paper develops an **uncertainty-aware DLMP mechanism** for a day-ahead distribution electricity market and explicitly coordinates it with the transmission-level wholesale market.
+
+The central question is:
+
+**How can a distribution market simultaneously price active power, reactive power, and renewable uncertainty while keeping its market-clearing results and price signals consistent with the wholesale electricity market?**
+
+The proposed framework introduces three distribution-level prices:
+
+- **active-power DLMP** for active energy;
+- **reactive-power DLMP** for reactive energy;
+- **uncertainty DLMP** for uncertainty and reserve.
+
+The uncertainty DLMP charges renewable DERs for forecast uncertainty and rewards resources that provide reserve to mitigate that uncertainty. Meanwhile, a decentralized **heterogeneous decomposition (HGD)** algorithm coordinates TSO and DSOs by iteratively exchanging only boundary power/reserve quantities and boundary prices.
+
+The main conceptual contribution is therefore not just a new DLMP formula. It is a unified pricing architecture linking:
+
+**wholesale LMP/ULMP → TSO–DSO coordination → distribution DLMPs → DER energy/reserve/uncertainty settlement.**
+
+---
+
+### 1. Problem addressed
+
+Distribution systems are increasingly populated by small-scale DERs such as:
+
+- PV;
+- wind turbines;
+- microturbines;
+- energy storage systems.
+
+A local distribution electricity market can coordinate these resources, but two problems become increasingly important.
+
+#### Renewable uncertainty
+
+PV and wind forecast errors can create:
+
+- overvoltage;
+- congestion;
+- extra reserve requirements;
+- additional operating cost.
+
+A conventional deterministic DLMP does not directly assign an economic responsibility to the uncertainty source.
+
+#### Transmission-distribution interaction
+
+Distribution systems are not isolated from the wholesale market.
+
+Large-scale DER scheduling changes the net demand seen by the transmission system. This changes:
+
+- transmission dispatch;
+- LMPs;
+- reserve requirements.
+
+In turn, transmission-level LMPs influence:
+
+- DSO purchases from the TSO;
+- local DER scheduling;
+- local DLMP formation.
+
+The paper therefore treats **uncertainty pricing** and **TSO–DSO market coordination** as one integrated problem.
+
+---
+
+### 2. Why ordinary DLMP is insufficient under uncertainty
+
+Conventional DLMP methods generally price the marginal cost of serving additional demand at a distribution node.
+
+They can reflect:
+
+- energy cost;
+- network loss;
+- congestion;
+- voltage constraints.
+
+However, if renewable forecast uncertainty is ignored, two market participants with the same expected energy injection can receive the same energy-related price signal even if one creates much larger balancing requirements.
+
+This produces a missing economic signal:
+
+**who creates uncertainty, and who provides the flexibility required to absorb it?**
+
+The paper therefore introduces an explicit **uncertainty price** at each distribution node.
+
+---
+
+### 3. Why transmission-distribution coordination is necessary
+
+A common simplification in DLMP studies is to assume that the LMP at the substation is fixed.
+
+The paper argues that this can be problematic when distribution-level DER penetration becomes large.
+
+If DSOs and the TSO clear independently:
+
+- system-wide generation resources may not be fully utilized;
+- congestion may become more serious;
+- wholesale prices may be distorted;
+- boundary power mismatches may occur;
+- the distribution market may respond to an LMP that would itself change if the DSO changed its demand.
+
+So the boundary price should be **endogenous to the interaction** rather than treated as an external constant.
+
+---
+
+### 4. Transmission-distribution coordinated market framework
+
+![Transmission-distribution coordinated framework. The TSO clears the wholesale market and sends LMP/ULMP signals to DSOs, while DSOs return active-energy and reserve demands after local robust scheduling and pricing. Source: Fig. 1 of Zhao et al. (2023).](papers/p023-zhao2023-dlmp-uncertainty-coordination/figures/zhao2023_dlmp_uncertainty_coordination/fig1_td_coordinated_market_framework.png){width=78%}
+
+The framework contains one TSO and multiple DSOs.
+
+#### Transmission level
+
+The TSO clears a robust wholesale market involving:
+
+- thermal generators;
+- wind farms;
+- load-serving entities;
+- distribution systems.
+
+The TSO determines:
+
+- energy dispatch;
+- reserve dispatch;
+- **LMP** for active energy;
+- **ULMP** for uncertainty/reserve.
+
+#### Distribution level
+
+Each DSO clears its local distribution market involving:
+
+- renewable DERs;
+- microturbines;
+- ESSs;
+- loads;
+- the upstream transmission system.
+
+Each DSO determines:
+
+- local active/reactive DER schedules;
+- local reserve;
+- active-power DLMP;
+- reactive-power DLMP;
+- uncertainty DLMP;
+- active-energy and reserve demand from the TSO.
+
+The two levels iterate until boundary quantities converge.
+
+---
+
+### 5. What is ULMP at the transmission level?
+
+The wholesale market has two related marginal prices.
+
+#### LMP
+
+The transmission LMP prices the marginal cost of serving an additional unit of forecast net load.
+
+Its formulation contains:
+
+- system energy component;
+- transmission congestion component.
+
+#### ULMP
+
+The **uncertainty locational marginal price (ULMP)** prices the marginal cost of an additional unit of net-load forecast deviation.
+
+It therefore reflects the marginal value of reserve and the network impact of uncertainty.
+
+Conceptually:
+
+**LMP → energy**  
+**ULMP → uncertainty / reserve**
+
+The DSO receives both signals at the transmission-distribution boundary.
+
+---
+
+### 6. Robust wholesale-market clearing
+
+The transmission market minimizes:
+
+
+a) thermal generation energy cost; and  
+b) reserve cost.
+
+The model contains two coupled operating states.
+
+#### Dispatch state
+
+Schedules generation to meet the forecast net load.
+
+#### Redispatch state
+
+Deploys reserve to cope with worst-case forecast deviations.
+
+The transmission uncertainty set is modeled as a box set for:
+
+- load forecast errors;
+- wind forecast errors.
+
+The robust model therefore seeks a schedule that remains feasible for the specified uncertainty bounds.
+
+---
+
+### 7. Why robust optimization is used
+
+The authors compare robust optimization conceptually with stochastic and chance-constrained methods.
+
+The main reasons given for using robust optimization are:
+
+- it does not require a probability distribution for uncertain variables;
+- it has lower data requirements;
+- it avoids very large scenario sets;
+- it produces a solution against the worst case within the uncertainty set;
+- this is consistent with risk-averse power-system operation.
+
+The trade-off is that the result depends strongly on how the uncertainty set is selected.
+
+---
+
+### 8. Distribution-level robust scheduling model
+
+At the distribution level, the DSO first solves a robust scheduling model.
+
+The model jointly determines the cost of:
+
+- purchasing active energy from the transmission system;
+- purchasing reactive energy from the transmission system;
+- purchasing reserve from the transmission system;
+- scheduling local DER active/reactive power;
+- scheduling local microturbine reserve.
+
+The distribution network is represented using a branch-flow formulation with second-order-cone constraints so that important distribution-system characteristics are retained.
+
+These include:
+
+- active and reactive power flow;
+- voltage magnitude;
+- line-current limits;
+- network losses;
+- line-capacity limits.
+
+---
+
+### 9. DER models represented in the DSO problem
+
+The distribution market includes three main DER categories.
+
+#### Renewable DERs
+
+PV and wind have:
+
+- forecast active power;
+- bounded forecast error;
+- reactive-power capability constrained by minimum power factor.
+
+#### Microturbines
+
+Microturbines provide:
+
+- active energy;
+- reactive power;
+- upward reserve.
+
+Their operation is constrained by:
+
+- apparent-power capacity;
+- ramping limits.
+
+#### Energy storage systems
+
+ESSs provide:
+
+- charging/discharging active power;
+- reactive power through the inverter.
+
+The model includes:
+
+- charging/discharging efficiency;
+- SOC bounds;
+- terminal-energy constraint;
+- inverter capacity.
+
+---
+
+### 10. Why the paper uses a second model for DLMP derivation
+
+The robust branch-flow scheduling problem is convex and could theoretically provide dual prices.
+
+However, the authors argue that such convex-price expressions are not sufficiently intuitive for market interpretation and settlement.
+
+Therefore, they use a two-step approach:
+
+1. solve the detailed robust scheduling model to obtain the worst-case realization and operating point;
+2. construct a **linear programming market-clearing model** around that operating point.
+
+This makes the price components easier to decompose and interpret.
+
+---
+
+### 11. Linearized power-flow ingredients
+
+Three main techniques are used.
+
+#### Polygonal inner approximation
+
+Quadratic apparent-power limits are approximated by linear inequalities.
+
+#### Branch-flow and voltage sensitivity factors
+
+The model uses sensitivity factors such as:
+
+- voltage sensitivity to active/reactive injection;
+- line-flow sensitivity to active/reactive injection.
+
+#### Delivery factor and fictitious nodal demand
+
+These are introduced to represent distribution network losses in the linearized model.
+
+The delivery factor reflects how much of an incremental injection effectively reaches the network after considering losses.
+
+The fictitious nodal demand allocates line losses to adjacent nodes.
+
+---
+
+### 12. Three distribution-level marginal prices
+
+The paper derives three prices.
+
+#### Active-power DLMP
+
+
+a marginal price for active-energy demand.
+
+#### Reactive-power DLMP
+
+
+a marginal price for reactive-energy demand.
+
+#### Uncertainty DLMP
+
+
+a marginal price for forecast deviation / reserve requirement.
+
+The uncertainty DLMP is the distinctive new pricing product in this paper.
+
+It creates a direct settlement rule:
+
+**uncertainty source pays → reserve provider is rewarded.**
+
+---
+
+### 13. DLMP decomposition
+
+A major strength of the paper is that each DLMP can be decomposed into economically meaningful components.
+
+For the active-power DLMP:
+
+\[
+\chi^p
+=
+\text{energy}
++
+\text{voltage}
++
+\text{congestion}
++
+\text{loss}.
+\]
+
+The reactive-power DLMP has an analogous decomposition.
+
+The uncertainty DLMP also contains:
+
+\[
+\chi^u
+=
+\text{uncertainty energy/reserve component}
++
+\text{voltage}
++
+\text{congestion}
++
+\text{loss}.
+\]
+
+This decomposition allows the DSO to explain why two nodes receive different prices.
+
+---
+
+### 14. Why active and reactive DLMPs also change with uncertainty
+
+An important result is that uncertainty does not only affect the newly introduced uncertainty DLMP.
+
+The active and reactive DLMPs also include dual variables associated with the **redispatch state**.
+
+Therefore uncertainty can change:
+
+- voltage scarcity;
+- line congestion;
+- reserve deployment;
+- marginal losses.
+
+As a result:
+
+**more renewable uncertainty can increase active-power DLMP, reactive-power DLMP, and uncertainty DLMP simultaneously.**
+
+This is important because energy and reserve are co-optimized rather than treated as independent products.
+
+---
+
+### 15. Settlement rule for DERs
+
+A distribution-level participant can have four relevant quantities:
+
+- active power generation;
+- reactive power generation;
+- reserve provision;
+- uncertainty contribution.
+
+The participant revenue is represented conceptually as:
+
+\[
+\text{Revenue}
+=
+\chi^p P
++
+\chi^q Q
++
+\chi^u R
+-
+\chi^u U.
+\]
+
+So:
+
+- active generation earns active-power DLMP;
+- reactive generation earns reactive-power DLMP;
+- reserve earns uncertainty DLMP;
+- forecast uncertainty is charged at uncertainty DLMP.
+
+This gives uncertainty an explicit market price rather than treating it as a system-wide externality.
+
+---
+
+### 16. The uncertainty price can be negative in one component
+
+A particularly interesting result appears in the voltage component of the uncertainty DLMP.
+
+One might expect reserve always to be rewarded.
+
+However, the paper shows cases in which the **voltage component is negative**.
+
+The reason is physical:
+
+- reserve is scheduled to respond to renewable uncertainty;
+- if fully deployed, additional active generation may aggravate an existing overvoltage problem;
+- therefore additional reserve at that location can have a negative marginal value for voltage management.
+
+So the price signal tells the microturbine to **reduce reserve**, even though reserve is normally considered beneficial.
+
+This demonstrates why a locational uncertainty price contains more information than a system-wide reserve price.
+
+---
+
+### 17. Wholesale LMP and ULMP results
+
+![Transmission-level LMPs and uncertainty LMPs (ULMPs) across the modified PJM 5-bus system. Source: Fig. 4 of Zhao et al. (2023).](papers/p023-zhao2023-dlmp-uncertainty-coordination/figures/zhao2023_dlmp_uncertainty_coordination/fig4_wholesale_lmp_ulmp.png){width=74%}
+
+The case study shows that wholesale LMPs and ULMPs vary by transmission bus when network congestion occurs.
+
+The paper reports spatial price differences particularly in:
+
+- hours 1–2;
+- hour 8;
+- hours 17–24.
+
+Bus D generally has the highest wholesale price, followed by bus C.
+
+This is important because the distribution systems connected to buses C and D inherit different boundary price signals.
+
+Therefore two otherwise identical distribution networks can obtain different DLMPs purely because they are connected to different transmission locations.
+
+---
+
+### 18. Distribution DLMPs follow the boundary price but are not identical to it
+
+The active-power DLMPs in each distribution system are strongly correlated with the boundary LMP.
+
+Similarly, uncertainty DLMPs are strongly correlated with the boundary ULMP.
+
+The transmission system can be viewed from the DSO perspective as a **virtual marginal source**.
+
+When the DSO imports marginal energy or reserve from the TSO:
+
+- boundary LMP determines the energy component of active-power DLMP;
+- boundary ULMP determines the energy component of uncertainty DLMP.
+
+However, local distribution prices are not simply copies of the transmission prices.
+
+They are modified by local:
+
+- voltage;
+- congestion;
+- loss conditions.
+
+---
+
+### 19. Important exception: the boundary ULMP does not always determine the uncertainty-DLMP energy component
+
+During hours 1–7 and 9–10 in the reported case, the distribution systems at buses C and D do not exchange reserve with the TSO.
+
+Local microturbines provide the required reserve instead.
+
+In those hours, the marginal reserve provider is local rather than upstream.
+
+Therefore:
+
+> boundary ULMP ≠ uncertainty-DLMP energy component.
+
+This is a useful market interpretation:
+
+**the marginal resource, not simply the physical interconnection, determines the marginal price component.**
+
+---
+
+### 20. Uncertainty DLMP results
+
+![Uncertainty DLMP profiles for the distribution systems connected to transmission buses C and D. Each curve represents one distribution node. Source: Fig. 6 of Zhao et al. (2023).](papers/p023-zhao2023-dlmp-uncertainty-coordination/figures/zhao2023_dlmp_uncertainty_coordination/fig6_uncertainty_dlmp.png){width=76%}
+
+The uncertainty DLMP varies:
+
+- over time;
+- between distribution systems;
+- among nodes within the same distribution system.
+
+The dominant variation is driven by the upstream ULMP / marginal reserve cost.
+
+Smaller nodal differences are created by:
+
+- voltage constraints;
+- local congestion;
+- network losses.
+
+This is exactly the feature the authors want from uncertainty pricing:
+
+> uncertainty should be priced according to both **when** and **where** it stresses the system.
+
+---
+
+### 21. Voltage component: example at node 18
+
+For node 18 at hour 7, the paper reports an active-power-DLMP voltage component of:
+
+**−2.45 $/MWh**
+
+with decomposition:
+
+- dispatch part: **−0.36 $/MWh**;
+- redispatch part: **−2.09 $/MWh**.
+
+The negative value corresponds to binding upper-voltage constraints.
+
+The economic signal therefore encourages microturbines and ESSs to reduce active-power generation so that overvoltage is alleviated.
+
+The larger redispatch component also shows that uncertainty is responsible for most of the marginal voltage problem in that example.
+
+---
+
+### 22. Congestion component: reverse-flow and uncertainty effects
+
+The paper gives two illustrative cases.
+
+#### Hour 11 — dispatch congestion
+
+Large PV production creates reverse active-power flow and congestion on line (2,3).
+
+The congestion component becomes negative for many nodes.
+
+The resulting DLMP signal encourages controllable DERs to reduce active generation.
+
+#### Hour 6 — redispatch congestion
+
+Wind uncertainty creates congestion on line (1,2) during the redispatch state.
+
+The price signal encourages DERs to increase local active generation/reserve so that the upstream line flow is reduced.
+
+So congestion prices can point in opposite directions depending on the physical cause of the congestion.
+
+---
+
+### 23. Loss component
+
+The loss component reflects the marginal effect of a nodal injection on distribution losses.
+
+The reported price signal can be positive or negative depending on location and operating condition.
+
+A positive marginal-loss component can reward DER generation when local injection reduces upstream transfer and losses.
+
+Thus, even without congestion or voltage binding, nodal prices can differ because of losses.
+
+---
+
+### 24. DER scheduling responds to DLMPs
+
+The paper demonstrates that microturbines choose between active energy and reserve according to local price signals.
+
+When active-power DLMP is high:
+
+> microturbines prioritize active generation.
+
+When active-power DLMP falls and reserve value is attractive:
+
+> residual capacity is used to provide reserve.
+
+Two microturbines at different distribution nodes therefore obtain different dispatch even though they have similar technical parameters.
+
+This is a direct consequence of **locational marginal pricing**.
+
+---
+
+### 25. Transmission prices change DSO purchases
+
+The coordination also works in the opposite direction.
+
+When boundary LMP and ULMP are high, the DSO tends to:
+
+- schedule more local DER active power;
+- schedule more local reserve;
+- purchase less active energy from the TSO;
+- purchase less reserve from the TSO.
+
+When boundary prices are low, the DSO imports more from the upstream system.
+
+This is the economic feedback loop that makes the transmission and distribution markets behave as an integrated market.
+
+---
+
+### 26. Sensitivity analysis: increasing renewable uncertainty
+
+The renewable uncertainty bound is scaled by parameter \(\Lambda\).
+
+The paper compares:
+
+- Case 1: \(\Lambda=1.0\);
+- Case 2: \(\Lambda=1.2\);
+- Case 3: \(\Lambda=1.4\).
+
+For the distribution system connected to bus D, the reported **average DLMPs** increase as follows:
+
+| Average price | Case 1 | Case 2 | Case 3 |
+|---|---:|---:|---:|
+| Active-power DLMP ($/MWh) | 29.79 | 29.98 | 30.61 |
+| Reactive-power DLMP ($/MVArh) | 2.16 | 2.21 | 2.33 |
+| Uncertainty DLMP ($/MWh) | 16.68 | 16.90 | 17.53 |
+
+So uncertainty raises not only the uncertainty price but also energy-related marginal prices.
+
+---
+
+### 27. Uncertainty reallocates profit among market participants
+
+As uncertainty increases:
+
+#### Renewable DERs
+
+Their reserve-related payment increases, reducing total profit.
+
+For PVs in the bus-D distribution system, total reported profit decreases from approximately:
+
+**$304.51 → $247.88**
+
+across Cases 1 to 3.
+
+#### Microturbines
+
+Higher uncertainty creates more demand for controllable reserve.
+
+Their reported profit increases from:
+
+**$786.60 → $826.01**.
+
+#### ESSs
+
+Storage also benefits from greater flexibility value.
+
+Its reported profit increases from:
+
+**$63.54 → $110.65**.
+
+The market therefore transfers value:
+
+**from uncertainty-causing resources → flexibility-providing resources.**
+
+---
+
+### 28. Distribution uncertainty also changes the wholesale market
+
+Higher renewable uncertainty in the distribution systems increases:
+
+- DSO active-energy demand from TSO;
+- DSO reserve demand from TSO;
+- distribution operating cost.
+
+This in turn tightens transmission-level energy and reserve supply.
+
+The reported average wholesale prices rise from Case 1 to Case 3:
+
+- LMP: **21.52 → 21.97 $/MWh**;
+- ULMP: **12.88 → 13.35 $/MWh**.
+
+Transmission operation cost also increases.
+
+This demonstrates why distribution uncertainty cannot be treated as purely local when DER penetration is large.
+
+---
+
+### 29. Heterogeneous decomposition (HGD)
+
+The coordinated transmission-distribution optimization is not solved as one centralized problem in normal operation.
+
+Instead, the HGD algorithm iterates between TSO and DSOs.
+
+#### TSO sends
+
+- boundary LMP;
+- boundary ULMP.
+
+#### DSO sends
+
+- boundary active-energy demand;
+- boundary reserve demand.
+
+No full internal network model needs to be exchanged.
+
+This preserves a degree of operational independence and limits information exchange.
+
+---
+
+### 30. Sensitivity terms accelerate convergence
+
+The original HGD interaction can oscillate because:
+
+- the TSO price responds to DSO demand;
+- the DSO demand responds to TSO price.
+
+The paper introduces:
+
+- sensitivity of LMP to boundary active-power demand;
+- sensitivity of ULMP to boundary reserve demand.
+
+These sensitivities are estimated from previous iterations and embedded in the DSO objective.
+
+They anticipate how the upstream price will move when the DSO changes its demand.
+
+This is conceptually similar to giving the DSO a local approximation of the upstream system's response.
+
+---
+
+### 31. HGD convergence and computation
+
+![Example HGD convergence. Boundary LMP and active-energy demand iteratively respond to each other; sensitivity information is introduced after the third iteration to accelerate convergence. Source: Fig. 12 of Zhao et al. (2023).](papers/p023-zhao2023-dlmp-uncertainty-coordination/figures/zhao2023_dlmp_uncertainty_coordination/fig12_hgd_convergence.png){width=58%}
+
+Two systems are tested.
+
+#### T5D33
+
+- 6 iterations;
+- 97.8 s;
+- HGD objective: **267451.01**;
+- centralized objective: **267451.01**.
+
+#### T118D69
+
+- 10 iterations;
+- 857.5 s;
+- HGD objective: **2314927.58**;
+- centralized objective: **2314927.58**.
+
+The identical objective values are used to verify the optimality of the decomposition method for the tested convex formulation.
+
+The method is therefore intended for day-ahead market clearing rather than sub-second real-time control.
+
+---
+
+### 32. Main case-study structure
+
+The primary T5D33 case contains:
+
+- a modified PJM 5-bus transmission system;
+- **100 identical IEEE 33-node distribution systems**;
+- half connected to transmission bus C;
+- half connected to transmission bus D.
+
+Each distribution system includes:
+
+- 8 PVs;
+- 2 wind turbines;
+- 2 microturbines;
+- 2 ESSs.
+
+The ESS rating is **3 MW × 2 h** per unit.
+
+Distribution voltage limits are:
+
+\[
+0.95 \le V \le 1.05 \text{ p.u.}
+\]
+
+The test design intentionally shows that identical local distribution networks can experience different prices because their upstream transmission locations differ.
+
+---
+
+### 33. What this paper teaches
+
+#### Lesson 1 — uncertainty should be a priced product, not only a technical constraint
+
+Forecast error creates real operating cost and reserve requirements.
+
+The uncertainty DLMP makes this cost visible to the source that creates it.
+
+#### Lesson 2 — reserve should be locational in distribution systems
+
+A MW of reserve can help one network constraint but worsen another.
+
+Therefore a single system-wide reserve price may miss important voltage and congestion effects.
+
+#### Lesson 3 — energy and uncertainty prices are coupled
+
+Because dispatch and redispatch are co-optimized, larger uncertainty changes ordinary active/reactive DLMPs as well as the uncertainty DLMP.
+
+#### Lesson 4 — DLMP should inherit information from the wholesale market
+
+The distribution network does not have an independent marginal energy cost if it can trade with the upstream grid.
+
+Boundary LMP/ULMP therefore naturally influence local DLMP components.
+
+#### Lesson 5 — TSO–DSO coordination is a market-design problem, not only a power-flow problem
+
+The quantities exchanged at the interface affect prices on both sides.
+
+A coordinated market should therefore iterate over both **physical quantities and marginal prices**.
+
+#### Lesson 6 — price decomposition improves interpretability
+
+Separating energy, voltage, congestion, and loss components helps explain why a particular DER is rewarded or charged.
+
+---
+
+### 34. Limitations
+
+Important limitations include:
+
+- renewable and load uncertainty are represented by bounded box sets rather than probability distributions;
+- robust optimization can be conservative if uncertainty bounds are too wide;
+- the framework assumes participants bid at marginal cost rather than behaving strategically;
+- reactive-power price at the transmission-distribution boundary is assumed constant because wholesale reactive-power pricing is not explicitly modeled;
+- the detailed distribution robust scheduling model is followed by a linearized model for price derivation, so the pricing formulation depends on the accuracy of the linearization around the obtained operating point;
+- the distribution systems used in the main case are replicated IEEE test systems rather than heterogeneous real feeders;
+- DER forecast-error correlations are not the main focus of the uncertainty set;
+- the market is day-ahead and does not explicitly model sequential intraday/real-time uncertainty updates;
+- the HGD method still requires iterative communication and several minutes for the larger test case;
+- reserve from microturbines is emphasized, while richer flexibility products from EVs, flexible loads, or aggregators are not modeled in detail.
+
+---
+
+### 35. Critical reading notes
+
+#### Robustness depends on the uncertainty-set design
+
+The uncertainty price is economically meaningful only relative to the uncertainty set used by the robust model.
+
+If the bounds are too conservative, the model may over-procure reserve and overprice uncertainty.
+
+If they are too narrow, the resulting schedule may not be sufficiently secure.
+
+So a practical implementation would need a defensible method for calibrating uncertainty bounds from forecast-error data.
+
+#### The transmission reactive-power interface is only partially coordinated
+
+Active energy and reserve are iterated between TSO and DSO, but reactive-power demand is not sent to the TSO.
+
+The root reactive-power price is treated as a constant.
+
+Thus, the framework is strongly coordinated for active energy and uncertainty/reserve, but not fully unified for reactive-power market formation.
+
+#### The market is not strategic
+
+All participants are assumed to bid at marginal cost.
+
+Therefore the paper studies **efficient marginal pricing**, not strategic bidding or market power.
+
+If large DER aggregators can manipulate local prices, additional game-theoretic or equilibrium modeling would be required.
+
+---
+
+### 36. Research idea triggers
+
+Possible extensions include:
+
+- distributionally robust DLMP using data-driven ambiguity sets rather than fixed box sets;
+- chance-constrained versus robust uncertainty DLMP comparison;
+- endogenous calibration of uncertainty sets from forecast performance;
+- joint active/reactive/uncertainty pricing with a fully coordinated transmission reactive-power market;
+- real-time or rolling-horizon TSO–DSO coordinated pricing;
+- strategic DER aggregator bidding under uncertainty DLMPs;
+- EV/V2G flexibility participation in uncertainty DLMP markets;
+- battery degradation-aware reserve pricing for ESSs;
+- prosumer flexibility and demand response under uncertainty DLMPs;
+- carbon-aware DLMP combining network marginal cost and carbon intensity;
+- green-certificate/carbon/energy/reserve co-pricing at distribution level;
+- privacy-preserving or federated TSO–DSO market coordination;
+- uncertainty DLMP for unbalanced three-phase distribution networks;
+- market settlement and revenue-adequacy analysis under uncertainty pricing;
+- learning-based prediction of nodal uncertainty marginal prices;
+- coupling uncertainty DLMP with VPP aggregation and bidding.
+
+---
+
+### 37. Position in the problem map
+
+This paper can be placed in the following branch of an electricity-market literature map:
+
+```text
+Distribution Electricity Market
+│
+├── Nodal pricing
+│   ├── Active-power DLMP
+│   ├── Reactive-power DLMP
+│   └── Uncertainty DLMP
+│
+├── DER uncertainty
+│   ├── Robust optimization
+│   ├── Reserve requirement
+│   └── Forecast-error charging
+│
+├── Network constraints
+│   ├── Voltage
+│   ├── Congestion
+│   └── Loss
+│
+├── TSO–DSO coordination
+│   ├── LMP / ULMP
+│   ├── Boundary power
+│   ├── Boundary reserve
+│   └── Heterogeneous decomposition
+│
+└── DER settlement
+    ├── Energy
+    ├── Reactive power
+    ├── Reserve
+    └── Uncertainty
+```
+
+A concise summary is:
+
+> **P023 extends DLMP from deterministic energy pricing to uncertainty-aware energy/reactive/reserve pricing and embeds the distribution market inside a coordinated TSO–DSO wholesale-market framework.**
+
+**Problem-map tags:** `DLMP` · `uncertainty pricing` · `ULMP` · `robust optimization` · `TSO-DSO coordination` · `distribution market` · `reserve pricing` · `DER` · `HGD` · `voltage-congestion-loss decomposition`
+
+:::
