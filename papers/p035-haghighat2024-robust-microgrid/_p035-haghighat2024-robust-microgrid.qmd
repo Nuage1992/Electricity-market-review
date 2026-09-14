@@ -1,0 +1,392 @@
+::: {.callout-note collapse="true" icon=false}
+## [P035] Haghighat et al. (2024) — Robust Microgrid Capacity Investment With Endogenous and Exogenous Uncertainties
+
+**Journal:** IEEE Transactions on Smart Grid, Vol. 15, No. 3, May 2024  
+**DOI:** 10.1109/TSG.2023.3326834  
+**Main topics:** microgrid capacity planning · two-stage robust optimization · decision-dependent uncertainty (DDU) · decision-independent uncertainty (DIU) · time-of-use pricing · demand response · second-order conic AC power flow · parametric column-and-constraint generation (CCG)
+
+### Quick takeaway
+
+This paper studies long-term microgrid investment when uncertainty is partly **exogenous** and partly **endogenous**. Market prices and renewable capacity factors are treated as decision-independent uncertainty (DIU), while electricity demand is treated as decision-dependent uncertainty (DDU): the range of possible future demand changes with the time-of-use (ToU) prices and peak/off-peak periods chosen by the planner, and the aggregate demand bounds can also depend on renewable capacity investment.
+
+The key modeling idea is therefore not simply “robust microgrid sizing.” It is to recognize that some planning decisions change the uncertainty set itself. The first stage selects DER technologies, locations and capacities, battery capacity, and node-specific ToU rates/timing. The second stage operates the microgrid under worst-case demand, market-price and renewable-output realizations while respecting a second-order conic AC power-flow model.
+
+The resulting robust problem cannot be handled directly by a standard CCG procedure because the uncertain-demand set \(D(x)\) moves with the first-stage decision \(x\). The paper develops a **parametric CCG** algorithm that repeatedly identifies decision-dependent worst-case scenarios or infeasibility rays and embeds their parametric characterizations into the master problem.
+
+### 1. Problem addressed — planning when decisions change future uncertainty
+
+Conventional robust microgrid planning usually assumes that uncertainty is externally given. For example, future load may lie inside a fixed interval and renewable output may vary inside a fixed capacity-factor range. Under this assumption, the uncertainty set does not change when the planner changes the investment decision.
+
+That assumption becomes questionable when demand response is included. A ToU tariff changes customer behavior, so the planner's own price decision changes the range of possible future loads. In this paper:
+
+- **renewable output uncertainty** is external;
+- **wholesale/market price uncertainty** is external;
+- **demand uncertainty** is endogenous because it depends on the ToU tariff and, through the aggregate-demand model, also on renewable investment.
+
+The planning problem therefore has a feedback loop:
+
+**investment and tariff decisions** → **possible demand realizations** → **worst-case operation** → **required DER/battery capacity and planning cost**.
+
+If this feedback is ignored, the planner may size the microgrid against a demand uncertainty set that is inconsistent with the tariff it actually implements.
+
+### 2. Why existing approaches are not enough
+
+The literature reviewed in the paper has four limitations that motivate the proposed model.
+
+First, most stochastic, robust and distributionally robust microgrid-planning studies represent load uncertainty as **decision-independent**. This misses the fact that responsive customers change consumption according to prices.
+
+Second, previous ToU-based planning studies generally optimize tariff levels while treating the timing of peak and off-peak periods as fixed. This paper instead co-optimizes **both the price rates and their timing** at each load bus.
+
+Third, simplified or linear network models may miss investment effects caused by voltage, reactive power and branch-flow limits. The paper therefore uses a second-order conic representation of AC power flow in the recourse stage.
+
+Fourth, basic CCG assumes a fixed uncertainty set. Here, the uncertainty set itself depends on first-stage decisions, so the standard scenario-generation logic does not directly apply.
+
+### 3. Overall two-stage planning structure
+
+The robust problem can be read schematically as
+
+\[
+\min_{x\in X}
+\left\{
+C^{\mathrm{inv}}(x)
++
+\max_{\substack{d\in D(x),\;\pi^s\in\Pi,\\ cf\in C}}
+\min_{y\in Y(x,d,cf)}
+C^{\mathrm{op}}(x,y,\pi^s)
+\right\}.
+\]
+
+The three levels have clear meanings:
+
+1. **First stage — planning:** choose DER/battery investments and the ToU design.
+2. **Adversarial uncertainty stage:** select the worst demand, market-price and renewable-output realization allowed by the uncertainty sets.
+3. **Recourse stage — operation:** dispatch generation, batteries, grid exchange and curtailment while satisfying network constraints.
+
+The first-stage vector contains, among other variables:
+
+- DER technology-selection binaries;
+- DER capacities \(P^C_{ig}\);
+- battery capacities \(P^E_i\);
+- peak/off-peak prices \(\pi_i^p,\pi_i^o\);
+- binary peak/off-peak timing variables.
+
+The operational variables include DER real/reactive generation, battery charging/discharging and energy, grid exchange, curtailment, branch flows and voltage-related auxiliary variables.
+
+### 4. Node-wise ToU pricing is itself a planning decision
+
+A major modeling contribution is that ToU pricing is not prescribed beforehand. For each load bus, the model decides:
+
+- the peak price;
+- the off-peak price;
+- which hours are peak;
+- which hours are off-peak;
+- minimum consecutive durations for both states.
+
+The price at bus \(i\) and time \(t\) is
+
+\[
+\pi_{it}=V_{it}\pi_i^p+W_{it}\pi_i^o,
+\]
+
+where \(V_{it}\) and \(W_{it}\) indicate peak and off-peak states.
+
+Additional binary variables model transitions into peak/off-peak states, so the tariff cannot switch unrealistically every hour. A revenue constraint also ensures that the utility's total revenue does not fall below a reference level based on nominal demand and an average price.
+
+**Why this matters:** the tariff is not just an operating signal. In this model it is a long-term design variable that changes customer behavior and therefore changes the robust capacity plan.
+
+### 5. Endogenous versus exogenous uncertainty
+
+#### 5.1 Decision-independent uncertainty (DIU)
+
+The uncertain market price at the substation and renewable capacity factors are represented by conventional polyhedral uncertainty sets with uncertainty budgets.
+
+For example, the market-price set constrains each price inside lower/upper bounds and limits the aggregate deviation through budget \(\vartheta^s\). Renewable capacity factors use an analogous construction.
+
+These sets do **not** depend on the first-stage decision.
+
+#### 5.2 Decision-dependent uncertainty (DDU)
+
+The nodal demand set is written as
+
+\[
+D(x)=\{\tilde d:\text{ demand bounds depend on }x\}.
+\]
+
+Its nodal lower and upper limits depend on peak/off-peak prices and timing through demand-sensitivity parameters \(\alpha\) and \(\beta\). Therefore, changing the ToU design changes the range of possible demand realizations.
+
+The paper also uses piecewise-linear lower/upper bounds on **aggregate microgrid demand** that can depend on installed renewable capacity. The motivation is that zero-marginal-cost renewable generation can lower effective electricity prices and induce higher consumption.
+
+A useful conceptual distinction is:
+
+> DIU: uncertainty affects the decision.  
+> DDU: the decision also affects the uncertainty.
+
+Setting the demand-sensitivity parameters to zero reduces the DDU set to an ordinary DIU set, recovering a conventional two-stage robust planning problem.
+
+### 6. AC-network-aware recourse problem
+
+The operating stage contains:
+
+- active and reactive nodal power balances;
+- real/reactive branch-flow equations;
+- branch-current limits;
+- nodal voltage limits;
+- DER active/reactive generation limits;
+- load curtailment;
+- battery power and energy constraints;
+- intertemporal battery energy balance;
+- substation import/reactive-power limits.
+
+The paper reformulates AC power flow through second-order conic (SOC) constraints using auxiliary variables \(R_{ij}\) and \(S_{ij}\). The authors assume a **radial topology** for exactness of the conic formulation.
+
+This is important because investment decisions are affected not only by energy balance but also by voltage support, reactive power and network loading. The Case 6 experiment directly illustrates this point: increasing reactive demand changes the optimal investment portfolio and total cost.
+
+### 7. Why ordinary CCG is insufficient
+
+Column-and-constraint generation normally alternates between:
+
+**master problem** → first-stage plan  
+**subproblem** → worst-case scenario  
+**master problem** → add that scenario.
+
+This logic is straightforward when the uncertainty set is fixed.
+
+Here, however,
+
+\[
+D=D(x),
+\]
+
+so a worst-case demand scenario found for one first-stage decision may not even belong to the uncertainty set after \(x\) changes. Therefore, simply adding fixed scenarios is not sufficient.
+
+### 8. Parametric CCG — core solution mechanism
+
+The paper constructs a parametric version of CCG using extreme points/rays of the dual feasible region and KKT conditions that characterize the corresponding worst-case DDU scenarios as functions of \(x\).
+
+The iterative logic is:
+
+**Master problem (MP)**  
+→ propose first-stage investment/ToU decision \(x^*\) and obtain a lower bound  
+→ **SP1:** test whether the recourse problem is robustly feasible  
+→ if feasible, **SP2:** find the worst-case operating-cost scenario and an extreme point  
+→ if infeasible, **SP3:** identify an extreme ray describing the violated robust-feasibility condition  
+→ add the corresponding parametric variables/constraints to the MP  
+→ repeat until \(UB-LB\le\epsilon\).
+
+The distinction between the subproblems is useful:
+
+- **SP1 = robust-feasibility check**;
+- **SP2 = worst-case cost evaluation**;
+- **SP3 = infeasibility-ray generation**.
+
+The key idea is that the algorithm does not store only a numerical demand scenario. It stores a **parametric characterization** of the scenario so that it can change consistently when the first-stage decisions change.
+
+### 9. Case studies and implementation
+
+The optimization programs were implemented in **AMPL** and solved with **GUROBI 10** on an Intel i5 2.60 GHz computer with 16 GB RAM.
+
+Three networks were studied.
+
+#### 9.1 Four-bus illustrative system
+
+- 10-year planning horizon;
+- one representative 24-hour operating day;
+- initially no DER capacity;
+- one 0.7 MVA substation;
+- 3 MVA feeder capacities;
+- load buses 2-4 with nominal real-power forecasts of 0.5, 1 and 1.5 MW;
+- voltage limits: 0.9-1.1 p.u.;
+- ToU range: 3-10 c/kWh;
+- average reference price: 6.5 c/kWh;
+- minimum peak/off-peak durations: 5 h / 10 h;
+- candidate technologies: PV, wind, diesel/microturbine and battery.
+
+Renewable capacity-factor uncertainty is modeled explicitly. For the base data, PV output when available lies in [0.6, 0.8] and wind in [0.2, 0.3]. Battery efficiency is 0.95 and the energy-to-power ratio is 4.
+
+Seven cases isolate the effects of DDU, aggregate-demand dependence, ToU timing limits, battery cost, renewable availability and reactive demand.
+
+![Optimal DER investments under Cases 1-6. Source: Fig. 1 of Haghighat et al. (2024).](papers/p035-haghighat2024-robust-microgrid/figures/haghighat2024_robust_microgrid/fig1_invested_der.png){width=95%}
+
+The figure shows that the model changes both technology and location as assumptions change. Wind is mainly installed at the lower-load node, while diesel/microturbine capacity tends to appear at higher-load nodes.
+
+#### 9.2 Sixteen-bus system
+
+- realistic 16-bus distribution network with 3 substations;
+- 15% clean-energy target in the base case;
+- candidate DER capacity at each node: 1-20 MW;
+- ToU range: 1-9 c/kWh in the base case;
+- several cases modify solar capital cost, price limits, load price sensitivities and the clean-energy target.
+
+#### 9.3 Seventy-bus system
+
+- 70 nodes, 79 branches and two 2.5 MW substations;
+- load power factor 0.94;
+- ToU range: 1-3 c/kWh;
+- three 8-hour representative periods are used for tractability;
+- renewable targets of 15%, 20%, 25% and 30% are examined.
+
+### 10. Main findings
+
+#### 10.1 Modeling demand as endogenous materially changes planning
+
+In the four-bus example, the DIU-only Case 0 has a reported cost of **$1,558,550**, while Case 1 introduces price-responsive DDU and reduces the cost to **$1,247,068**, about **20.0% lower** based on the reported values.
+
+The reason is not simply “robust optimization is cheaper.” The tariff changes the feasible demand region, and flexible demand can shift away from expensive/peak periods. This reduces the capacity and operating burden associated with the original static demand representation.
+
+When decision-dependent aggregate-demand limits are additionally introduced in Case 2, cost rises to **$1,458,175**, about **16.9% above Case 1**, because the admissible demand level becomes larger.
+
+#### 10.2 Restricting peak-price hours changes both load and investment
+
+Case 3 caps total peak hours at 20. The model then reports a cost of **$1,627,535**, approximately **11.6% above Case 2**. Supplied demand and installed capacity increase because the planner has less freedom to suppress/shift demand through long peak-price periods.
+
+The paper reports that node 4 reaches the upper peak-price limit of 10 c/kWh and uses hours 5-24 as peak periods, while many periods at nodes 2 and 3 become off-peak.
+
+![Hourly demand supplied under Cases 0-6. Source: Fig. 2 of Haghighat et al. (2024).](papers/p035-haghighat2024-robust-microgrid/figures/haghighat2024_robust_microgrid/fig2_demand_supplied.png){width=70%}
+
+This figure makes the DR effect visible: after DDU/ToU response is introduced, demand is shifted away from peak hours and can increase in off-peak periods.
+
+#### 10.3 Battery and DER capacity can substitute for each other
+
+In Case 4, battery capital cost is halved and the model installs a **100 kW battery at node 2**. The reported cost is **$1,461,825**, very close to Case 2 (+0.25%), and the overall installed capacity is similar.
+
+The authors interpret this as evidence that storage and generation can partially substitute for each other when their capital costs become comparable. The battery is reported to discharge during hours 1-7 and 17-22, and node-2 supplied demand increases from 8.3 MWh in Case 2 to 12.9 MWh in Case 4.
+
+#### 10.4 Worse renewable availability requires more installed capacity
+
+In Case 5, the wind capacity-factor interval is shifted from [0.2, 0.3] to [0.15, 0.25] and PV from [0.6, 0.8] to [0.5, 0.7]. Installed renewable and conventional capacity increase and the reported cost rises to **$1,505,260**.
+
+Because planning is robust against the worst case, lower available renewable output must be compensated by greater installed capacity and/or conventional resources.
+
+#### 10.5 Reactive power and voltage constraints matter for sizing
+
+Case 6 reduces load power factor from 0.9 to 0.78. The reported cost increases from $1,458,175 in Case 2 to **$1,467,665**, and installed capacity also rises.
+
+The result supports the paper's argument that planning based only on active-power balance can misestimate required generation capacity. Reactive demand and voltage feasibility can materially affect the investment solution.
+
+#### 10.6 Higher ToU price bounds can reduce planning cost, but through demand suppression/shift
+
+For the 16-bus system, Case 3 allows loads above 3 MW to face a wider ToU range of 2-12 c/kWh. Its reported cost is **$13,762,690**, about **1.87% below** the base Case 1 cost of $14,025,125. This case also has the lowest load/demand and the lowest daily network losses among the compared cases.
+
+The economic gain therefore comes with an important interpretation: stronger price signals reduce or reshape demand, which then reduces required infrastructure and losses.
+
+#### 10.7 Renewable targets increase cost and renewable capacity
+
+For the 70-bus system, increasing the renewable target from 15% to 30% raises reported total cost from **$915,712** to **$1,162,627**, an increase of about **27.0%**. The number and capacity of renewable resources also increase.
+
+Wind dominates the renewable investment because, under the paper's input data, it has lower capital cost and a higher capacity factor than solar.
+
+#### 10.8 Parametric CCG converges in few iterations, but larger systems still require substantial time
+
+All reported test systems converge in **2-3 algorithmic iterations**. Average solution times are 3 s for the illustrative system, 32 s for the 16-bus case, and 790 s for the 70-bus case.
+
+![Computational statistics of the parametric CCG experiments. Source: Table V of Haghighat et al. (2024).](papers/p035-haghighat2024-robust-microgrid/figures/haghighat2024_robust_microgrid/table5_computing_statistics.png){width=55%}
+
+This shows that iteration count alone is not a sufficient scalability metric: the master/subproblem size grows substantially with the network.
+
+### 11. Why the method works
+
+The paper combines three modeling choices that reinforce each other.
+
+1. **DDU prevents tariff-demand inconsistency.** The planner cannot choose a ToU tariff while pretending that the feasible demand range remains unchanged.
+2. **Robust recourse protects against adverse operating conditions.** Investment is tested against the worst realizations of demand, renewable output and market price inside their uncertainty sets.
+3. **AC-network constraints prevent economically attractive but physically infeasible capacity plans.** Voltage, reactive power and line limits enter the second-stage feasibility test.
+
+The parametric CCG then makes this formulation computationally manageable by adding only the DDU-relevant worst-case structures discovered during the iterations instead of enumerating all possibilities upfront.
+
+### 12. What this paper teaches
+
+#### Lesson 1 — Uncertainty can be caused by the decision itself
+
+Not every uncertain parameter should be modeled by a fixed interval or fixed probability distribution. Demand response, strategic curtailment, participation and adoption decisions can change the uncertainty set.
+
+#### Lesson 2 — Tariff design and infrastructure planning can be one coupled problem
+
+A ToU scheme changes demand, and changed demand changes optimal DER/storage investment. Treating tariff design as an independent post-processing step can therefore miss important planning interactions.
+
+#### Lesson 3 — Robustness should include physical network feasibility
+
+A capacity portfolio that balances annual energy may still violate voltage, reactive-power or branch constraints. Network-aware recourse can change both technology mix and capacity.
+
+#### Lesson 4 — Storage value is endogenous to the rest of the portfolio
+
+A battery is not automatically selected because it is flexible. Its investment becomes attractive when its capital cost is competitive with alternative DER capacity and when intertemporal shifting has system value.
+
+#### Lesson 5 — “More renewables” changes both supply uncertainty and demand behavior
+
+In this formulation, renewable investment affects not only uncertain generation but also the aggregate demand bounds. Planning therefore has a two-way renewable-demand interaction rather than a one-way supply model.
+
+### 13. Limitations / what remains unsolved
+
+#### A. Limitations or scope explicitly stated by the authors
+
+The paper explicitly relies on a **radial topology** for exactness of the second-order conic AC power-flow formulation. It also simplifies the 70-bus operating horizon to three 8-hour periods for tractability.
+
+The paper does not provide a separate detailed future-work section. Its conclusion mainly emphasizes the proposed framework and the flexibility of node-specific ToU design.
+
+#### B. Further research space visible from the model
+
+**Demand-response behavior is parametrically specified.** The DDU set relies on price-sensitivity parameters \(\alpha\) and \(\beta\). The paper states that these can be estimated from historical data, but it does not study estimation error, learning, behavioral heterogeneity beyond parameter settings, or strategic customer response.
+
+**Uncertainty is set-based rather than distributional.** The model does not exploit empirical distributions or ambiguity sets. A natural extension is data-driven DRO that combines price-responsive DDU with distributional ambiguity.
+
+**ToU is the only DR mechanism studied.** Real-time pricing, critical-peak pricing, incentive-based DR, demand bids, or market participation could produce different endogenous uncertainty structures.
+
+**Battery degradation is represented only indirectly through operating costs/capacity constraints.** Detailed cycle/aging degradation is not developed as an endogenous planning cost.
+
+**No islanding/resilience operating mode is modeled in the presented formulation.** The motivation mentions resilience, but the case formulation is grid-connected and focuses on investment, DR and uncertain normal operation.
+
+**Scalability remains relevant.** The 70-bus case needs an average 790 s even though convergence occurs in only 2-3 outer iterations. Larger multi-period or higher-resolution planning problems may therefore require decomposition/parallelization improvements.
+
+**Customer welfare is not modeled explicitly.** Demand changes through price elasticity, but discomfort, utility, fairness and distributional impacts of node-specific tariffs are not separately quantified.
+
+### 14. Critical reading
+
+1. **Table II contains a potentially confusing unit/label.** The row labeled “Daily demand met (%)” reports values such as 2640, 2149 and 2864. These are not interpretable as ordinary percentages bounded by 100. The paper does not clarify whether these values are cumulative percentage-points across hours, another aggregate index, or whether the label/unit is incomplete. They should therefore not be silently converted into conventional percentages.
+
+2. **Case 5 wording can be misread.** The paper says the uncertainty-set boundaries of renewable capacity factors are “reduced,” but the intervals change from [0.2, 0.3] to [0.15, 0.25] for wind and [0.6, 0.8] to [0.5, 0.7] for PV. The interval widths remain unchanged; the ranges are shifted downward. The experiment therefore primarily represents poorer renewable availability rather than a narrower uncertainty band.
+
+3. **Higher demand flexibility may lower planning cost partly by reducing served demand.** When comparing ToU cases, lower cost should not automatically be interpreted as a pure efficiency gain. Some savings arise because the tariff reshapes or suppresses demand. A welfare-based comparison would need to value consumer utility/discomfort explicitly.
+
+### 15. Research idea triggers
+
+#### Idea 1 — Data-driven DDU + DRO for microgrid planning
+
+Replace fixed sensitivity coefficients with a data-driven ambiguity set for price response:
+
+**historical price/load data** → estimate uncertain elasticity/distribution → **decision-dependent DRO** → robust DER/storage investment.
+
+This would preserve the paper's core insight that price changes demand uncertainty while reducing reliance on fixed behavioral parameters.
+
+#### Idea 2 — Multi-stage adaptive planning with endogenous demand
+
+The current framework is two-stage. A natural extension is:
+
+**investment** → **tariff update** → **observed demand response** → **capacity/operation adaptation**.
+
+This would be suitable for multi-year expansion planning where both customer behavior and DER adoption evolve over time.
+
+#### Idea 3 — DDU under real-time pricing or flexibility markets
+
+Instead of binary peak/off-peak ToU states, make real-time prices or flexibility payments first-stage/upper-level decisions. Then the uncertainty set of demand/flexibility availability becomes endogenous to the market signal.
+
+#### Idea 4 — Endogenous uncertainty from DER adoption
+
+The same DDU logic can be applied to EV, battery or rooftop-PV adoption: incentives affect adoption, adoption affects load and uncertainty, and the resulting uncertainty affects network investment.
+
+#### Idea 5 — Robust network planning with customer welfare/fairness
+
+Add explicit consumer utility or discomfort and compare node-specific ToU tariffs against fairness constraints. This would connect robust capacity planning with the billing/fairness issues seen in local-energy-market studies.
+
+#### Idea 6 — Resilience-oriented DDU planning
+
+Extend the recourse problem with islanding contingencies, critical-load service and outage-duration uncertainty. Then investigate whether ToU/DR decisions change not only normal-operation demand uncertainty but also the amount of flexible load available during emergencies.
+
+#### Idea 7 — Higher-resolution and scalable parametric CCG
+
+The 70-bus case uses only three 8-hour periods. A useful methodological paper could target hourly/sub-hourly horizons using parallel subproblems, cut management, warm starts or surrogate screening while retaining exact DDU treatment.
+
+### 16. Problem-map tags
+
+**Problem-map tags:** `microgrid capacity investment` · `decision-dependent uncertainty` · `decision-independent uncertainty` · `robust planning` · `time-of-use pricing` · `demand response` · `endogenous demand` · `DER sizing` · `battery investment` · `AC network constraints` · `voltage/reactive-power feasibility` · `parametric CCG` · `planning-operation coupling` · `customer price response`
+
+:::

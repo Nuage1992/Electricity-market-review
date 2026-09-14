@@ -1,0 +1,418 @@
+::: {.callout-note collapse="true" icon=false}
+## [P030] Sun et al. (2025) — Learning-Enabled Adaptive Power Capping Scheme for Cloud Data Centers
+
+**Journal:** *IEEE Transactions on Smart Grid*, 16(6), 4755–4767, November 2025  
+**DOI:** 10.1109/TSG.2025.3598070  
+**Main topics:** cloud data centers; adaptive power capping; demand-side energy management; Service Level Agreement (SLA); Partially Observable Markov Decision Process (POMDP); Model-Based Reinforcement Learning (MBRL); distributional reinforcement learning; uncertainty-aware model learning
+
+### Quick takeaway
+
+This paper studies how a cloud data center can reshape its electricity demand without giving the energy manager access to detailed job-level information. The core control variable is a **power cap**: an upper bound on the cluster power consumption. The energy manager lowers the cap when electricity is expensive and relaxes it when electricity is cheap, but it must avoid delaying computing jobs so much that their Service Level Agreements (SLAs) are violated.
+
+The main difficulty is that the energy manager does not know the internal job-scheduling logic and cannot directly observe job details such as execution dependencies, individual resource usage, or deadlines. In addition, job arrivals, electricity prices, and even the scheduler itself may change over time. Therefore, a fixed rule or one-shot optimization can easily become inaccurate.
+
+The paper formulates the interaction between the energy manager and the job scheduler as a POMDP-like sequential decision problem and proposes an **uncertainty-aware Model-Based Reinforcement Learning (MBRL)** method. The learned environment model imitates how the scheduler reacts to power caps, generates virtual trajectories, and reduces the number of costly real interactions. A distributional value network and a decision-aware environment-model loss are then used to improve robustness to uncertainty and environmental changes.
+
+The most important practical message is that **power capping can be treated as a high-level interface between electricity-market signals and cloud-computing operations**. It allows an energy manager to exploit temporal flexibility in computing demand while keeping internal scheduling details hidden.
+
+### 1. Problem addressed — energy management without job-level control
+
+Cloud data centers consume large amounts of electricity, so their flexible computing loads can potentially respond to time-varying electricity prices or other signals. Traditional energy-management methods usually act directly on jobs or computing resources, for example by rescheduling jobs, changing resource allocation, migrating virtual machines, or adjusting processor voltage/frequency.
+
+The problem is that the **energy manager may not have access to this detailed information or control authority**. The paper identifies two reasons:
+
+- privacy restrictions between cloud tenants and the data-center operator;
+- organizational and security barriers between the energy-management team and the job-scheduling team inside a large cloud company.
+
+As a result, the energy manager may know the total cluster power and some aggregated quality-of-service information, but not the internal scheduling policy or job-level states.
+
+The paper therefore asks:
+
+> Can the energy manager reshape the data center load using only a high-level power limit and limited aggregated feedback, while keeping electricity cost low and maintaining acceptable SLA performance?
+
+This is not only an optimization problem. It is also a **learning problem**, because the energy manager must learn how the hidden scheduler reacts to different power caps.
+
+### 2. Why existing approaches are not enough
+
+The paper reviews two main categories of data-center energy management: job scheduling and resource management. Both can be effective, but they normally require more detailed operational information than the energy manager may be allowed to access.
+
+Power capping is attractive because it does not require the energy manager to decide which individual job should run. However, existing power-capping approaches are often based on predefined rules or one-shot optimization. The paper argues that these methods have three weaknesses.
+
+**First, the scheduler response is not known exactly.** A cap does not directly determine the final power consumption or job delay. The job scheduler interprets the cap and changes job execution accordingly.
+
+**Second, the environment is dynamic.** Job arrivals, electricity prices, SLA requirements, and scheduling algorithms can change over time.
+
+**Third, model-free reinforcement learning is interaction-hungry.** It can learn without an accurate physical model, but the large number of exploration interactions may be expensive in a real data center because intermediate policies can temporarily create inefficient or poor-quality operation.
+
+The paper therefore seeks a method that can **learn the hidden scheduler response with fewer real interactions and adapt when the operating environment changes**.
+
+### 3. System architecture — energy manager and job scheduler are deliberately separated
+
+The framework separates the cloud data center into two decision layers:
+
+1. the **energy manager**, which sees electricity-market signals and aggregated operational feedback and chooses a cluster power cap;
+2. the **job scheduler**, which receives the cap as an upper-bound constraint and decides how jobs are actually executed.
+
+![Interaction between the energy manager and job scheduler. Source: Fig. 2 of Sun et al. (2025).](papers/p030-sun2025-adaptive-power-capping/figures/sun2025_adaptive_power_capping/fig2_energy_manager_scheduler.png){width=78%}
+
+The information loop is:
+
+**Electricity price + aggregated feedback → energy manager → power cap → job scheduler → actual power + SLA information → energy manager.**
+
+This architecture is important because the energy manager does **not** need the detailed internal scheduling logic. It only needs enough aggregate feedback to evaluate the consequences of its previous cap decisions.
+
+The paper assumes that the data center is a **price taker**. It receives an electricity price signal and adjusts its demand, but its own demand does not affect the market price.
+
+The authors also note that the external signal does not have to be electricity price. In principle, the same framework could use marginal carbon intensity or a contracted renewable-generation profile.
+
+### 4. Sequential decision model — what the agent observes and controls
+
+The energy manager is modeled as the reinforcement-learning agent.
+
+#### 4.1 State
+
+The state contains three groups of information:
+
+- **cluster information:** time step, current power cap, and actual cluster power;
+- **aggregated scheduler feedback:** total SLA violation status and remaining computing-resource requirement;
+- **price information:** the current spot-market electricity price.
+
+The paper deliberately uses aggregated job information rather than individual job information.
+
+The aggregated SLA delay measure is
+
+\[
+SLA^{vio}_t = \sum_{n=1}^{N} I_{t>j^{ddl}_n}\left(t-j^{ddl}_n\right),
+\]
+
+where the indicator becomes active when the current time has passed job \(n\)'s deadline. This variable therefore increases when jobs remain unfinished after their deadlines.
+
+The aggregated unfulfilled resource requirement is
+
+\[
+res_t = \sum_{n=1}^{N} I_{res^{un}_n>0}res^{un}_n.
+\]
+
+The purpose of these variables is to give the energy manager enough information to judge whether a cap is too restrictive without revealing individual job-level details.
+
+#### 4.2 Action
+
+The action is the cluster power cap \(P_t^{cap}\). The action is discretized into
+
+\[
+\{0\%,1\%,2\%,\ldots,100\%\}
+\]
+
+of the cluster's maximum rated power, giving 101 possible cap levels.
+
+#### 4.3 Reward — electricity cost versus service quality versus capping intensity
+
+The one-step reward is
+
+\[
+r_t=r_t^{energy}+r_t^{ddl}+r_t^{cap}.
+\]
+
+The three terms are:
+
+\[
+r_t^{energy}=-P_t^a p_t,
+\]
+
+which rewards lower electricity expenditure;
+
+\[
+r_t^{ddl}=-SLA_t^{vio}\times pen,
+\]
+
+which penalizes deadline violations; and
+
+\[
+r_t^{cap}=-(P^{max}-P_t^{cap})\times adj_c,
+\]
+
+which penalizes strong power capping.
+
+The resulting policy must therefore balance **energy savings** against **job-completion quality** and the cost associated with restrictive power caps.
+
+### 5. Why Model-Based Reinforcement Learning is used
+
+The key design choice is to use **Model-Based Reinforcement Learning (MBRL)** rather than a purely model-free algorithm.
+
+The framework contains two learned components:
+
+- an environment model \(\hat P_\theta(\hat s_{t+1}|s_t,a_t)\), which learns how the job-scheduling environment transitions after a power-cap action;
+- a distributional state-action value network \(Q_\phi(s_t,a_t)\), which evaluates and selects power-capping actions.
+
+![Workflow of the uncertainty-aware MBRL scheme. Source: Fig. 3 of Sun et al. (2025).](papers/p030-sun2025-adaptive-power-capping/figures/sun2025_adaptive_power_capping/fig3_mbrl_workflow.png){width=88%}
+
+The learning loop works as follows.
+
+1. The energy manager interacts with the real scheduler and stores trajectories \([s_t,a_t,r_t,s_{t+1}]\) in a real buffer.
+2. These trajectories train the environment model to imitate the scheduler response.
+3. The trained environment model generates **virtual trajectories**.
+4. Real and virtual trajectories are both used to update the decision network.
+
+The purpose is sample efficiency. Once the environment model is reasonably accurate, the agent can learn from simulated transitions instead of repeatedly experimenting on the real cloud data center.
+
+### 6. Two-stage uncertainty-aware optimization
+
+The paper does not use a standard point-prediction environment model and standard expected-value RL. It introduces uncertainty into both the decision stage and the transition-model learning stage.
+
+#### 6.1 Decision-making stage — distributional value learning
+
+Instead of learning only one expected state-action value, the method learns a **distribution of possible returns** using quantile regression.
+
+The distributional network outputs
+
+\[
+Z(\tau,s_t,a_t|\phi),
+\]
+
+for sampled quantiles \(\tau\). The expected state-action value is then
+
+\[
+Q_\phi(s_t,a_t)=\mathbb{E}_{\tau}[Z(\tau,s_t,a_t|\phi)].
+\]
+
+Quantile regression with a Huber loss is used to approximate the return distribution, and the paper motivates this through the Wasserstein distance.
+
+The practical interpretation is that the agent learns not only "how good this action is on average" but also the **shape of the possible return outcomes under uncertainty**.
+
+#### 6.2 Transition-dynamics learning stage — decision-aware model loss
+
+A standard environment model could minimize Mean Squared Error (MSE) between predicted and actual next states. The paper argues that this may waste modeling capacity on prediction errors that are not important for the final power-capping decision.
+
+Instead, the proposed loss compares the **decision value** of the real next state with the expected decision value under the learned transition model:
+
+\[
+\mathcal{L}_{\theta}
+=
+\mathbb{E}_{G_N}
+\left[
+\left|
+V_{\phi_t}(s_{k+1})-
+\int \hat P_{\theta_t}(d\hat s_{k+1}|s_k,a_k)
+V_{\phi_t}(\hat s_{k+1})
+\right|^2
+\right].
+\]
+
+This is a form of **value-aware model learning**: prediction errors matter more when they change the value of future decisions.
+
+This is one of the most transferable ideas in the paper. A learned model does not necessarily need to reproduce every environmental detail with equal accuracy; it should be especially accurate in the parts of the state space that influence the optimization objective.
+
+### 7. Finite-iteration optimality guarantee
+
+The authors derive an upper bound on the gap between the state-action value distribution under the finite-iteration policy and the ideal optimal distribution.
+
+The bound is mainly controlled by two factors:
+
+- the **environment-model learning error** accumulated during iterations;
+- a residual term that decays with \(\gamma^K\), where \(K\) is the number of iterations and \(\gamma\) is the discount factor.
+
+The theoretical message is straightforward: if the learned transition model remains sufficiently accurate and the number of iterations increases, the finite-iteration policy approaches the optimal policy in the Wasserstein metric.
+
+The paper uses this result as a theoretical justification for making useful decisions before unlimited training is possible.
+
+### 8. Case study design
+
+| Item | Setting in the paper |
+|---|---|
+| Experimental platform | Simulator of a cloud data center with power-budget constraints |
+| Real-world trace source | Alibaba Cluster Trace (Trace_201708) |
+| Electricity-price source | Seasonal PJM market price data |
+| Default job scheduler | First-Come-First-Serve (FCFS) |
+| Other schedulers | Round-Robin (RR), Earliest Deadline First (EDF), energy-aware scheduling |
+| Additional job-arrival patterns | Uniformly distributed online jobs; highly concentrated batch jobs |
+| Power model | Linear power-consumption model based on job resource-utilization information |
+| Main horizon shown | 24-hour daily operation |
+| Simulation time-step duration | Paper does not explicitly state it in the main text |
+| Cluster/server count | Paper does not explicitly state it |
+| RL baselines | Proximal Policy Optimization (PPO), Soft Actor-Critic (SAC), Deep Q-Network (DQN), Implicit Quantile Network (IQN) |
+| MBRL loss comparisons | Proposed loss; Kullback-Leibler (KL) divergence loss; Mean Squared Error (MSE) loss |
+| Operational baselines | Rule-based power capping; forecast-and-optimize |
+| Detailed numerical RL hyperparameters | Paper does not report the full numerical settings in the main text |
+
+The experiments are therefore **simulation-based**, but they are driven by real Alibaba production traces and real electricity-market price data.
+
+### 9. Main findings
+
+#### 9.1 Power capping reshapes demand according to price
+
+Across spring, summer, autumn, and winter price patterns, the power cap becomes tighter when electricity prices are high and more relaxed when prices are low.
+
+The effect is strongest when prices are high and volatile. In the winter case, the method postpones jobs that still have sufficient deadline slack and executes them later during lower-price periods.
+
+The important mechanism is not simple load shedding. It is **temporal shifting of flexible computing work**.
+
+#### 9.2 Scheduling policy changes the amount of energy flexibility
+
+The method works with FCFS, RR, EDF, and energy-aware scheduling, but the achievable savings differ.
+
+EDF and energy-aware scheduling provide more flexibility because the scheduler can distinguish jobs according to urgency or energy-related objectives. FCFS and RR are less aligned with deadlines, so aggressive capping more easily creates SLA violations.
+
+This means that the energy flexibility of a data center is not determined only by the load level. It also depends on the **internal scheduler's ability to exploit temporal slack**.
+
+#### 9.3 Long-deadline jobs provide much more power-shifting capability
+
+The experiments with different job-arrival patterns show that short-deadline online jobs leave little room for load shifting. Batch jobs with longer deadlines can be moved more aggressively to low-price periods.
+
+This is a useful physical interpretation of data-center demand response:
+
+**deadline slack → scheduling flexibility → electrical load flexibility.**
+
+#### 9.4 Faster learning than model-free RL
+
+The proposed method improves its reward quickly and, after about **2,500 iterations**, surpasses the compared model-free algorithms in the training curve.
+
+At convergence, its total reward is reported to differ from PPO by only **6.47%**, while it reaches comparable performance **2.17 times faster**.
+
+The paper attributes this gain to the learned environment model, which generates virtual trajectories and reduces the number of direct interactions required with the real environment.
+
+#### 9.5 Better adaptation after sudden environmental changes
+
+The paper creates a sequence of abrupt changes: the scheduler switches from EDF to FCFS, then a job burst occurs, and finally an electricity-price spike occurs.
+
+![Training performance under sudden environmental changes. Source: Fig. 11 of Sun et al. (2025).](papers/p030-sun2025-adaptive-power-capping/figures/sun2025_adaptive_power_capping/fig11_adaptation_dynamic_changes.png){width=76%}
+
+The proposed method shows a smaller performance drop and faster recovery than SAC, PPO, IQN, and DQN. The environment model already contains learned information about state transitions, so it can partially absorb the change instead of relearning entirely from direct interactions.
+
+The paper does not report one single numerical "adaptation time" for these events, so the comparison is mainly visual and qualitative.
+
+#### 9.6 Uncertainty-aware model learning improves convergence
+
+Compared with MBRL using KL-divergence loss or MSE loss, the proposed loss converges faster and reaches a higher final reward.
+
+The paper's explanation is that:
+
+- KL-based learning represents uncertainty but does not include enough decision context;
+- MSE-based value-aware learning contains decision information but handles uncertainty more simplistically;
+- the proposed method combines both uncertainty information and decision relevance.
+
+#### 9.7 Adaptive learning outperforms fixed rules and one-shot forecast optimization
+
+The rule-based method reacts weakly to changing prices and job arrivals. The forecast-and-optimize method tracks prices better but can set caps too low when its forecast is inaccurate or when the scheduler response changes.
+
+The proposed method achieves lower total cost and lower SLA violation rate in the paper's uncertain-environment comparison. Exact percentage improvements are not explicitly stated in the text; the comparison is presented mainly through the boxplots in Fig. 14.
+
+### 10. Sensitivity to SLA design
+
+The paper tests four SLA penalty settings.
+
+- **Case I:** default fixed penalty for every delayed time step;
+- **Case II:** penalty increases linearly with delay duration;
+- **Case III:** a short grace period is allowed before penalties begin;
+- **Case IV:** the Case-I penalty is reduced by half.
+
+Case II produces the lowest violation rate because missing a deadline becomes very expensive, but it also produces the highest total cost.
+
+Case III allows more scheduling flexibility and therefore reduces total cost, with a slight increase in violation rate.
+
+Case IV makes violations cheap, so the controller tolerates more delayed jobs. Total cost falls only marginally, while the violation rate rises substantially.
+
+This sensitivity study shows that **the economic value of demand flexibility depends strongly on how service quality is monetized**.
+
+### 11. What this paper teaches
+
+#### Lesson 1 — A power cap can act as an interface between the electricity system and the computing system
+
+The energy manager does not need to schedule individual jobs. It can send one aggregate control signal and let the internal scheduler handle the computing details.
+
+#### Lesson 2 — Data-center flexibility comes from job slack, not simply from high power consumption
+
+A large load is not automatically flexible. The crucial quantity is how much computing work can be shifted without violating deadlines.
+
+#### Lesson 3 — Model-based RL is valuable when real exploration is expensive
+
+Learning a transition model allows many policy updates to be performed using virtual trajectories. This is especially useful when poor intermediate decisions have a real operational cost.
+
+#### Lesson 4 — Prediction accuracy and decision usefulness are not the same objective
+
+The environment model is trained to preserve decision-relevant value information, not only to minimize next-state prediction error. This idea can be transferred to many energy-management problems with learned models.
+
+#### Lesson 5 — Uncertainty protection changes the economics of flexibility
+
+If the controller is too aggressive, it saves electricity cost but creates SLA violations. The correct policy depends on uncertainty, deadline structure, and the economic penalty assigned to service degradation.
+
+### 12. Critical reading — points that deserve attention
+
+**POMDP terminology.** The paper calls the formulation a Partially Observable Markov Decision Process, but the stated tuple is \((S,A,P,R,\gamma)\), without an explicit observation space or observation model. The operational description is clearly based on incomplete information, but the mathematical formulation shown in the paper is closer to an MDP written in terms of aggregated observable states. This is a modeling-description issue rather than something to silently correct.
+
+**State notation.** The price component is introduced with one state notation and later referred to with another notation in the surrounding text. This appears to be a minor notation inconsistency.
+
+**Power-cap adjustment cost.** The paper explains this term as representing the impact of a wide range of power-cap adjustments and hardware wear, but Eq. (6) penalizes \(P^{max}-P_t^{cap}\), i.e., how restrictive the current cap is. It does not directly penalize the temporal change \(|P_t^{cap}-P_{t-1}^{cap}|\). Therefore, the mathematical term is closer to a "capping intensity" penalty than a conventional ramp/change penalty.
+
+**Privacy claim.** Aggregated feedback reduces access to job-level information, but the paper does not provide a formal privacy guarantee such as differential privacy or an information-leakage analysis.
+
+**Risk preference.** The method learns a distribution of returns, but the action value used for greedy decision-making is the expectation of that distribution. The paper does not formulate an explicitly risk-averse criterion such as Conditional Value at Risk (CVaR).
+
+**Experimental detail.** The paper provides the simulator design and data sources, but does not report several implementation details in the main text, such as the exact simulation time-step duration, server/cluster size, and a full list of numerical RL hyperparameters. This limits exact reproducibility from the article alone.
+
+### 13. Limitations / What remains unsolved
+
+#### A. Limitations or future work explicitly stated by the authors
+
+The explicit future direction is to integrate **Energy Storage Systems (ESS)** with power capping. The authors argue that storage could further reduce electricity cost, mitigate sudden power ramps, improve resilience, support grid stability, and facilitate renewable-energy integration.
+
+#### B. Further research space visible from the model
+
+**Price-taking assumption.** The data center only responds to an exogenous price. The paper does not study strategic bidding, market clearing, demand-response payment, or the effect of a large data center on Locational Marginal Price (LMP).
+
+**No grid-network constraints.** The power system appears only through a price signal. Distribution-network congestion, voltage limits, feeder capacity, and network-aware flexibility are not modeled.
+
+**Simulation rather than field deployment.** The simulator is driven by real traces, but the paper does not report Hardware-in-the-Loop (HIL) or live data-center deployment.
+
+**No explicit storage or on-site generation.** Flexible computing is the only major flexibility mechanism in the main model.
+
+**No formal safe-exploration constraint.** SLA violations are handled through reward penalties rather than hard safety constraints or chance constraints.
+
+**Scheduler abstraction.** The environment model learns aggregate scheduler behavior, but the generalization to entirely new schedulers, hardware configurations, or unseen workload classes is not theoretically guaranteed.
+
+**Optimality bound is not an online certificate.** The theoretical gap depends on quantities such as environment-model error and concentrability. The paper establishes the bound analytically but does not demonstrate a practical real-time procedure that computes a certified bound during operation.
+
+### 14. Research idea triggers
+
+#### Idea 1 — From price-taking load response to market participation
+
+Extend the framework from "receive price → adjust cap" to **data-center bidding in day-ahead / real-time / ancillary-service markets**. The research question becomes whether computing flexibility can be priced and offered as a market product while still respecting SLA uncertainty.
+
+#### Idea 2 — Network-aware data-center flexibility
+
+Add distribution-network constraints or Distribution Locational Marginal Prices (DLMPs). This would connect computing flexibility to feeder congestion and voltage management rather than treating the electricity system as an external scalar price.
+
+#### Idea 3 — Risk-sensitive distributional MBRL
+
+The paper already learns the return distribution. A natural extension is to use the distribution explicitly in decision-making, for example through CVaR, chance constraints, or tail-probability limits on SLA violations.
+
+#### Idea 4 — Joint power capping + ESS optimization
+
+This is the most direct extension mentioned by the authors. Flexible jobs provide **temporal computing flexibility**, while batteries provide **electrical energy flexibility**. A joint controller could decide whether to defer jobs, discharge storage, or accept a higher electricity price.
+
+#### Idea 5 — Price + carbon + renewable matching
+
+The paper notes that carbon intensity or renewable profiles could replace price signals. A stronger extension is a multi-objective controller using **electricity price + marginal carbon intensity + renewable availability + SLA cost** simultaneously.
+
+#### Idea 6 — Continual learning with explicit change detection
+
+The experiments contain scheduler changes, job bursts, and price spikes, but the method reacts implicitly. A new design could add drift/change-point detection and trigger selective model adaptation, model reset, or uncertainty inflation when the environment changes structurally.
+
+#### Idea 7 — Formal privacy for aggregated feedback
+
+Replace the informal "aggregated information" privacy argument with a measurable privacy mechanism. The energy manager could learn from differentially private or encrypted aggregate feedback and quantify the trade-off between privacy, model accuracy, and energy cost.
+
+#### Idea 8 — Safe or offline RL for deployment
+
+Because real exploration is expensive, a practical next step is offline pretraining from historical traces, followed by constrained online adaptation. Hard SLA constraints, safe exploration, or fallback rules could make deployment more credible.
+
+#### Idea 9 — More realistic power-cap wear and ramping model
+
+Replace the current capping-intensity penalty with explicit cap-ramp limits, switching/ramping costs, thermal effects, and hardware reliability models. This would align the mathematical penalty more directly with the hardware-wear motivation.
+
+### 15. One-sentence memory hook
+
+**This paper learns how a hidden cloud scheduler reacts to an aggregate power cap, then uses an uncertainty-aware MBRL controller to shift computing demand toward favorable electricity-price periods with fewer real interactions.**
+
+**Problem-map tags:** `data-center demand flexibility` · `incomplete operational information` · `power capping` · `SLA-energy trade-off` · `sample efficiency` · `dynamic scheduler` · `environment uncertainty` · `model-based reinforcement learning` · `decision-aware model learning` · `privacy boundary` · `price-responsive demand` · `safe deployment`
+
+:::

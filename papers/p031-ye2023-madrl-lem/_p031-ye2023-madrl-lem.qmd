@@ -1,0 +1,419 @@
+::: {.callout-note collapse="true" icon=false}
+## [P031] Ye et al. (2023) — Multi-Agent Deep Reinforcement Learning for Coordinated Energy Trading and Flexibility Services Provision in Local Electricity Markets
+
+**Journal:** IEEE Transactions on Smart Grid, Vol. 14, No. 2, March 2023, pp. 1541–1554  
+**DOI:** 10.1109/TSG.2022.3149266  
+**Main topics:** Local Electricity Market (LEM); local energy trading; Flexibility Services (FS); prosumer coordination; Multi-Agent Deep Reinforcement Learning (MADRL); Multi-Actor-Attention-Critic (MAAC); Prioritized Experience Replay (PER); Centralized Training and Decentralized Execution (CTDE); Electric Vehicles (EV); Energy Storage (ES); Heating, Ventilation and Air Conditioning (HVAC)
+
+### Quick takeaway
+
+This paper studies a Local Electricity Market (LEM) that performs **two functions at the same time**: prosumers trade energy locally, and their flexible Distributed Energy Resources (DERs) sell upward/downward flexibility services to an Electricity System Operator (ESO) or Distribution System Operator (DSO). The central question is not only how to operate flexible DERs economically, but how to coordinate many heterogeneous prosumers without requiring a central entity to know every household's detailed DER model and private operating information.
+
+The paper develops two formulations of the same problem. First, it builds an idealized **model-based, system-centric optimization** that jointly optimizes energy trading and flexibility provision and explicitly models the time-coupled constraints of EVs, batteries and HVAC systems. This serves as a theoretical benchmark. Second, it reformulates the problem as a **model-free, prosumer-centric Markov Game**, where each prosumer is an agent that learns its own policy from observations and interaction with the environment.
+
+The proposed learning method, **MAAC-PER**, combines the Multi-Actor-Attention-Critic (MAAC) architecture with Prioritized Experience Replay (PER). MAAC is used to reduce multi-agent non-stationarity and scalability/privacy problems, while PER accelerates learning by replaying more informative experiences. In a 300-prosumer case study using Ausgrid data, the learned solution is only **2.70% / 3.35% above the theoretical benchmark** for the LEM / LEM+FS cases, respectively, while avoiding the perfect-model and perfect-forecast assumptions of the benchmark.
+
+### 1. Problem addressed — how can a LEM coordinate both energy trading and flexibility services?
+
+The paper starts from a practical DER-management problem. Large numbers of small flexible resources are increasingly owned by individual prosumers. Coordinating them centrally is difficult because the system would need to collect detailed operating models, forecasts and private information from many households.
+
+A Local Electricity Market reduces this system-wide coordination problem to a smaller local cluster. However, many existing LEM studies focus mainly on **local energy trading**: prosumers use local surplus PV and flexible resources to reduce imports from the grid and improve collective self-consumption.
+
+The authors argue that this leaves another source of value underused. Flexible DERs can also provide **flexibility services (FS)** to the wider electricity system, such as balancing or distribution-network support. Therefore, the research problem is:
+
+> How can heterogeneous prosumers coordinate their DERs so that local energy trading and external flexibility-service provision are optimized jointly, while avoiding a centralized architecture that requires full models, forecasts and private data?
+
+The two market functions compete for the same physical flexibility. A battery, EV or HVAC system used to improve local self-consumption has less remaining flexibility available for FS, and vice versa. This makes joint optimization important.
+
+### 2. Why existing approaches are not enough
+
+The literature review is organized around three dimensions.
+
+#### 2.1 System-centric vs. prosumer-centric coordination
+
+A **system-centric** architecture can theoretically achieve a globally optimal solution because a central coordinator knows all DER models and dispatches them directly. The authors highlight four practical drawbacks: communication burden, computational burden, privacy concerns and reliability concerns.
+
+A **prosumer-centric** architecture leaves DER dispatch authority with individual prosumers and uses market signals to coordinate them indirectly. It is more practical but generally cannot guarantee the system-wide optimum.
+
+#### 2.2 Model-based vs. model-free decision-making
+
+Most model-based methods require:
+
+- explicit knowledge of complex DER operating models;
+- accurate forecasts of uncertain variables such as demand and PV output; or
+- known analytical uncertainty distributions.
+
+The authors argue that these requirements create large monitoring, forecasting and computational burdens.
+
+Model-free Deep Reinforcement Learning (DRL) avoids explicit DER models in the agent decision process. However, multi-agent learning introduces its own problems. Concurrent independent learning suffers from a non-stationary environment. Fully centralized learning and Multi-Agent Deep Deterministic Policy Gradient (MADDPG) can become computationally intractable and may require private information from all agents. Parameter-sharing methods assume homogeneous agents, which does not fit heterogeneous DER portfolios.
+
+#### 2.3 Energy trading and flexibility services are often separated
+
+Most prior LEM work focuses on energy trading only. A smaller body of work studies flexibility markets. Very few studies combine both functions, and the paper identifies specific limitations in those that do:
+
+- time-coupled DER constraints are sometimes ignored;
+- energy and FS are sometimes optimized sequentially rather than simultaneously;
+- some reserve-market designs are not aligned with ESO/DSO procurement structures.
+
+The paper therefore identifies the missing combination as:
+
+**prosumer-centric + model-free + simultaneous local energy trading and FS provision**.
+
+### 3. Overall LEM architecture — two markets compete for the same DER flexibility
+
+The LEM contains residential prosumers with heterogeneous portfolios that may include PV, inflexible demand, EVs, ES units and HVAC systems. A LEM platform connects these prosumers with an electricity supplier and an ESO/DSO.
+
+![Examined LEM architecture combining local energy trading and flexibility-service provision. Source: Fig. 1 of Ye et al. (2023).](papers/p031-ye2023-madrl-lem/figures/ye2023_madrl_lem/fig1_lem_framework.png){width=82%}
+
+The architecture contains three main flow types:
+
+- **energy flows:** local energy trading among prosumers and residual import/export with the supplier;
+- **FS flows:** aggregated upward/downward flexibility sold to the ESO/DSO;
+- **information flows:** retail tariffs, FS prices and local market information communicated through the LEM platform.
+
+The coordination horizon is one day with a **30-minute resolution**, so \(T=48\) periods.
+
+The two generic FS products are:
+
+- **up-FS:** increase generation or reduce demand relative to the baseline;
+- **down-FS:** reduce generation or increase demand relative to the baseline.
+
+The paper models only the **forward availability** of this flexibility. It does not model real-time activation or activation remuneration. The authors also state that the generic FS representation does not capture special services such as dynamic frequency response or reactive-power management.
+
+### 4. Model-based system-centric benchmark
+
+The benchmark assumes that a central coordinator has perfect knowledge of all DER operating models and accurate forecasts of uncertain exogenous variables.
+
+#### 4.1 EV and battery flexibility
+
+EV and ES flexibility comes from changing charging/discharging schedules while respecting inter-temporal energy constraints. For an EV, the basic energy-balance relation is
+
+\[
+E^{ev}_{n,t}=E^{ev}_{n,t-1}+\Delta t P^{evc}_{n,t}\eta^{evc}_{n}
+-\Delta t P^{evd}_{n,t}/\eta^{evd}_{n}-E^{tr}_{n,t}.
+\]
+
+This equation links present actions to future flexibility: charging or discharging now changes the energy margin available later. EVs additionally have availability and departure-energy requirements. ES units follow a similar model but are always grid-connected and have no commuting-energy requirement.
+
+The up-/down-FS limits are constrained not only by charging/discharging power capacity but also by the battery's remaining energy margin. Therefore, the paper explicitly captures the **time-coupled physical nature of flexibility**.
+
+#### 4.2 HVAC flexibility
+
+HVAC flexibility is represented through indoor thermal dynamics. HVAC power can be shifted as long as indoor temperature remains within user comfort limits. This means thermal comfort acts as an energy-like storage constraint: consuming less/more power now changes the future temperature margin available for FS.
+
+#### 4.3 System-level objective
+
+The LEM net power exchange with the external supplier is the sum of the prosumers' net demands:
+
+\[
+P_t^{re}=\sum_{n=1}^{N} l_{n,t}.
+\]
+
+The benchmark minimizes
+
+\[
+\min \sum_{t=1}^{T}
+\left[
+\lambda_t^b[P_t^{re}]^+
++\lambda_t^s[P_t^{re}]^-
+-\lambda_t^{F,u}FU_t^{tot}
+-\lambda_t^{F,d}FD_t^{tot}
+\right].
+\]
+
+The first two terms represent the cost/revenue of residual grid import/export. The last two terms represent revenue from selling upward and downward flexibility. Importantly, **local energy trading and FS provision are optimized simultaneously**, so the optimizer decides how much DER flexibility should be used for each purpose.
+
+### 5. Model-free prosumer-centric reformulation as a Markov Game
+
+The practical formulation treats each prosumer as an agent in a finite **Markov Game (MG)**. Unlike the benchmark, an agent does not explicitly know its DER equations when selecting actions. Physical constraints are imposed **ex post by the environment** after the agent proposes an action.
+
+#### 5.1 Observation — local information plus 48-step history
+
+Each prosumer observes its own local variables, including EV/ES energy states, EV availability, indoor temperature, and historical profiles of:
+
+- outdoor temperature;
+- retail import/export tariffs;
+- up-/down-FS prices;
+- inflexible demand;
+- PV production.
+
+For these time-series variables, the previous **48 half-hour periods** are included. A **Gated Recurrent Unit (GRU)** network extracts features intended to infer future trends without using external forecasts.
+
+The global state is conceptually the concatenation of all agents' observations, but each agent can physically observe only its own local information.
+
+#### 5.2 Actions — energy operation and FS provision
+
+For each flexible DER, actions are continuous normalized commands. EV/ES actions include charging/discharging plus upward/downward FS decisions. HVAC actions include power consumption plus upward/downward FS provision.
+
+The environment maps normalized actions to physically feasible power levels using the relevant power, energy or thermal limits. This design is important: the policy itself is model-free, but the simulated environment still contains the physical models needed to enforce feasibility.
+
+An exception is the EV departure-energy requirement. It is not hard-enforced by the immediate action projection; violation is instead penalized in the reward at departure.
+
+### 6. Local energy pricing and agent economic objective
+
+Local energy prices are set with a **Mid-Market Rate (MMR)** mechanism. The base local price is the midpoint of the supplier's retail import and export tariffs, and the actual local buying/selling prices are adjusted according to whether the LEM as a whole is a net consumer or net producer.
+
+This mechanism creates a price between the retail buying and selling alternatives, allowing both local buyers and sellers to potentially benefit from local trading.
+
+For prosumer \(n\), the paper defines the net-cost expression as
+
+\[
+r^{net}_{n,t}
+=\lambda_t^{L,b}[l_{n,t}]^+
++\lambda_t^{L,s}[l_{n,t}]^-
+-\left(\lambda_t^{F,u}FU^{pro}_{n,t}
++\lambda_t^{F,d}FD^{pro}_{n,t}\right).
+\]
+
+An EV departure penalty is added when the required commuting energy is not available.
+
+**Critical reading note:** the paper calls this quantity a *reward* and states that agents maximize cumulative reward, but the expression itself is written as a **net cost** (positive import cost minus revenues). As written, maximizing it would appear to favor a higher cost. The paper does not explicitly reconcile this sign convention. This may be a notation/sign issue in the manuscript or a difference between the written formulation and implementation, but it should not be silently corrected.
+
+### 7. MAAC — using attention to coordinate many heterogeneous agents
+
+The proposed method builds on the **Multi-Actor-Attention-Critic (MAAC)** architecture, which follows **Centralized Training and Decentralized Execution (CTDE)**.
+
+During training, each agent has its own actor and critic. Rather than feeding every other agent's full observation/action vector directly into agent \(n\)'s critic, MAAC learns a compressed, attention-weighted contribution from the other population:
+
+\[
+x_n=\sum_{j\ne n}\omega_j v_j.
+\]
+
+The attention weight \(\omega_j\) determines how strongly agent \(n\)'s critic should consider information associated with agent \(j\). Therefore, the critic can focus on the other agents that are most relevant to its value estimate instead of treating every agent equally.
+
+The paper argues that this helps with three problems:
+
+1. **non-stationarity:** other agents' behavior is incorporated into centralized training;
+2. **scalability:** the critic avoids direct concatenation of all raw observations/actions;
+3. **privacy:** the platform handles learned embeddings/contributions rather than requiring agents to directly exchange their full local physical information.
+
+### 8. MAAC-PER — prioritize informative experiences
+
+The paper further combines MAAC with **Prioritized Experience Replay (PER)**. Instead of sampling all historical experiences uniformly, experiences with larger Temporal-Difference (TD) errors are replayed more frequently.
+
+The sampling probability is
+
+\[
+P_l=\frac{p_l^{\beta_1}}{\sum_j p_j^{\beta_1}},
+\]
+
+where the priority is rank-based on the absolute TD error. Because prioritized sampling introduces bias, importance-sampling weights are applied during critic training.
+
+The intended effect is:
+
+**ordinary replay**  
+→ many low-information experiences repeatedly sampled  
+
+**PER**  
+→ more learning updates concentrated on experiences where the critic/policy has more to learn.
+
+The replay buffer is also shared across agents, increasing sample diversity and allowing experiences obtained by one agent to contribute to others' learning.
+
+### 9. Training and execution architecture
+
+![Centralized training and decentralized execution architecture of MAAC-PER. Source: Fig. 3 of Ye et al. (2023).](papers/p031-ye2023-madrl-lem/figures/ye2023_madrl_lem/fig3_maac_per_architecture.png){width=78%}
+
+During **centralized training**, each agent provides a learned embedding to the LEM environment/platform. Attention-derived population information contributes to critic updates. Actors and critics are trained using the shared prioritized replay buffer.
+
+During **decentralized execution**, the critics are no longer required. Each prosumer uses only its trained actor and its own local observation to determine actions. This is the key practical distinction between training and operation.
+
+### 10. Case study setup
+
+The case study uses a real-world Australian residential dataset and a large simulated LEM.
+
+- **Number of prosumers:** 300 residential prosumers.
+- **Data source:** Ausgrid residential demand and rooftop-PV dataset.
+- **Weather data:** Australian government open dataset.
+- **Time resolution:** 30 min.
+- **Coordination horizon:** 24 h / 48 periods.
+- **Dataset horizon:** one year.
+- **Testing:** one randomly selected day from each of 52 weeks, giving 52 test days.
+- **Training:** all remaining days.
+- **DER heterogeneity:** 80 HVAC-only; 80 HVAC+EV; 80 HVAC+PV+ES; 60 HVAC+EV+PV+ES.
+- **Retail import price:** Time-of-Use tariffs with summer/winter differentiation.
+- **Export price:** Australian Feed-in-Tariff, \$0.105/kWh.
+- **FS products:** Regulation Raise and Regulation Lower.
+- **Implementation:** Python / PyTorch.
+- **Hardware:** 6-core 2.60 GHz Intel Core i7-10750H CPU, 32 GB RAM.
+- **Optimizer:** Adam.
+- **Discount factor:** \(\gamma=0.99\).
+- **Soft-update rate:** \(\tau=10^{-3}\).
+- **Actor/critic:** two hidden layers with 100 hidden units.
+- **PER parameters:** \(\beta_1=0.6\), \(\beta_2=0.4\), buffer size \(10^4\).
+
+The paper does not report field deployment or hardware-in-the-loop validation; the study is simulation-based using real measured input data.
+
+### 11. Economic value of combining local trading and FS
+
+Four market designs are compared:
+
+| Case | Energy trading | FS provision |
+|---|---|---|
+| SILO | Each prosumer trades independently with supplier | No |
+| SILO + FS | Independent supplier trading | Individual FS provision |
+| LEM | Local energy trading | No |
+| LEM + FS | Local energy trading | Aggregated FS provision |
+
+The average daily economic results over the 52 test days are:
+
+| Case | Import cost ($) | Export revenue ($) | FS revenue ($) | Net cost ($) |
+|---|---:|---:|---:|---:|
+| SILO | 2060 | 187 | 0 | 1873 |
+| SILO + FS | 2210 | 212 | 1109 | 889 |
+| LEM | 1459 | 12 | 0 | 1447 |
+| LEM + FS | 1547 | 21 | 1033 | **493** |
+
+The mechanisms behind these results are important.
+
+#### Local energy trading
+
+Local trading increases collective self-consumption. One prosumer's excess PV can be consumed by another prosumer's flexible DER instead of being exported at a low tariff and later replaced by high-tariff imports. This reduces both imports and exports, but the import-cost reduction dominates because the import tariff is higher than the export tariff.
+
+#### Flexibility services
+
+When FS is enabled, some DER flexibility is deliberately reserved for FS instead of being used purely to flatten the local net-load profile. This can actually increase grid imports/export in some periods. However, the additional FS revenue is sufficiently large that total net cost falls.
+
+The key lesson is therefore:
+
+> **The operating schedule with the flattest local net demand is not necessarily the economically best schedule once flexibility itself has a market value.**
+
+From the reported Table II values, the combined LEM+FS case has a net cost about **73.7% lower than SILO** (derived from the paper's reported values), demonstrating the large combined value of the two market functions in this case study.
+
+### 12. Learning performance — why MAAC-PER matters
+
+The paper compares Concurrent learning, MAAC and MAAC-PER. Centralized learning and MADDPG are also attempted but cannot be successfully executed in the 300-agent setting because of computational intractability. Parameter sharing is excluded because it assumes homogeneous agents.
+
+Each method is trained using **10 random seeds**, with **10,000 episodes per seed**. Performance is evaluated on the 52-day test set every 100 episodes.
+
+![Learning curves for the LEM + FS case. Source: Fig. 7 of Ye et al. (2023).](papers/p031-ye2023-madrl-lem/figures/ye2023_madrl_lem/fig7_training_lem_fs.png){width=78%}
+
+The Concurrent method remains unstable and does not converge after 10,000 episodes because 300 agents independently update their policies, continuously changing the environment seen by the others.
+
+The reported final results are:
+
+| Case | Method | Net cost ($) | Training time (min) |
+|---|---|---:|---:|
+| LEM | Concurrent | 2041 | 388 |
+| LEM | MAAC | 1475 | 86 |
+| LEM | **MAAC-PER** | **1447** | **75** |
+| LEM | Theoretical benchmark | 1409 | — |
+| LEM + FS | Concurrent | 775 | 445 |
+| LEM + FS | MAAC | 504 | 99 |
+| LEM + FS | **MAAC-PER** | **493** | **85** |
+| LEM + FS | Theoretical benchmark | 477 | — |
+
+Relative to Concurrent learning, the authors report that MAAC-PER improves solution quality by **29.10% / 36.39%** and computational performance by **80.67% / 80.90%** in the LEM / LEM+FS cases.
+
+Most importantly, MAAC-PER remains close to the idealized centralized benchmark:
+
+- LEM: **2.70%** higher net cost than benchmark;
+- LEM + FS: **3.35%** higher net cost than benchmark.
+
+This comparison is central to the paper's argument: a practically implementable model-free/prosumer-centric scheme loses only a small amount of economic optimality relative to a benchmark that assumes perfect models, forecasts and centralized information.
+
+### 13. What this paper teaches
+
+#### Lesson 1 — local energy trading and flexibility provision should be co-optimized
+
+The same DER flexibility supports multiple market functions. Sequentially allocating flexibility to one market and then the other can miss better joint allocations.
+
+#### Lesson 2 — minimum local energy exchange is not the same as minimum economic cost
+
+Providing FS can make the LEM net-load profile less flat because flexibility is held back for an external service. If FS revenue is high enough, that schedule can still be economically superior.
+
+#### Lesson 3 — model-free does not mean physics-free
+
+The prosumer agent does not explicitly use DER equations when choosing actions, but the environment still enforces battery, EV and HVAC operating constraints. The physical model is moved from the decision algorithm into the environment.
+
+#### Lesson 4 — multi-agent coordination needs a mechanism for non-stationarity
+
+Independent agents make each other's environment continually change. Attention-based centralized training gives critics enough information about the population to stabilize learning, while decentralized actors retain local execution.
+
+#### Lesson 5 — DER flexibility is an opportunity cost
+
+A kW of battery/EV/HVAC flexibility used for collective self-consumption cannot simultaneously be fully sold as external FS. Market design therefore changes the physical schedule, not just the financial settlement.
+
+#### Lesson 6 — a small optimality gap may justify a much more practical architecture
+
+The learned method is slightly more expensive than the perfect-information centralized benchmark, but avoids many of the benchmark's information and forecasting requirements. In practical market design, implementation feasibility can be more important than achieving the mathematical optimum under unrealistic assumptions.
+
+### 14. Limitations and what remains unsolved
+
+#### A. Limitations explicitly stated or directly acknowledged by the paper
+
+1. **FS activation is not modeled.** Only forward trading of availability is considered; real-time utilization and utilization remuneration are excluded.
+2. **Generic FS representation.** The up-/down-FS formulation cannot represent special products such as dynamic frequency response or reactive-power management.
+3. **Theoretical benchmark is idealized.** It assumes perfect knowledge of DER operating models and accurate forecasts.
+4. **Some MADRL benchmarks are computationally infeasible at 300 agents.** Centralized learning and MADDPG cannot be executed successfully in the case study.
+
+The conclusion does not provide a detailed explicit future-work list beyond the above scope boundaries.
+
+#### B. Further research space visible from the formulation
+
+These are **further thoughts / possible extensions**, not claims made by the authors.
+
+1. **No explicit distribution-network constraints.** Local trading is represented through aggregate energy balance and prices rather than AC/linearized power flow, voltage limits, line congestion or losses. A LEM schedule that is economically feasible is therefore not automatically distribution-network feasible.
+2. **No endogenous FS market clearing or strategic bidding.** FS prices are external inputs from the ESO/DSO. Prosumers learn quantities, not strategic bids into a clearing mechanism.
+3. **No activation uncertainty.** Selling availability creates obligations if the service is called, but the model does not represent uncertain activation energy or state-recovery requirements.
+4. **Privacy is architectural rather than formally guaranteed.** The method reduces direct sharing of raw local information, but the paper does not provide differential-privacy, encryption or information-leakage guarantees. Learned embeddings and shared replay structures may still deserve privacy analysis.
+5. **Aggregate welfare is emphasized more than individual fairness.** The main reported economic metric is the total net cost of all 300 prosumers. The distribution of benefits across heterogeneous participants and individual-rationality/participation constraints are not the central focus.
+6. **EV departure feasibility is penalty-based.** Required EV energy at departure is penalized rather than enforced as a hard safety constraint in the model-free formulation. Safe RL or constrained RL could provide stronger feasibility guarantees.
+7. **Generalization is tested within one yearly dataset.** Test days are sampled from the same one-year data source used to construct the training set. Cross-year, cross-region and structural market-change generalization are not demonstrated.
+8. **Communication latency, failures and cyber-security are not modeled.** These issues could matter in a distributed real-time implementation.
+
+### 15. Critical reading — points worth checking before reusing the formulation
+
+#### 15.1 Potential reward-sign inconsistency
+
+The Markov Game section states that each agent aims to **maximize** cumulative reward. However, Eq. (37) is explicitly described as the prosumer's **net cost**, with import cost positive and energy/FS revenues reducing that quantity. Eq. (41) then adds a negative EV-violation penalty. Taken literally, maximizing the expression in Eq. (37) would increase cost rather than minimize it. The paper does not explain whether the implemented RL reward uses the negative of this cost. This should be verified before reproducing the method.
+
+#### 15.2 “Privacy-preserving” should be interpreted carefully
+
+The paper's privacy argument is based on avoiding direct exchange of raw observations/actions and using learned embeddings plus decentralized execution. It does not establish a formal privacy guarantee. Therefore, “privacy-preserving” here should not be interpreted as equivalent to cryptographic privacy or Differential Privacy (DP).
+
+#### 15.3 “Model-free” refers to agent decision-making, not the full simulator
+
+The agent does not know its DER models, but the environment explicitly uses those models to clip/project actions and update energy and temperature states. This is a legitimate model-free RL setup, but it is important not to interpret the whole system as model-independent.
+
+### 16. Research idea triggers
+
+#### Idea 1 — LEM + FS + network-constrained market clearing
+
+Extend the LEM from an aggregate energy balance to an explicit distribution network:
+
+**prosumer MADRL**  
+→ **local energy + FS bids**  
+→ **network-constrained clearing / DLMP**  
+→ voltage and line limits.
+
+This would test whether economically attractive flexibility schedules remain physically deliverable.
+
+#### Idea 2 — forward FS availability + uncertain real-time activation
+
+Add a second stage for actual FS activation. The learning problem would need to reserve sufficient state-of-charge/thermal margins under uncertain call probabilities, creating a natural stochastic or distributionally robust extension.
+
+#### Idea 3 — safe/constrained MADRL for hard service guarantees
+
+Replace penalty-only handling of critical constraints, especially EV departure energy, with Constrained Markov Decision Process (CMDP), safe RL or shielded/projection-based methods. This could provide explicit constraint-violation guarantees.
+
+#### Idea 4 — fairness-aware local energy and flexibility market
+
+The current case study mainly optimizes aggregate net cost. A natural extension is to combine system efficiency with benefit allocation, individual rationality or fairness metrics so that no subgroup consistently provides flexibility without adequate compensation.
+
+#### Idea 5 — adaptive / continual MADRL under market and population changes
+
+Test structural changes such as new prosumers joining/leaving, DER portfolio changes, tariff redesign, FS-price regime shifts or changing user comfort preferences. This would move from stationary offline training toward continual market adaptation.
+
+#### Idea 6 — privacy-quantified MARL
+
+Combine MAAC-style compressed coordination with formal privacy mechanisms such as DP, federated learning or secure aggregation, and explicitly quantify the trade-off between privacy loss, communication burden and market efficiency.
+
+#### Idea 7 — multi-market flexibility stacking
+
+Extend the two-function LEM to simultaneous participation in local energy, congestion management, balancing, reserve and possibly carbon/flexibility markets. The core question becomes how to allocate one physical unit of DER flexibility among competing revenue streams with different time scales and activation risks.
+
+### Problem-map tags
+
+**Problem-map tags:** `local electricity market` · `local energy trading` · `flexibility services` · `DER coordination` · `prosumer-centric control` · `multi-agent non-stationarity` · `scalability` · `privacy` · `time-coupled flexibility` · `joint market optimization` · `flexibility opportunity cost` · `model-free energy management` · `benefit allocation` · `network constraints` · `safe reinforcement learning`
+
+:::

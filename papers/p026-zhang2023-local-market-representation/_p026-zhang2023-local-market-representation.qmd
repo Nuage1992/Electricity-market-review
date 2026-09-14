@@ -1,0 +1,525 @@
+::: {.callout-note collapse="true" icon=false}
+## [P026] Zhang et al. (2023) — Extracting Umbrella Constraint-Based Representation of Local Electricity Markets
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1632–1641  
+**DOI:** 10.1109/TSG.2022.3166793  
+**Main topics:** local–wholesale market coordination · distributed energy resource aggregation · Temporal-Coupled Feasible Region (TCFR) · projection-based representation · Umbrella Constraint Identification (UCI) · Parallel UCI (P-UCI) · network constraints · temporal coupling · computational scalability
+
+### Quick takeaway
+
+This paper asks a very practical coordination question: **how can a local electricity market containing many Distributed Energy Resources (DERs) tell the wholesale market what it can reliably deliver without sending the full internal distribution-network model?** The difficulty is that the feasible exchange power at the Point of Common Coupling (PCC) is determined not only by network constraints, but also by intertemporal constraints such as Micro-Turbine (MT) ramping and Demand Response (DR) energy conservation.
+
+The authors represent the whole local market by a **Temporal-Coupled Feasible Region (TCFR)**. Any exchange trajectory inside this region can be supported by at least one feasible internal DER schedule. The TCFR is therefore an equivalent external description of the local market: the wholesale market can optimize over this condensed region instead of directly handling thousands of internal variables and constraints.
+
+The main computational idea has two layers. First, **Parallel Umbrella Constraint Identification (P-UCI)** removes constraints that never form an effective boundary of the original feasible set. Second, an **outer progressive approximation** repeatedly finds infeasible exchange points and cuts them away until the remaining polytope represents the TCFR. In the modified IEEE 33-bus case, the original 24-hour model contains 12,882 constraints; P-UCI retains 8,430 umbrella constraints, and the final TCFR is represented by only 192 constraints.
+
+The paper is especially useful as a study of **physical feasibility abstraction**. It is not mainly a pricing paper or a bidding-strategy paper. Its key contribution is to build a compact interface between a complex local distribution market and the wholesale market.
+
+### 1. Problem addressed — how to expose local-market flexibility without exposing the whole local model
+
+A local electricity market may contain photovoltaic (PV) units, micro-turbines, demand response and other time-varying resources. Internally, their operation is restricted by:
+
+- distribution-network power-flow and voltage constraints;
+- DER capacity and output limits;
+- intertemporal constraints, such as MT ramping;
+- demand-response constraints that couple decisions across time.
+
+The upper-level wholesale market does not need every internal variable. What it needs to know is:
+
+> **Which active/reactive power exchanges at the PCC are actually implementable by the local market?**
+
+A traditional generating unit can be summarized using relatively simple parameters such as minimum/maximum output and ramp rate. A local market is harder to summarize because many heterogeneous resources and network constraints jointly determine its operating flexibility.
+
+If the local market sends too little information, the wholesale market may schedule an exchange that the distribution system cannot physically realize. If it sends the complete internal optimization model, coordination becomes computationally heavy and may reveal unnecessary internal information.
+
+The paper therefore treats **equivalent feasible-region extraction** as the key interface problem between local and wholesale markets.
+
+### 2. Why existing approaches are not enough
+
+The paper divides existing coordination methods broadly into:
+
+1. **Iteration-based methods**, such as Lagrangian-relaxation-based coordination; and  
+2. **Projection-based methods**, which project the high-dimensional local feasible set onto the variables exchanged with the wholesale market.
+
+Projection-based methods are attractive because the local market can submit an equivalent model to the wholesale level and avoid repeated local–wholesale iterations during market coordination.
+
+The remaining difficulty is **temporal coupling**. Existing feasible-region methods can become expensive when the original model contains many time-linked DER constraints. A local market with DR, storage-like flexibility and ramp-limited generation is not simply a collection of independent hourly feasible intervals.
+
+The paper therefore focuses on two linked problems:
+
+- **representation problem:** derive a correct low-dimensional feasible region that preserves temporal coupling;
+- **computational problem:** remove redundant constraints and avoid exhaustive directional enumeration.
+
+### 3. Overall framework — from internal DER constraints to a wholesale-market interface
+
+The logic can be summarized as:
+
+```text
+Internal local-market model
+(network + DER + temporal constraints)
+                ↓
+Remove redundant internal constraints
+using P-UCI
+                ↓
+Project the remaining high-dimensional model
+onto PCC exchange variables
+                ↓
+Temporal-Coupled Feasible Region (TCFR)
+                ↓
+Wholesale market / ISO treats the local market
+as one aggregated feasible resource
+```
+
+The information boundary is important. The wholesale market sees a feasible envelope for exchange power rather than the detailed schedules of every DER and every internal network variable.
+
+The authors argue that this can reduce both computational burden and unnecessary disclosure of internal DER information. However, the paper does **not** formulate a cryptographic or Differential Privacy (DP) guarantee; its privacy benefit comes from sharing a condensed external representation instead of the full internal model.
+
+### 4. Temporal-Coupled Feasible Region (TCFR) — what exactly is being projected?
+
+The local electricity-market constraints are grouped into:
+
+- \(\Phi_L\): linearized power-flow, voltage, phase-angle and other network constraints;
+- \(\Phi_D\): DER capacity and other non-temporal operating limits;
+- \(\Phi_T\): temporal-coupled constraints, including DR and MT ramping constraints.
+
+The complete model is written compactly as
+
+\[
+\Phi_A=\{(x,y)\mid Ax+By\le b\},
+\]
+
+where:
+
+- \(x\) contains the variables used to represent the local market to the outside, i.e. the relevant PCC exchange variables;
+- \(y\) contains internal variables such as load, line-flow and DER operating variables.
+
+For a specified external exchange \(x\), the admissible internal schedules are
+
+\[
+Y(x)=\{y\mid By\le b-Ax\}.
+\]
+
+The TCFR is then the projection of the complete feasible set onto \(x\):
+
+\[
+R_{\mathrm{TC}}
+=\mathrm{Pr}_x(\Phi_A)
+=\{x\mid \exists y: Ax+By\le b\}
+=\{x\mid Dx\le d\}.
+\]
+
+This equation contains the central idea of the paper:
+
+> An exchange point \(x\) belongs to the TCFR only when at least one internal DER/network schedule \(y\) can realize it.
+
+Therefore, aggregation here does **not** mean simply adding installed MW or independent flexibility intervals. It means preserving the existence of a feasible internal realization.
+
+### 5. Feasibility diagnosis — finding exchange points that the local market cannot realize
+
+To test whether a candidate exchange \(x\) is feasible, the authors introduce nonnegative slack vectors and solve
+
+\[
+f(x)=
+\min_{y,v^{I},v^{O}\ge0}
+\mathbf{1}^{\top}v^{I}+\mathbf{1}^{\top}v^{O}
+\]
+
+subject to a relaxed form of the original internal constraints.
+
+Interpretation:
+
+- \(f(x)=0\): no forced relaxation is needed, so an internal feasible schedule exists;
+- \(f(x)>0\): some constraints must be violated/relaxed, so the exchange point is outside the true TCFR.
+
+The next question is more useful for region construction:
+
+> **What is the worst infeasible point inside the current candidate region?**
+
+The authors formulate this as a max–min problem. They then use duality, strong duality and complementarity conditions, followed by a Big-\(M\) linearization, to obtain a **Mixed-Integer Linear Programming (MILP)** diagnostic problem that can be handled by an off-the-shelf solver.
+
+The important conceptual point is not the full algebra. The diagnostic model acts as a **feasibility detector**: it searches the current outer approximation for the exchange point that is hardest for the internal DER system to realize.
+
+### 6. Outer progressive approximation — start large and cut away impossible exchange space
+
+The paper constructs the TCFR through an outer progressive approximation.
+
+The procedure is:
+
+1. Start from a reasonably large candidate region \(R_C\).
+2. Solve the diagnostic MILP to find the worst infeasible exchange point \(x^O\).
+3. If its infeasibility measure is zero, the current region contains no detected infeasible point and the algorithm stops.
+4. If \(x^O\) is infeasible, connect it to a known internal feasible point \(x^I\).
+5. Use dichotomy/bisection to locate a boundary point \(x^b\).
+6. Generate a new separating constraint (cut).
+7. Remove the infeasible part of \(R_C\) and repeat.
+
+Geometrically:
+
+```text
+large outer polytope
+      ↓
+find an impossible point
+      ↓
+locate the true boundary
+      ↓
+add one cut
+      ↓
+smaller polytope
+      ↓
+repeat until no infeasible point remains
+```
+
+This differs from simple directional enumeration. Instead of densely searching many directions in advance, the method uses detected infeasibility to decide where another boundary is needed.
+
+### 7. Parallel Umbrella Constraint Identification (P-UCI) — remove constraints that never matter
+
+Before repeated projection calculations, the authors reduce the original constraint set.
+
+An **umbrella constraint** is an effective constraint whose hyperplane can touch the feasible region while all other constraints remain satisfied. A redundant constraint lies away from the feasible boundary and therefore does not affect the final feasible set.
+
+For constraint \(j\), the method introduces a slack \(s_j\):
+
+\[
+s_j=
+\begin{cases}
+0, & \text{constraint }j\text{ is umbrella},\\
+>0, & \text{otherwise}.
+\end{cases}
+\]
+
+The geometric interpretation is intuitive:
+
+- \(s_j=0\): the constraint can become active on the feasible boundary;
+- \(s_j>0\): there is a positive distance between that constraint and the feasible region, so it is redundant for defining the boundary.
+
+A direct UCI formulation becomes very large. If the original problem has \(I\) variables and \(J\) constraints, the paper states that the combined UCI model contains \(J(I+1)\) variables and \(J(J+1)\) constraints.
+
+The proposed **Parallel UCI (P-UCI)** decomposes this into \(J\) independent Linear Programming (LP) subproblems. Each subproblem checks one constraint and contains only \(I+1\) variables and \(J+1\) constraints. Because these tests are independent, they can be solved in parallel.
+
+Why this matters:
+
+> Projection is expensive partly because the algorithm repeatedly carries constraints that never define the feasible boundary. P-UCI removes those constraints before the more expensive region-characterization stage.
+
+### 8. Modified Initial Space Generation (M-ISG) — a numerical detail that matters
+
+Theoretically, a sufficiently large initial outer region should contain the true TCFR. In practice, the authors report that an excessively loose initial region may lead to missed boundaries because of solver accuracy.
+
+They therefore propose **Modified Initial Space Generation (M-ISG)**, which solves directional optimization problems to construct an initial region closer to the true feasible set.
+
+A two-dimensional search direction is represented by
+
+\[
+\max \;
+x_1\cos\left(\frac{2i\pi}{N}\right)
++x_2\sin\left(\frac{2i\pi}{N}\right),
+\]
+
+subject to the local-market feasibility model.
+
+The paper reports:
+
+- a very large generic initial region can miss two TCFR boundaries;
+- \(N=4\) M-ISG directions still miss some constraints;
+- \(N=8\) retrieves **almost all** boundaries in the illustrated example.
+
+This is an important practical message: **a mathematically correct projection framework can still be sensitive to numerical initialization and solver tolerance.**
+
+### 9. Case study setup
+
+#### Modified IEEE 33-bus feeder
+
+- **Test system:** modified IEEE 33-bus distribution feeder.
+- **Horizon:** 24 hours.
+- **Time step:** 1 hour.
+- **Local resources explicitly used in the base case:** PV, MT and DR.
+- **MTs:** 5 units, each with 1 MW installed capacity.
+- **MT ramp rate:** 0.2 MW/h.
+- **PVs:** 7 units, each with 0.2 MW installed capacity.
+- **Software:** MATLAB R2016a Parallel Computing Toolbox.
+- **Solver:** IBM ILOG CPLEX 12.6.
+- **Computer:** Xeon Platinum 8160 CPU; the paper reports 3.50 GHz and 128 GB RAM.
+
+The paper also tests a realistic radial distribution network in the metropolitan area of Caracas.
+
+#### Caracas distribution network
+
+- **Nodes:** 141.
+- **Maximum active load:** 11.90 MW.
+- **Maximum reactive load:** 7.38 Mvar.
+- **PVs:** 80.
+- **MTs:** 20.
+
+The paper does not report a field deployment or Hardware-in-the-Loop (HIL) experiment. The validation is computational.
+
+### 10. Main findings
+
+#### 10.1 The local market's feasible exchange region changes strongly over the day
+
+The paper visualizes active/reactive feasible-region slices at 3:00, 8:00, 13:00, 18:00 and 23:00.
+
+- **3:00:** the region is small because load is low, DR adjustment capability is limited and PV output is zero.
+- **8:00:** increasing load and solar irradiance expand the feasible area.
+- **13:00:** the feasible region is largest; high load and solar production increase the operating range, while reverse power flow and line limits affect its shape.
+- **18:00:** lower PV output narrows active-power flexibility relative to 13:00.
+- **23:00:** lower nighttime load reduces the region again.
+
+The result shows why a fixed static aggregate capacity is insufficient: the local market's external flexibility depends on both resource availability and network conditions.
+
+#### 10.2 Temporal coupling changes the geometry of aggregate flexibility
+
+Because a 24-dimensional coupled region cannot be plotted directly, the paper shows a three-dimensional slice using active power at 11:00, 12:00 and 13:00.
+
+If the three periods were independent, their combined feasible set would be a box/cube. Instead, the TCFR is an irregular polyhedron.
+
+The cause is intertemporal physics and operational logic, particularly:
+
+- MT ramping constraints;
+- DR total-power/energy conservation across time.
+
+This is one of the most important results in the paper:
+
+> **Independent hourly flexibility regions can overstate what an aggregator can actually deliver across time.**
+
+#### 10.3 The proposed representation dramatically reduces the information exchanged upward
+
+For the 24-hour modified 33-bus case:
+
+| Representation stage | Number of constraints |
+|---|---:|
+| Original local-market scheduling problem | 12,882 |
+| After P-UCI | 8,430 |
+| Final projected TCFR | 192 |
+
+The final TCFR is therefore much more compact than the original local model.
+
+The paper states that P-UCI reduces the “calculation pressure” by about 40%. A simple comparison of the reported constraint counts, however, gives a reduction from 12,882 to 8,430 of about **34.6%**. The paper does not clarify whether “calculation pressure” refers to a broader computational measure rather than raw constraint count. This should therefore be treated as a wording/numerical point to check rather than silently reconciled.
+
+#### 10.4 P-UCI accelerates the feasible-region calculation without changing the region
+
+Three methods are compared:
+
+- **M1:** directional enumeration;
+- **M2:** proposed feasible-region characterization without P-UCI;
+- **M3:** proposed characterization with P-UCI.
+
+The reported pattern is:
+
+- with few enumeration directions, M1 is fast but inaccurate;
+- increasing the number of directions improves M1 accuracy but greatly increases computation time;
+- M3 is faster than M2;
+- M2 and M3 retain the same characterization accuracy because removing non-umbrella constraints does not change the true feasible boundary;
+- as the number/capacity of DERs increases, the number of effective TCFR boundaries grows and all methods require more computation.
+
+The text available in the paper establishes these trends, but this note does not reproduce every numeric entry in Table I.
+
+#### 10.5 DER capacity does not expand flexibility in a purely proportional way
+
+In the sensitivity analysis, increasing DER installed capacity generally enlarges the TCFR.
+
+However:
+
+- between approximately **0.64 MW and 2.56 MW**, the shape changes little;
+- when installed capacity exceeds **2.56 MW**, the shape begins to change;
+- the paper identifies a boundary that visibly restricts further expansion and estimates that it is associated with a line-security constraint.
+
+This demonstrates an important network effect:
+
+> More DER capacity does not automatically translate into proportional market flexibility. Once network constraints become active, the distribution grid limits how much of the additional resource can be exposed to the upper market.
+
+The authors also note that it is difficult to assign a single physical interpretation to an individual TCFR facet because projection can combine multiple original physical constraints into one aggregate boundary.
+
+#### 10.6 The method remains advantageous on the larger Caracas network
+
+For the 141-node Caracas case with 80 PVs and 20 MTs, computation becomes slower because of the larger system.
+
+The paper reports that, relative to M1 with 64 directional segments, the proposed method improves computational efficiency by **246.4%**.
+
+The paper does not define this percentage in a way that allows it to be safely converted into a unique “time reduction” or “speed-up factor”, so the reported 246.4% value should be preserved as stated.
+
+### 11. What this paper teaches
+
+#### Lesson 1 — Aggregation is a feasibility-preservation problem, not a capacity-addition problem
+
+A group of DERs cannot be represented correctly by simply summing maximum powers. The aggregate offer must guarantee that every accepted external exchange has at least one feasible internal realization.
+
+#### Lesson 2 — Temporal coupling must survive aggregation
+
+MT ramping and DR energy-conservation constraints connect different hours. Once these constraints are projected to the market interface, they create cross-time boundaries. Treating each hour independently can create infeasible wholesale schedules.
+
+#### Lesson 3 — The distribution network is part of market flexibility
+
+The sensitivity analysis shows that additional DER capacity eventually activates network-security limits. Therefore:
+
+```text
+installed DER capacity
+        ≠
+deliverable market flexibility
+```
+
+The network determines how much flexibility can actually reach the PCC.
+
+#### Lesson 4 — Redundant-constraint screening can be valuable before projection
+
+P-UCI is a preprocessing step, but it directly improves the efficiency of the more expensive feasible-region extraction. Removing constraints that never become active does not change the feasible set, yet reduces repeated computational work.
+
+#### Lesson 5 — Compact representation trades detail for a cleaner interface
+
+TCFR gives the wholesale market only the information needed for feasible coordination. This reduces model size and unnecessary internal disclosure.
+
+The trade-off is interpretability: a projected TCFR facet may combine several original constraints, making it difficult to say exactly which physical device or line “caused” that boundary.
+
+#### Lesson 6 — Numerical geometry matters
+
+The paper's M-ISG discussion is easy to overlook but important. A poor initial outer region can cause missed boundaries in finite-precision computation even when the theoretical framework is sound.
+
+### 12. Limitations / What remains unsolved
+
+#### A. Limitations or unresolved issues explicitly visible in the paper
+
+**1. Physical interpretation of projected boundaries is difficult.**  
+The paper explicitly states that a particular TCFR boundary is difficult to map back to one physical constraint because projection combines multiple original constraints.
+
+**2. Initial-space selection affects numerical boundary retrieval.**  
+The paper reports that a very large initial space can miss boundaries and that even \(N=4\) M-ISG is insufficient in the illustrated example. \(N=8\) retrieves “almost all” boundaries, rather than an explicitly proven complete set under finite solver tolerance.
+
+**3. Larger systems still require more computation.**  
+The Caracas case confirms that computation time increases with system scale, even though the proposed method is faster than the comparison method.
+
+**4. The paper does not give a detailed future-work agenda.**  
+Its conclusion mainly summarizes the proposed representation and its potential use by distribution utilities and Independent System Operators (ISOs).
+
+#### B. Further thought / possible extensions based on the model
+
+The points below are **not claims made by the authors**; they are natural extensions from the paper's formulation.
+
+**1. Deterministic TCFR → uncertainty-aware TCFR.**  
+PV output and load are treated through a deterministic feasible-set formulation. A natural extension is a Stochastic Optimization, Robust Optimization, Chance-Constrained Optimization or Distributionally Robust Optimization (DRO) representation that gives a confidence/risk meaning to the aggregate feasible region.
+
+**2. Linearized network model → AC / unbalanced distribution-network representation.**  
+The paper uses linearized power-flow constraints. For low-voltage or highly unbalanced systems, an AC or three-phase unbalanced feasible-region approximation with a quantified approximation error would be valuable.
+
+**3. Offline 24-hour representation → rolling/real-time update.**  
+The paper defines the local electricity market as a real-time market, while the main case constructs a 24-hour TCFR. A practical extension is a rolling-horizon TCFR that updates quickly as forecasts, DER availability and network topology change.
+
+**4. Structural information hiding → formal privacy protection.**  
+Sharing TCFR instead of the full internal model reduces disclosed information, but it is not a formal privacy guarantee. A future design could combine feasible-region exchange with differential privacy, secure multiparty computation or encrypted coordination while controlling the resulting feasibility error.
+
+**5. Compact boundary → interpretable boundary attribution.**  
+Because a projected facet mixes multiple physical constraints, dual-information or attribution methods could identify which lines, devices or intertemporal constraints dominate each aggregate boundary.
+
+**6. Feasible-region representation → bidding, pricing and strategic behavior.**  
+The current paper mainly solves the physical representation problem. A next step is to ask how a local market should bid a TCFR, how prices should be formed on its boundaries, and how market power or strategic misreporting of the feasible region should be controlled.
+
+**7. Upper-level dispatch → guaranteed fast disaggregation.**  
+Once the ISO selects a point/trajectory inside the TCFR, the local operator still needs an internal DER schedule. The paper establishes existential feasibility, but a practically useful market architecture could jointly design compact aggregation and fast schedule recovery/disaggregation.
+
+### 13. Research idea triggers
+
+#### Idea 1 — Distributionally robust TCFR for local–wholesale market coordination
+
+```text
+Deterministic TCFR
+        +
+PV/load forecast uncertainty
+        +
+Wasserstein DRO or joint chance constraints
+        ↓
+risk-guaranteed aggregate feasible region
+```
+
+Research question: *How should the TCFR shrink or reshape when the local operator requires a specified out-of-sample feasibility probability?*
+
+This directly extends the paper without changing its core representation philosophy.
+
+#### Idea 2 — TCFR + Distribution Locational Marginal Price (DLMP)
+
+P026 provides a **physical feasible interface**, but it does not develop detailed local price formation.
+
+A natural combined framework is:
+
+```text
+network- and time-coupled TCFR
+        ↓
+wholesale/local coordinated clearing
+        ↓
+DLMP / uncertainty price / flexibility price
+```
+
+Research question: *Can the shadow prices of TCFR boundaries be decomposed into network, temporal-flexibility and uncertainty components?*
+
+#### Idea 3 — Dynamic TCFR with incremental boundary updates
+
+Instead of reconstructing the entire feasible region whenever forecasts change:
+
+```text
+previous TCFR
+      +
+new PV/load forecast
+      +
+changed DER availability
+      ↓
+identify only affected umbrella constraints/facets
+      ↓
+fast updated TCFR
+```
+
+This is attractive for rolling-horizon and near-real-time market operation.
+
+#### Idea 4 — Interpretable aggregate flexibility boundaries
+
+Develop a method that maps each TCFR facet back to its dominant physical causes:
+
+- line congestion;
+- voltage constraint;
+- MT ramp;
+- DR energy budget;
+- DER capacity.
+
+This would make the aggregate market representation more useful for operators, because a boundary would not only say “cannot go further” but also explain **why**.
+
+#### Idea 5 — Strategic TCFR reporting and market power
+
+The method assumes that the local market submits its feasible region as a truthful technical representation.
+
+A market-design extension could study:
+
+- intentional shrinking of the declared feasible region;
+- strategic withholding of flexibility;
+- manipulation of aggregate boundaries;
+- auditing or incentive mechanisms that make truthful feasible-region reporting desirable.
+
+#### Idea 6 — Aggregation + exact/fast disaggregation as one design problem
+
+A strong extension would require that every wholesale schedule accepted inside the aggregate region can be converted into individual DER setpoints within a strict time limit.
+
+This connects market abstraction to real implementation:
+
+```text
+wholesale dispatch
+      ↓
+TCFR point
+      ↓
+fast internal disaggregation
+      ↓
+DER/network-feasible schedule
+```
+
+### 14. Critical reading notes
+
+- **Constraint-count wording:** the paper reports 12,882 original constraints and 8,430 after P-UCI, while describing the reduction in “calculation pressure” as about 40%. The raw count reduction is approximately 34.6%. The paper does not explain whether “calculation pressure” is intended to mean something broader than constraint count.
+- **Equation-reference issue:** in the prose explaining Fig. 3 and UCI, the paper states that \(s_j>0\) is forced “to satisfy Eq. (11)”. Eq. (11) belongs to the earlier strong-duality derivation, whereas the surrounding UCI discussion concerns Eqs. (15)–(17). This appears to be a possible equation-number reference inconsistency; it should not be silently corrected.
+- **Initialization sensitivity:** the paper says \(N=8\) retrieves “almost all” boundaries in the illustrated M-ISG test. This is weaker than a finite-precision guarantee that every boundary is recovered.
+- **246.4% efficiency statement:** the paper reports a 246.4% computational-efficiency improvement on the Caracas network but does not provide a sufficiently explicit definition in the surrounding text to translate this safely into a unique speed-up or percentage time saving.
+- **Privacy wording:** the conclusion states that DER users can avoid disclosure of private information by using the aggregate TCFR. This should be understood as reduced model-information disclosure; the paper does not provide a formal privacy metric or privacy-preserving protocol.
+
+**Problem-map tags:** `local–wholesale market coordination` · `flexibility aggregation` · `temporal coupling` · `feasible-region projection` · `network constraints` · `constraint redundancy` · `scalability` · `information disclosure` · `physical interpretability` · `real-time updating`
+
+<!--
+Recommended original-paper figures for this note:
+1. Fig. 2 — Illustration of the outer progressive approximation algorithm.
+2. Fig. 8 — Time coupled feasible region of local electricity market.
+3. Fig. 9 — Reduction in the number of constraints.
+
+These figures are intentionally not embedded here because the uploaded File Library PDF was readable for analysis but was not exposed as an extractable PDF binary in the artifact runtime. No redrawn or fabricated substitute is used.
+-->
+:::

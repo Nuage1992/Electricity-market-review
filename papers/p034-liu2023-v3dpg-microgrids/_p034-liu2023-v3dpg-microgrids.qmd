@@ -1,0 +1,384 @@
+::: {.callout-note collapse="true" icon=false}
+## [P034] Liu et al. (2023) — Reinforcement Learning-Based Energy Trading and Management of Regional Interconnected Microgrids
+
+**Journal:** IEEE Transactions on Smart Grid, 14(3), 2047–2059  
+**DOI:** 10.1109/TSG.2022.3214202  
+**Main topics:** regional interconnected microgrids; local hour-ahead market; wholesale market; double auction; multi-agent reinforcement learning; continuous actions; value decomposition; recurrent neural network; Burn-In initialization; energy storage; privacy; decentralized decision-making
+
+### Quick takeaway
+
+This paper studies how multiple interconnected microgrids (MGs) can jointly trade energy while each MG keeps autonomous control and only observes local information. Each MG must decide how much energy to trade, where to trade it, and at what local-market price before its current renewable generation and demand are known. This creates a coupled sequential decision problem: local trading, wholesale trading, and energy-storage operation affect one another, while forecast errors may leave an MG under- or over-supplied.
+
+The proposed **Value-Decomposition Deep Deterministic Policy Gradients (V3DPG)** method combines an Actor–Critic architecture with two additional ideas. First, a value-decomposition term couples the agents during training so that locally learned policies support a common regional objective without requiring each MG to directly use the raw observations and actions of all other MGs. Second, a Gated Recurrent Unit (GRU) layer with Burn-In initialization is embedded in the critic to learn temporal information implicitly from historical trajectories instead of explicitly forecasting demand and renewable generation as a separate intermediate step.
+
+The paper also treats the Energy Storage System (ESS) as a **virtual market** with an internal virtual energy price, so that stored energy has an economic value that evolves with charging history. In the experiments with three MGs, V3DPG achieves higher market rewards and lower imbalance penalties than independent Deep Deterministic Policy Gradient (DDPG) and Multi-Agent Deep Deterministic Policy Gradient (MADDPG) baselines. The paper is useful because it links **market design, storage valuation, partial observability, temporal prediction, and multi-agent cooperation** in one framework.
+
+### 1. Problem addressed — coordinated trading under local information and uncertain net demand
+
+The paper considers a regional system containing several interconnected MGs. Each MG has local renewable generation, non-dispatchable demand, and an ESS. It can obtain or sell energy through two coupled markets:
+
+- a **local hour-ahead market**, where MGs trade with one another; and
+- a **wholesale market**, where MGs trade with the external power plant/main grid.
+
+The difficult part is that the trading decision is made **before the current renewable generation and demand are revealed**. Therefore, an MG may buy too little, buy too much, sell too much, or fail to exploit a local trading opportunity. After the actual generation and demand become known, the ESS and a penalized spot transaction are used to restore energy balance.
+
+The central research problem is therefore not simply “how much should an MG buy?” It is:
+
+> How can multiple MGs learn continuous, privacy-conscious, cooperative trading policies using only local observations, while jointly reducing dependence on the wholesale market and managing storage under uncertain renewable generation and demand?
+
+### 2. Why existing approaches are not enough
+
+The paper identifies several limitations in previous work.
+
+**Model-based optimization requires information that may not be available.** Centralized, hierarchical, game-theoretical, and distributed optimization methods generally depend on mathematical system models, future information, or global coordination knowledge. The authors argue that this is difficult to maintain in a changing real system.
+
+**Single-agent RL ignores inter-MG coupling.** Energy trading among interconnected MGs is inherently multi-agent: the action of one buyer or seller changes local-market clearing and affects other agents.
+
+**Some multi-agent RL methods require global information during training.** In particular, the paper uses MADDPG as an example where critics use global states/actions, increasing computation and exposing private operational information.
+
+**Separate forecasting creates an additional error channel.** Earlier approaches predict demand or renewable generation first and then feed those predictions into the policy. The authors argue that the intermediate forecast error can propagate into the trading decision.
+
+**Discrete-state/action methods are difficult to apply to continuously traded energy.** Trading quantity and intended price are naturally continuous. The proposed method therefore uses an Actor–Critic structure suitable for continuous state and action spaces.
+
+### 3. Regional two-market architecture
+
+![Regional interconnected MG trading structure. Source: Fig. 1 of Liu et al. (2023).](papers/p034-liu2023-v3dpg-microgrids/figures/liu2023_v3dpg_microgrids/fig1_regional_mg_trading.png){width=78%}
+
+Each MG contains local demand, renewable generation, and an ESS. A non-profit regional trading center operates the local hour-ahead market using a double-auction mechanism. The MGs also retain access to the wholesale market.
+
+The sequence in each time interval is approximately:
+
+**local observation/history**  
+→ **MG submits intended price and trading quantities**  
+→ **double auction determines local clearing price and actual local trade**  
+→ **remaining intended trade is handled by the wholesale market**  
+→ **actual renewable generation and demand become known**  
+→ **ESS charges/discharges**  
+→ **remaining imbalance is settled through penalized spot trading**.
+
+This timing is important: the RL policy acts before the current-period generation and demand are known, so the policy must learn from history rather than react to perfect contemporaneous information.
+
+### 4. Local hour-ahead market — continuous bids and double auction
+
+Each MG chooses an intended action
+
+\[
+a_i^t=(\lambda_i^t,x_i^t,e_i^t),
+\]
+
+where:
+
+- \(\lambda_i^t\) is the intended local-market trading price;
+- \(x_i^t\) is the intended total trading volume across both markets; and
+- \(e_i^t\) is the intended local hour-ahead trading volume.
+
+Positive \(e_i^t\) denotes buying and negative \(e_i^t\) denotes selling.
+
+Buy bids are ordered from high to low price, while sell bids are ordered from low to high price. The local market clearing price is taken from the buyer/seller intersection and is calculated as
+
+\[
+\hat\lambda^t=\frac{b^t+s^t}{2},
+\]
+
+where \(b^t\) and \(s^t\) are the relevant marginal buy and sell prices around the clearing point.
+
+The actual local trading amount \(q_i^t\) may differ from the intended amount because the collective bids must clear and because line congestion is considered. The unfilled part of the intended total trade is handled through the wholesale market:
+
+\[
+x_i^t=q_i^t+p_{W,i}^t.
+\]
+
+The authors constrain local bid prices so that local exchange is economically preferable to buying from or selling to the external plant.
+
+### 5. Energy balance and penalized imbalance settlement
+
+After market trading, the actual current-period renewable output \(g_i^t\) and demand \(d_i^t\) are observed. Energy balance is written as
+
+\[
+d_i^t=g_i^t+\hat x_i^t-p_{ES,i}^t+k_i^t,
+\]
+
+where \(\hat x_i^t\) is the energy actually received after network losses, \(p_{ES,i}^t\) is ESS charging/discharging energy, and \(k_i^t\) is the residual under- or over-supply.
+
+The ESS is used first to absorb surplus or cover shortage subject to its state-of-charge and charging/discharging limits. Any remaining \(k_i^t\) is settled in the wholesale market at deliberately unattractive spot prices:
+
+\[
+c_u^t=(1+\beta)\lambda_{W,+}^t,
+\qquad
+c_o^t=(1-\beta)\lambda_{W,-}^t.
+\]
+
+This penalty mechanism gives the agent an economic reason to improve its intended trading decisions rather than relying on balancing after uncertainty is revealed.
+
+### 6. ESS as a virtual market — assigning an internal value to stored energy
+
+A distinctive part of the paper is that the ESS is treated as a **virtual market**. The state includes a virtual ESS price \(\lambda_{V,i}^t\), representing the unit value of the energy currently stored.
+
+The virtual price is updated according to the previous stored-energy value and the source of newly charged energy. For example, energy charged from local surplus is valued differently from energy bought from the wholesale market. When the ESS discharges, its stored energy retains its internal valuation.
+
+The intended economic behavior is:
+
+- charge when the internal value of stored energy is attractive relative to market conditions;
+- discharge when stored energy has greater value in meeting load or selling at a favorable price; and
+- avoid unnecessary spot-market correction.
+
+This is more informative than using SOC alone because two batteries with the same SOC can contain energy accumulated under different economic conditions.
+
+### 7. Decentralized Partially Observable MDP
+
+The interconnected MG problem is formulated as a **Decentralized Partially Observable Markov Decision Process (DecPOMDP)**. Each MG has a local observation rather than the full global state.
+
+For MG \(i\), the observation is
+
+\[
+s_i^t=
+(d_i^{t-1},g_i^{t-1},SOC_i^{t-1},\hat\lambda^{t-1},\lambda_{V,i}^{t-1}).
+\]
+
+Thus, the actor does not observe the current \(d_i^t\) or \(g_i^t\) before deciding. It only knows the previous demand, previous renewable production, ESS state, previous local clearing price, and ESS virtual price.
+
+The actual environment action after local-market clearing is
+
+\[
+z_i^t=(\hat\lambda^t,q_i^t,p_{W,i}^t).
+\]
+
+This distinction between **intended action** and **actual executed market action** is important: a market participant does not control the final clearing result by itself.
+
+### 8. Reward design — local economics plus imbalance and ESS incentives
+
+The reward contains several components:
+
+\[
+r_i^t=ho_i^t+\zeta_i^t+\varpi_i^t+\tau_i^t+\xi_i^t+\sigma_i^t+\upsilon_i^t.
+\]
+
+Conceptually, they capture:
+
+- revenue/cost from local-market trading;
+- revenue/cost from scheduled wholesale trading;
+- penalty for the difference between intended and cleared local trade;
+- penalty for violating the minimum ESS level;
+- under-supply and over-supply settlement after energy management; and
+- a virtual ESS revenue/cost term based on the difference between market prices and the virtual storage price.
+
+The reward is therefore designed not only to minimize immediate purchase cost, but also to teach the policy to make realistic forward trading decisions and use storage economically.
+
+### 9. V3DPG — value decomposition added to continuous Actor–Critic learning
+
+![Value-decomposition Actor–Critic architecture of V3DPG. Source: Fig. 3 of Liu et al. (2023).](papers/p034-liu2023-v3dpg-microgrids/figures/liu2023_v3dpg_microgrids/fig3_v3dpg_architecture.png){width=80%}
+
+Each MG has its own actor and critic. The actor uses local information to generate the continuous intended trading action. The critic evaluates the local state-action value.
+
+The cooperative element comes from value decomposition. Inspired by Value-Decomposition Networks (VDN), the paper assumes the total action value can be approximated as
+
+\[
+Q_{total}(s^t,a^t)=\sum_{i=1}^{N}Q_i(s_i^t,a_i^t).
+\]
+
+The critic loss contains both:
+
+1. an individual temporal-difference error for each agent; and
+2. a total value-decomposition error that forces the sum of local critics to be consistent with the global cooperative return.
+
+A simplified representation is
+
+\[
+L(\omega_i)
+\sim
+(y_i-Q_i)^2
++
+\frac{1}{N}
+\left(y_{total}-\sum_iQ_i\right)^2.
+\]
+
+This is the mechanism that connects otherwise independent agents during learning. The authors' goal is to obtain cooperation without requiring every MG's actor to directly consume the raw states/actions of all other MGs.
+
+The paper also notes that **QMIX** could replace simple additive VDN-style decomposition when nonlinear relations among agents need to be represented more accurately.
+
+### 10. RNN critic and Burn-In — implicit prediction without an explicit forecasting module
+
+Demand and renewable generation are temporal signals. Instead of building a separate forecast model and passing its point predictions into the controller, the paper places a GRU recurrent layer inside each critic.
+
+The critic therefore learns a hidden temporal representation from historical trajectories. The paper calls this **implicit prediction**: the GRU does not explicitly output tomorrow's/hour-ahead demand or renewable generation. Rather, predictive information is embedded in the critic's hidden features and influences how the actor is trained.
+
+Because V3DPG is off-policy, randomly sampled replay data may be inconsistent with the current recurrent hidden state. The paper therefore uses **Burn-In initialization**. Two consecutive episodes are stored together: the first is replayed to reconstruct an appropriate hidden state, while the second is used for gradient updates.
+
+This matters because a poorly initialized recurrent state can make the critic evaluate an otherwise good action incorrectly.
+
+### 11. Case study and implementation
+
+The test system contains **three interconnected MGs**. Real demand and solar-generation data come from **300 Ausgrid solar homes**, split into three groups of 100 homes. Wind-generation data from **Elia** are added to selected MGs to create more diverse generation profiles and therefore more opportunities for inter-MG trade.
+
+Key MG settings reported in Table II include:
+
+| MG | Renewable type | \(d^{max}\) | \(g^{max}\) | \(SOC^{max}\) | \(SOC^{min}\) | ESS charge/discharge limit |
+|---|---|---:|---:|---:|---:|---:|
+| 1 | Wind + solar | 150 | 200 | 250 | 50 | ±80 MWh |
+| 2 | Solar | 150 | 170 | 200 | 30 | ±60 MWh |
+| 3 | Wind | 150 | 170 | 200 | 40 | ±70 MWh |
+
+The trading horizon is one day with **24 hourly time steps**. Wholesale price data originate from 2010–2013 New South Wales AER weekly market-price data; the paper generates daily prices by adding Gaussian noise with variance 0.2. The first two years are used for training and the remaining year for testing.
+
+Selected implementation settings include:
+
+- \(\alpha=0.3\) for wholesale buy/sell price spread;
+- \(\beta=0.5\) for imbalance penalty pricing;
+- charging/discharging efficiency \(\eta_{ch}=\eta_{dis}=0.98\);
+- ESS degradation/leakage parameter \(l_e=0.02\);
+- network loss coefficient \(l_s=0.05\);
+- actor and critic: two hidden layers;
+- critic: additional GRU layer;
+- training: 5,000 episodes;
+- evaluation every 1,000 episodes;
+- convergence comparison over 9 random seeds.
+
+Baselines are independent **DDPG**, **MADDPG**, and a random policy. Two ablations are also used: **V3DPG_NR** removes the recurrent layer, while **V3DPG_NH** retains the RNN but removes the hidden-state recovery/Burn-In procedure.
+
+### 12. Main findings
+
+#### 12.1 V3DPG converges faster and reaches the highest reward
+
+The reward curves show that the learning methods improve slowly during the first ~1,000 episodes, accelerate around 2,000 episodes, and approach stable behavior after approximately **4,000 episodes**. V3DPG reaches the highest steady reward and converges faster than the compared methods.
+
+The two ablations are also informative: V3DPG without recurrent modeling performs worst among the V3DPG variants, while using the RNN without proper hidden-state reconstruction improves performance but remains below the complete method. This supports the paper's claim that both temporal representation and Burn-In matter.
+
+#### 12.2 Learned local-market prices reflect each MG's energy position
+
+The intended bid-price distributions differ among MGs. MG1 is more frequently a seller, MG3 is more frequently a buyer, and MG2 is more balanced. This indicates that the policy learns distinct bidding behavior from heterogeneous generation-demand patterns rather than converging to one common bid rule.
+
+#### 12.3 V3DPG reduces dependence on the wholesale market
+
+![Average local/wholesale-market reward components under V3DPG, DDPG, and MADDPG. Source: Fig. 11 of Liu et al. (2023).](papers/p034-liu2023-v3dpg-microgrids/figures/liu2023_v3dpg_microgrids/fig11_market_reward_comparison.png){width=72%}
+
+The authors report that V3DPG's **total wholesale-market reward is about 13% higher than DDPG and about 4.1% higher than MADDPG**. They attribute this to better exploitation of market price spreads and better timing of wholesale sales.
+
+For the local hour-ahead market, V3DPG obtains a trading reward approximately **31.2% higher than DDPG**, which the authors interpret as stronger local cooperation and more active intraregional energy exchange.
+
+The important mechanism is not simply “buy less from the wholesale market.” The learned policy combines local exchange, scheduled wholesale trade, ESS operation, and penalized balancing so that external-market dependence is reduced while profitable selling opportunities are still used.
+
+#### 12.4 Recurrent modeling reduces imbalance volumes
+
+The weekly penalized buy/sell volumes are closest to zero under the complete V3DPG method. Removing the RNN gives the largest mismatch, while retaining the RNN without Burn-In is intermediate. The authors therefore argue that temporal information in the critic improves the accuracy of intended forward trading volumes.
+
+### 13. Why the proposed method works
+
+The method combines several mechanisms that solve different parts of the problem:
+
+**Actor–Critic → continuous market decisions.** Intended bid prices and quantities do not need to be discretized.
+
+**Value decomposition → cooperative learning.** The agents retain local actors/critics, but the training loss also rewards consistency with regional performance.
+
+**GRU critic → temporal information.** Historical demand and renewable patterns influence value estimation without creating a separate forecast variable.
+
+**Burn-In → reliable recurrent replay.** Reconstructing hidden states makes off-policy recurrent training more consistent.
+
+**Virtual ESS price → intertemporal storage valuation.** The policy sees not only how much energy is stored, but also an internal representation of its economic value.
+
+**Penalty settlement → learning pressure against forecast/trading errors.** Incorrect forward trades are deliberately made economically unattractive.
+
+### 14. What this paper teaches
+
+#### Lesson 1 — Market action and market outcome are not the same thing
+
+An MG chooses a bid, but the double auction and network limits determine the actual cleared transaction. For learning-based electricity-market models, the environment should therefore include the clearing mechanism rather than treating the agent's bid as the final dispatch.
+
+#### Lesson 2 — Cooperation does not necessarily require one global actor
+
+Value decomposition can connect local learning objectives to a regional objective while leaving each actor dependent only on local observations during execution.
+
+#### Lesson 3 — Prediction can be embedded inside value learning
+
+Instead of **forecast → controller**, this paper uses **history → recurrent critic → policy learning**. This reduces dependence on an explicit point-forecasting interface, although it also makes the learned predictive information less interpretable.
+
+#### Lesson 4 — Storage has both a physical state and an economic state
+
+SOC describes physical availability; the virtual ESS price describes the economic value of the stored energy. This separation is useful whenever storage is charged from energy with different opportunity costs.
+
+#### Lesson 5 — Local trading value comes from diversity
+
+If all MGs have the same PV profile and similar demand, they may all want to buy or sell at the same time, leaving little room for local exchange. The paper deliberately introduces wind-generation diversity to create complementary positions among MGs.
+
+### 15. Critical reading
+
+**Gradient-update sign in Eq. (35).** The paper states that the critic loss is minimized but writes the parameter update as \(\omega_i\leftarrow\omega_i+l_c\nabla_{\omega_i}L(\omega_i)\). Standard gradient descent on a loss would normally use a minus sign. The paper does not explain this sign choice, so it should not be silently corrected when reproducing the method.
+
+**Wholesale buy/sell terminology around the virtual ESS price appears inverted in the prose.** In the nomenclature, \(\lambda_{W,+}\) is the wholesale **buying** price and \(\lambda_{W,-}\) is the wholesale **selling** price. However, the explanation around Eq. (23) refers to \(\lambda_{W,-}\) as a purchase price and \(\lambda_{W,+}\) as a sale price in two places. The equations and nomenclature should therefore be checked carefully in any implementation.
+
+**“Privacy” is architectural rather than formally guaranteed.** The method avoids giving each local policy all other MGs' raw observations/actions, but the paper does not provide differential privacy, encryption, secure aggregation, or an information-leakage analysis. It is safer to interpret the claim as **reduced information sharing**, not a formal privacy guarantee.
+
+**Network modeling is simplified.** Congestion is represented through line current limits and participation factors, with a fixed network-loss coefficient. The model does not perform a detailed AC distribution power flow with voltage/reactive-power constraints.
+
+### 16. Limitations / what remains unsolved
+
+#### A. Explicitly stated or directly acknowledged by the paper
+
+- The authors describe RL-based MG energy trading as still being at an early stage rather than presenting the framework as a complete practical solution.
+- Remark 1 explicitly notes that **QMIX** could replace the additive VDN formulation when nonlinear inter-agent relations need to be represented more accurately.
+- The paper focuses on the proposed trading/management mechanism and does not present a field or hardware-in-the-loop validation.
+
+#### B. Further research space visible from the model
+
+These are **further thoughts / possible extensions**, not claims made by the paper.
+
+- **Explicit network physics:** replace participation-factor congestion checks with linearized or AC distribution power flow, voltage limits, reactive power, and network losses.
+- **Uncertainty and risk:** the recurrent critic learns uncertainty implicitly, but there is no explicit chance constraint, robust guarantee, Conditional Value at Risk (CVaR), or Distributionally Robust Optimization (DRO) layer.
+- **Flexible demand:** demand is assumed non-dispatchable. Adding demand response, EVs, HVAC, or industrial loads would increase both flexibility and coordination complexity.
+- **Storage degradation:** a leakage/degradation parameter is used in the SOC model, but a cycle-dependent degradation cost or lifetime model is not included in the market objective.
+- **Scalability:** only three MGs are tested. The performance of additive value decomposition and the trading center with tens or hundreds of heterogeneous MGs is not demonstrated.
+- **Strategic market behavior:** the double auction is embedded as a rule, but incentive compatibility, market power, manipulation, and truthful bidding are not studied.
+- **Price realism:** wholesale prices are derived from weekly historical data and perturbed with Gaussian noise rather than using a fully aligned hourly real-time market dataset.
+- **Communication failures/delay:** local autonomy is emphasized, but communication latency, packet loss, cyberattacks, and stale market information are not modeled.
+- **Interpretability of implicit prediction:** the GRU learns temporal features, but the framework cannot directly report forecast distributions or confidence intervals for generation and demand.
+
+### 17. Research idea triggers
+
+#### Idea 1 — V3DPG + network-constrained local electricity market
+
+Replace the simplified congestion model with branch-flow or AC constraints and study whether decentralized continuous bidding remains feasible under voltage and thermal limits. The market-clearing layer could return network-aware prices or feasibility corrections to the agents.
+
+**Problem × Network:** local trading + physical distribution feasibility.
+
+#### Idea 2 — Implicit recurrent prediction + explicit risk protection
+
+Keep the recurrent critic for feature learning but add a probabilistic uncertainty head or conformal/quantile predictor. The market policy could then optimize expected return while enforcing a chance constraint or CVaR limit on imbalance purchases.
+
+**Problem × Uncertainty:** implicit forecasting + explicit risk guarantee.
+
+#### Idea 3 — Storage virtual price + degradation-aware valuation
+
+Extend the virtual ESS price so that one stored MWh carries not only its energy opportunity cost but also an incremental degradation cost. This would test whether the current framework overuses storage when market spreads are high.
+
+**Problem × Storage:** economic state of stored energy + lifecycle cost.
+
+#### Idea 4 — VDN → QMIX / attention-based coordination
+
+The paper itself suggests QMIX for nonlinear inter-agent relations. A stronger extension is to compare additive VDN, QMIX, and attention-based critics as MG number and heterogeneity increase.
+
+**Problem × Scalability:** cooperative value representation for many heterogeneous MGs.
+
+#### Idea 5 — Local market + real-time balancing / multi-timescale trading
+
+The current structure combines a local hour-ahead market with wholesale settlement. A natural extension is a multi-timescale design with day-ahead scheduling, hour-ahead local trading, and real-time balancing under rolling forecasts.
+
+**Problem × Time scale × Market:** hierarchical trading and receding-horizon correction.
+
+#### Idea 6 — Privacy-preserving cooperative RL
+
+Add secure aggregation, federated critics, or differential privacy and quantify the trade-off among privacy, communication, convergence, and market efficiency.
+
+**Problem × Privacy:** reduced-information architecture → formal privacy protection.
+
+### 18. Connection to the emerging literature map
+
+This paper sits at the intersection of several recurring Smart Grid problems:
+
+- **P031-type question:** how can multiple autonomous energy actors cooperate without a centralized dispatcher?
+- **P033-type question:** how can RL manage energy and flexibility under time-varying conditions?
+- **P032-type question that remains open here:** how should the gains from regional cooperation be allocated fairly across MGs?
+
+Its distinctive contribution is the combination of **continuous double-auction decisions + storage valuation + recurrent implicit prediction + value-decomposed cooperative RL**.
+
+**Problem-map tags:** `interconnected microgrids` · `local energy trading` · `double auction` · `wholesale-market dependence` · `partial observability` · `renewable uncertainty` · `multi-agent cooperation` · `continuous bidding` · `storage valuation` · `imbalance penalty` · `privacy` · `network congestion` · `scalability`
+
+:::

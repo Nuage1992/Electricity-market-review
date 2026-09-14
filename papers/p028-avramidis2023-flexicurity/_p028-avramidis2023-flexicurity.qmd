@@ -1,0 +1,581 @@
+::: {.callout-note collapse="true" icon=false}
+## [P028] Avramidis and Takis-Defteraios (2023) — Flexicurity: Some Thoughts About a Different Smart Grid of the Future
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1333–1336  
+**DOI:** 10.1109/TSG.2022.3220053  
+**Paper type:** IEEE Letter / perspective article rather than an optimization or empirical case-study paper  
+**Main topics:** flexicurity · electricity-market reform · flexibility and security co-procurement · ancillary services · reserve over-procurement · RES curtailment · battery storage · demand response · European power system · 2050 transition
+
+### Quick takeaway
+
+This paper is not mainly about a new algorithm. It asks a more fundamental market-design question:
+
+> **Are current electricity markets separating "flexibility" and "security" too strongly, even though the two are physically and economically interdependent?**
+
+The authors argue that the European power system is simultaneously experiencing high Renewable Energy Source (RES) penetration, increasing curtailment, weakening inertia, network congestion, reserve over-procurement, price cannibalization, and slow deployment of flexible resources such as batteries and Demand Response (DR). In their view, existing market arrangements respond to these problems through many separate products, auctions, procurement timelines, and operator interventions. This can create inefficient asset use and can prevent potentially valuable resources from participating across several services.
+
+The paper therefore introduces the concept of **flexicurity**: flexibility and security should be evaluated and potentially procured as a more unified, malleable service. The proposed idea is deliberately high-level. The authors do **not** provide a formal market-clearing model, pricing mechanism, optimization formulation, or field trial. Instead, the letter is best read as a **problem-framing paper** that identifies industrial concerns and proposes a new market-design research agenda.
+
+Its main value for a literature review is therefore not a numerical result, but a change in perspective: future grids may need to value an asset not only by how much energy or reserve it can provide, but by the **combined flexibility and security services it can deliver to the system**.
+
+### 1. Problem addressed — current market design does not match the physical needs of a high-RES grid
+
+The paper starts from the observation that the European power system is changing faster than the market architecture that governs it.
+
+Higher RES penetration creates several interacting problems:
+
+- variable and less controllable generation increases balancing needs;
+- conventional generators may remain online at inefficient partial-loading conditions to provide security and reserves;
+- inverter-based generation reduces synchronous inertia and can increase frequency sensitivity;
+- network congestion and voltage problems become more important;
+- RES can be curtailed because the grid cannot absorb all available production;
+- negative prices and price cannibalization can reduce producer revenues;
+- batteries and demand response remain much less deployed than their technical flexibility potential would suggest.
+
+The authors' central concern is that these problems are often treated separately:
+
+```text
+energy market
++ balancing products
++ reserve markets
++ congestion management
++ network reinforcement
++ stability/security measures
+```
+
+while the physical grid experiences them simultaneously.
+
+The proposed research question is therefore:
+
+> **Can flexibility and security be co-managed through a more unified market framework rather than through many fragmented products and interventions?**
+
+### 2. Why the authors believe current approaches are not enough
+
+The paper highlights four operational and market-design problems.
+
+#### 2.1 Copper-plating — markets may clear without fully reflecting network constraints
+
+The authors use **copper-plating** to describe the simplified treatment of the network in zonal market clearing. If internal network constraints are not represented directly in clearing, Transmission System Operators (TSOs) may need additional redispatch or other interventions after the market clears.
+
+The paper notes that both ENTSO-E and the United Kingdom were examining more network-aware, Optimal Power Flow (OPF)-based or nodal approaches, although it explicitly does not attempt to resolve the zonal-versus-nodal pricing debate.
+
+#### 2.2 Gold-plating — risk aversion may produce excessive network investment
+
+**Gold-plating** refers to over-investment in network infrastructure, with costs ultimately transferred to customers.
+
+The authors do not argue that every reinforcement is unnecessary. Their point is that System Operators (SOs) bear a large share of the operational risk associated with network failure, which can encourage conservative decisions. Conversely, postponing reinforcement too long can also increase the cost of later congestion-management interventions.
+
+The underlying problem is therefore a difficult trade-off:
+
+```text
+reinforce too early / too much
+          ↕
+manage constraints operationally
+          ↕
+reinforce too late / too little
+```
+
+#### 2.3 Reserve over-procurement — much more capacity is procured than activated
+
+Using European ancillary-service data for an average day in 2021–2022, Table I reports very low utilisation factors:
+
+| Product | Utilisation factor |
+|---|---:|
+| Frequency Containment Reserve (FCR) | 4.65% |
+| automatic Frequency Restoration Reserve (aFRR) | 3.75% |
+| manual Frequency Restoration Reserve (mFRR) | 2.79% |
+| Replacement Reserve (RR) | 1.74% |
+
+The authors interpret these low activation levels as evidence that a very large share of procured ancillary-service capacity is ultimately unused.
+
+Their concern is not only procurement cost. Capacity committed to reserve products may also be unavailable for other market opportunities, depending on product rules and timing.
+
+A critical point, however, is that **low activation does not automatically prove that reserve procurement is economically excessive**: reserves partly exist to protect against low-probability events. The paper presents an industry-oriented criticism rather than a formal reliability-cost optimization demonstrating the optimal reserve quantity.
+
+#### 2.4 RES curtailment — renewable capacity exists but cannot always be used
+
+The paper reports that average curtailment rates can range from approximately 1% to 25%, with instantaneous curtailment reaching 40%–70% in some cases.
+
+It also cites an ENTSO-E estimate that yearly curtailment attributable solely to transmission-capacity deficits exceeded 156 TWh in a 2019 report.
+
+Table II gives ENTSO-E estimates for 2040 RES curtailment under business-as-usual conditions:
+
+- **Total average curtailment:** 395 TWh;
+- **Total maximum curtailment:** 810 TWh.
+
+The authors use these numbers to argue that simply installing more RES is not sufficient. Grid flexibility, security, transmission capacity, and market design determine how much renewable energy can actually be utilized.
+
+### 3. European asset landscape — installed share is not the same as system value
+
+Figure 1 compares major energy assets along two conceptual dimensions:
+
+- contribution to **flexibility**;
+- contribution to **security**.
+
+![Illustrative positioning of major European power-system assets by flexibility and security potential. Source: Fig. 1 of Avramidis and Takis-Defteraios (2023).](papers/p028-avramidis2023-flexicurity/figures/avramidis2023_flexicurity/fig1_european_grid_flexicurity.png){width=78%}
+
+The 2022 shares shown in the figure are approximately:
+
+- coal and gas: 36.82%;
+- renewables: 31.45%;
+- hydro: 17.65%;
+- nuclear: 11.96%;
+- biomass: 1.79%;
+- demand response: 0.22%;
+- batteries: 0.11%.
+
+The figure is important for interpretation, but the caption explicitly states that the flexibility/security ranking is **illustrative** and represents potential under full deployment rather than current penetration.
+
+The authors' argument is that the technologies with the greatest potential to change grid operation — particularly battery storage and demand response — had very small active shares, even though they can offer substantial operational flexibility.
+
+### 4. From separate flexibility and security products to "flexicurity"
+
+The conceptual contribution of the paper is the term **flexicurity**, meaning the joint consideration of:
+
+- **flexibility**, which the authors associate more closely with efficient market operation; and
+- **security**, which they associate with the technical conditions required for reliable grid operation.
+
+Figure 2 visualizes this distinction.
+
+![Conceptual decomposition of grid flexibility and grid security that together form "grid flexicurity". Source: Fig. 2 of Avramidis and Takis-Defteraios (2023).](papers/p028-avramidis2023-flexicurity/figures/avramidis2023_flexicurity/fig2_flexicurity_concept.png){width=80%}
+
+On the flexibility side, the figure distinguishes capabilities such as:
+
+- ramp-rate capability;
+- steady-state flexibility;
+- dynamic flexibility;
+- delivery volume and duration;
+- response/notification characteristics.
+
+On the security side, it distinguishes:
+
+- steady-state security;
+- dynamic security;
+- broader grid-security parameters such as reactive capability and inertia provision.
+
+The authors' key proposition is:
+
+> **A future market could procure a single, more flexible product closer to real time and allow operators to deploy it either for flexibility needs, such as constraint management, or for security needs, such as stability management.**
+
+They describe this as a **malleable product** rather than a fixed collection of separate services.
+
+The motivation is to reduce problems created by:
+
+- different procurement timelines;
+- different remuneration mechanisms;
+- service primacy rules;
+- revenue-stack restrictions;
+- fragmented market participation.
+
+### 5. What the proposed flexicurity market does — and does not — specify
+
+The paper proposes a direction rather than a complete market mechanism.
+
+#### What is proposed
+
+The broad idea is:
+
+```text
+multiple physical capabilities of an asset
+              ↓
+joint flexibility + security valuation
+              ↓
+closer-to-real-time procurement
+              ↓
+one malleable flexicurity product
+              ↓
+operator dispatches capability where needed:
+constraint management / balancing / stability / security
+```
+
+#### What is not specified
+
+The paper does **not** provide:
+
+- a mathematical definition of the flexicurity product;
+- eligibility and qualification rules;
+- a market-clearing objective;
+- network or dynamic-security constraints for clearing;
+- bidding variables;
+- pricing or settlement rules;
+- co-optimization with energy;
+- opportunity-cost treatment;
+- asset baselines;
+- performance measurement;
+- penalty design;
+- rules for simultaneous services;
+- proof-of-concept simulation;
+- quantitative welfare comparison;
+- field testing.
+
+This distinction is essential. The paper should therefore be cited as a **conceptual market-design proposal**, not as evidence that a flexicurity market has already been shown to outperform existing electricity-market structures.
+
+### 6. Why the authors connect flexicurity to the 2050 transition
+
+The paper compares two conceptual paths toward a future high-RES European grid.
+
+![Two conceptual pathways toward 2050: current-practice aggressive transition versus a flexicurity-oriented transition with earlier deployment of "game changers". Source: Fig. 3 of Avramidis and Takis-Defteraios (2023).](papers/p028-avramidis2023-flexicurity/figures/avramidis2023_flexicurity/fig3_2050_transition_strategies.png){width=82%}
+
+#### Path 1 — aggressive transition under current practices
+
+The red pathway represents a relatively aggressive continuation of existing policy:
+
+- conventional nuclear and coal/gas plants are steadily decommissioned;
+- RES penetration continues to increase;
+- battery storage and demand response grow more slowly.
+
+The authors argue that this may create a paradox:
+
+```text
+more RES
+↓
+less conventional security support
+↓
+grid becomes more fragile
+↓
+operators become more conservative
+↓
+more reserve / intervention / participant restrictions
+```
+
+Thus, a transition that increases renewable capacity can still make system operation more difficult if flexibility and security resources do not develop at the same pace.
+
+#### Path 2 — flexicurity-oriented transition
+
+The green pathway first emphasizes technologies the authors call **"game changers"**, especially:
+
+- battery storage;
+- demand response.
+
+The intended sequence is:
+
+```text
+build flexibility and security capability
+        ↓
+reduce system stress
+        ↓
+increase RES more aggressively
+        ↓
+begin coordinated conventional-plant retirement
+        ↓
+reach a mature "flexicure" system
+```
+
+The central message is therefore about **transition sequencing**:
+
+> The authors prefer building the operational capabilities needed to host RES before aggressively retiring the assets that currently provide security.
+
+Figure 3 is an illustrative strategic vision rather than an optimized generation-expansion or market-transition plan.
+
+### 7. Industrial concerns summarized by the paper
+
+The letter reports five broad concerns attributed to industry experience:
+
+1. The grid is operated too conservatively, which can exclude market participants.
+2. Flexibility has not developed at the same pace as security requirements.
+3. Renewable resources continue to suffer from curtailment and market-design limitations.
+4. Battery and demand-response deployment is held back by adoption and regulatory barriers.
+5. Academic research can become disconnected from near-term industrial implementation.
+
+These claims are important because the article intentionally presents an industry-facing viewpoint. They should not, however, be treated as universal empirical findings across all European jurisdictions.
+
+### 8. Main findings / key quantitative messages
+
+This paper does not contain a conventional case study, benchmark algorithm, or statistical experiment. Its main evidence consists of industry observations, cited system statistics, and conceptual figures.
+
+The most reusable quantitative messages are:
+
+- conventional coal/gas, nuclear and hydro together account for roughly **65%** of the illustrated 2022 European-grid composition;
+- RES account for roughly **30%**;
+- batteries and demand response together occupy only a very small share in Fig. 1;
+- ancillary-service utilisation factors reported in Table I are only **1.74%–4.65%**, depending on product;
+- the authors cite curtailment rates of roughly **1%–25%** on average, with some instantaneous rates of **40%–70%**;
+- a cited 2019 ENTSO-E report attributes more than **156 TWh/year** of curtailment to transmission-capacity deficits;
+- Table II reports a total **395 TWh average** and **810 TWh maximum** estimated RES curtailment for 2040.
+
+The paper uses these observations to support one central diagnosis:
+
+> **The limiting factor in the energy transition is not only how much renewable generation is installed, but also whether markets and networks can flexibly and securely integrate it.**
+
+### 9. What this paper teaches
+
+#### Lesson 1 — Market design is itself a power-system control layer
+
+Physical flexibility can exist but remain unused if market rules do not let assets expose, stack, or monetize their capabilities.
+
+Therefore:
+
+```text
+technical flexibility
+≠
+market-accessible flexibility
+```
+
+#### Lesson 2 — Flexibility and security are not independent
+
+Fast ramps, inertia, reactive capability, congestion relief and reserve provision are technically different services, but the need for one service often depends on the availability of the others.
+
+A grid that is physically weak may force operators to procure more security and restrict economically attractive flexibility.
+
+#### Lesson 3 — Procurement volume and activation volume are different concepts
+
+Large procured reserves do not imply that those reserves will be frequently activated.
+
+This creates an important research question:
+
+> How much unused availability is economically justified by reliability risk, and how much is inefficient over-procurement?
+
+The paper raises this issue but does not solve it quantitatively.
+
+#### Lesson 4 — More RES capacity does not automatically mean more usable renewable energy
+
+Curtailment demonstrates that:
+
+```text
+installed renewable capacity
+        ≠
+renewable energy actually absorbed by the grid
+```
+
+Transmission limits, flexibility, market rules and system-security requirements determine utilization.
+
+#### Lesson 5 — The order of the transition matters
+
+The paper argues that rapidly removing conventional assets before deploying replacement flexibility/security resources can increase operational fragility.
+
+Thus, decarbonization is not only an end-state planning problem but also a **transition-path problem**.
+
+#### Lesson 6 — An asset should be valued by a portfolio of capabilities
+
+Battery storage, hydro, flexible demand and other resources can potentially contribute to several services.
+
+A future market may therefore need to value **multi-dimensional capability**, rather than forcing an asset into one narrow product category at a time.
+
+### 10. Limitations / What remains unsolved
+
+#### A. Limitations and future needs explicitly acknowledged by the authors
+
+**1. The flexicurity concept is immature.**  
+The conclusion explicitly states that the idea requires further investigation before a transition to a new market paradigm.
+
+**2. Proof-of-concept models are still needed.**  
+The paper calls for formal demonstration rather than treating the conceptual proposal as established.
+
+**3. Value quantification is missing.**  
+The economic benefit of the proposed market has not been quantified.
+
+**4. Real implementation would require substantial development.**  
+The authors acknowledge that a new market product would require studies, stakeholder consultation, field trials, and resolution of many detailed design questions.
+
+#### B. Further thought / research space suggested by the paper
+
+The following are **extensions inferred from the paper**, not conclusions claimed by the authors.
+
+**1. Different security services may not be perfectly substitutable.**  
+Inertia, reactive power, steady-state congestion relief and ramping capability have different units, timescales, locations and physical effects. A single "malleable" product therefore requires a mathematically rigorous conversion or multi-attribute clearing mechanism.
+
+**2. Low reserve utilization does not by itself establish over-procurement.**  
+Reliability products are partly insurance against rare events. A stronger study should optimize reserve procurement against outage risk, Value of Lost Load (VoLL), uncertainty and activation probability.
+
+**3. Locational value is central.**  
+A battery located behind a congested interface may have a different security value from an identical battery elsewhere. A realistic flexicurity market probably requires network-aware or nodal valuation.
+
+**4. Dynamic-security constraints need explicit representation.**  
+If inertia, frequency stability or voltage-security capabilities are to be traded, market clearing must connect economic decisions to dynamic power-system constraints.
+
+**5. TSO–DSO coordination is unresolved.**  
+Distribution-level flexibility can solve a local problem while creating a transmission-level problem, or vice versa. Flexicurity therefore needs rules for coordination across network levels.
+
+**6. Revenue stacking versus service exclusivity requires formal rules.**  
+If one asset offers energy, reserve, congestion relief and stability support, the market must determine which services can be delivered simultaneously and how opportunity costs are compensated.
+
+### 11. Research idea triggers
+
+#### Idea 1 — Formal co-optimization of energy and flexicurity
+
+Convert the conceptual product into a mathematical market-clearing model:
+
+```text
+energy bids
++
+flexibility capabilities
++
+security capabilities
++
+network constraints
++
+dynamic-security requirements
+        ↓
+joint market clearing
+        ↓
+energy price + flexicurity remuneration
+```
+
+A strong paper would compare welfare, security and RES curtailment against conventional sequential markets.
+
+#### Idea 2 — Risk-based reserve procurement instead of fixed conservative requirements
+
+The paper criticizes reserve over-procurement but does not calculate the economically optimal reserve level.
+
+A natural extension is:
+
+```text
+forecast uncertainty
++
+contingency probability
++
+activation cost
++
+Value of Lost Load
+        ↓
+stochastic / robust / DRO reserve procurement
+```
+
+Research question: *How much reserve should be procured when reliability risk is explicitly priced rather than managed through conservative fixed rules?*
+
+#### Idea 3 — Locational flexicurity pricing
+
+Combine flexicurity with Locational Marginal Pricing (LMP) or Distribution Locational Marginal Pricing (DLMP).
+
+The value of a resource could depend on:
+
+- energy balance;
+- line congestion;
+- voltage support;
+- reactive-power capability;
+- ramp capability;
+- inertia/frequency support.
+
+This would move the paper's idea from a general product toward a network-aware price signal.
+
+#### Idea 4 — Flexicurity capability region for DER aggregators
+
+Instead of describing an aggregator by a single MW bid, construct a multidimensional feasible region:
+
+```text
+active power
+× reactive power
+× ramp rate
+× duration
+× response time
+× reserve
+× security contribution
+```
+
+This connects naturally to feasible-region and flexibility-aggregation research.
+
+#### Idea 5 — TSO–DSO flexicurity coordination
+
+Develop a hierarchical framework in which:
+
+- the Distribution System Operator (DSO) evaluates local DER capability;
+- the Transmission System Operator (TSO) evaluates system-level value;
+- conflicts between local congestion relief and transmission security are resolved explicitly.
+
+#### Idea 6 — Battery/DR deployment planning under flexicurity value
+
+The 2050 argument can be converted into a long-term planning problem:
+
+```text
+investment in batteries / DR
++
+avoided network reinforcement
++
+avoided reserve procurement
++
+reduced curtailment
++
+security replacement value
+        ↓
+optimal transition pathway
+```
+
+This would quantitatively test the paper's claim that earlier investment in "game changers" can enable safer later RES expansion and conventional-plant retirement.
+
+#### Idea 7 — Flexicurity from simulation to market sandbox / field trial
+
+A practical research pathway could be:
+
+```text
+conceptual market
+↓
+small optimization proof-of-concept
+↓
+digital twin / co-simulation
+↓
+hardware-in-the-loop
+↓
+regulatory sandbox
+↓
+field pilot
+```
+
+This directly addresses the authors' concern that academic market studies can become detached from deployable practice.
+
+### 12. Connection to P026 and P027
+
+This paper occupies a different layer from the previous two papers.
+
+**P026 — Extracting Umbrella Constraint-Based Representation of Local Electricity Markets**
+
+asks:
+
+> **What aggregate flexibility is physically feasible?**
+
+It constructs a Temporal-Coupled Feasible Region (TCFR).
+
+**P027 — Frequency Regulation Capacity Offering of District Cooling System**
+
+asks:
+
+> **Given uncertain operation and market conditions, how much flexibility should a resource strategically offer?**
+
+It uses Reinforcement Learning (RL) to choose regulation capacity.
+
+**P028 — Flexicurity**
+
+asks:
+
+> **What kind of market product should the system procure from flexible resources in the first place?**
+
+The three papers therefore form a useful knowledge chain:
+
+```text
+P026
+physical feasible capability
+        ↓
+P027
+strategic market offering
+        ↓
+P028
+market-product / market-architecture design
+```
+
+A possible combined research direction is:
+
+```text
+DER physical feasible region
+        ↓
+multi-dimensional flexibility + security capability
+        ↓
+strategic offering under uncertainty
+        ↓
+network-aware flexicurity market clearing
+        ↓
+real-time dispatch / disaggregation
+```
+
+This is a further synthesis across the papers, not a framework proposed directly in P028.
+
+### 13. Critical reading notes
+
+- **This is a perspective letter, not a validation study.** No optimization model, simulation benchmark, field experiment, welfare analysis or causal empirical test is provided.
+- **Figure 1 is explicitly illustrative.** The relative flexibility/security positioning of assets should not be interpreted as a measured quantitative ranking.
+- **The term "flexicurity" is conceptually defined but not mathematically operationalized.** There is no formal unit, product specification, price, clearing rule or settlement mechanism.
+- **Reserve-utilization interpretation requires care.** Table I shows very low activation relative to procurement, but low activation can be a legitimate feature of insurance-like reliability services. The paper's conclusion of over-procurement is an industrial criticism rather than a demonstrated system optimum.
+- **The 2050 pathways in Fig. 3 are conceptual scenarios.** They are not outputs of capacity-expansion optimization and should not be quoted as optimized technology shares.
+- **Several industry criticisms are qualitative.** Statements about grids being overly secure, market participants being locked out, or academia being detached from reality reflect the authors' industry-facing assessment rather than universally tested European-system results.
+- **A unified product may face a physical-comparability problem.** Ramping, inertia, reactive power and congestion relief are not automatically interchangeable. This is a key issue that a future mathematical flexicurity framework would need to solve.
+
+**Problem-map tags:** `market fragmentation` · `flexibility valuation` · `system security` · `reserve over-procurement` · `RES curtailment` · `network constraints` · `market design` · `ancillary services` · `battery storage` · `demand response` · `TSO–DSO coordination` · `transition pathway` · `2050 decarbonization`
+:::

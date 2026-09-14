@@ -1,0 +1,541 @@
+::: {.callout-note collapse="true" icon=false}
+## [P033] ZareiJeliani et al. (2026) — Real-Time AI-Driven Energy and Flexibility Management for a Technical Virtual Power Plant
+
+**Journal:** IEEE Transactions on Smart Grid, Vol. 17, No. 4, July 2026, pp. 2810–2821  
+**DOI:** 10.1109/TSG.2026.3661242  
+**Main topics:** technical virtual power plant (TVPP); real-time energy market; flexibility market; flexible ramping; distributed energy resources (DERs); multi-agent deep reinforcement learning (MADRL); Multi-Agent Proximal Policy Optimization (MAPPO); Centralized Training and Decentralized Execution (CTDE); transfer learning; linear programming (LP); CNN-LSTM forecasting; electric vehicle charging stations (EVCSs); energy storage systems (ESSs); distribution network constraints
+
+### Quick takeaway
+
+This paper studies how a **Technical Virtual Power Plant (TVPP)** can jointly manage energy and flexibility in real time while respecting distribution-network constraints. The TVPP aggregates photovoltaic (PV) generation, wind turbines (WTs), distributed generators (DGs), Energy Storage Systems (ESSs), and Electric Vehicle Charging Stations (EVCSs), and participates in both the real-time energy market and upward/downward flexibility markets at a **5-minute resolution**.
+
+The paper combines three ideas. First, a **Convolutional Neural Network–Long Short-Term Memory (CNN-LSTM)** model predicts short-term flexibility requirements using quantile forecasts of net load. Second, a hybrid optimization framework decomposes the original Mixed-Integer Linear Programming (MILP) scheduling problem: EVCS and ESS decisions, including the discrete charging/discharging choices, are handled by **Multi-Agent Proximal Policy Optimization (MAPPO)**, while the remaining system-level decisions and network constraints are handled by an LP model. Third, single-agent Proximal Policy Optimization (PPO) policies are pre-trained and transferred to the multi-agent environment to accelerate training and improve stability.
+
+The main methodological message is that the paper does **not** replace mathematical optimization with end-to-end reinforcement learning. Instead, it deliberately separates adaptive sequential decisions from hard system constraints. RL handles the most dynamic and combinatorial parts, while LP supplies feasibility-oriented system feedback. In the reported tests on the IEEE 33-bus system, the proposed method achieves higher normalized profit than the paper's intra-hourly mathematical-optimization benchmark and supports instantaneous online decisions after training.
+
+### 1. Problem addressed — real-time flexibility management is both a forecasting and coordination problem
+
+The TVPP participates in a real-time market where renewable generation, electricity prices, EV availability, loads, and flexibility requirements change rapidly. The central operational problem is therefore not only to schedule energy, but also to maintain enough **upward flexibility (UF)** and **downward flexibility (DF)** to respond to short-term net-load changes.
+
+Too little flexibility can cause ramp shortages, power-balance problems, or stronger reliance on regulation services. Too much flexibility is also costly because capacity must be reserved instead of being used for energy production, charging, or other profitable purposes. Therefore, the TVPP must answer two coupled questions:
+
+1. **How much flexibility will the system need in the next short interval?**
+2. **How should heterogeneous DERs be scheduled so that the TVPP earns market revenue while retaining sufficient deliverable flexibility and respecting network constraints?**
+
+The problem is particularly difficult at a 5-minute time scale because conventional optimization must repeatedly solve a large problem containing binary charging/discharging variables, inter-temporal SOC dynamics, ramp constraints, market transactions, and distribution-network limits.
+
+### 2. Why existing approaches are not enough
+
+The paper identifies limitations on both sides of the traditional solution spectrum.
+
+#### 2.1 Mathematical optimization
+
+Mathematical programming can explicitly represent physical constraints and produce feasible schedules, but the authors argue that large real-time problems become difficult when they contain many DERs, binary operating decisions, uncertainty, and short decision intervals. A monolithic MILP is therefore viewed as insufficiently adaptive and potentially difficult to scale.
+
+#### 2.2 Pure reinforcement learning
+
+Deep Reinforcement Learning (DRL) can learn adaptive policies for uncertain and sequential environments, but previous RL-based energy-management studies can suffer from:
+
+- high-dimensional state/action spaces;
+- slow or unstable training;
+- difficulty coordinating multiple DERs;
+- lack of explicit feasibility guarantees for network and operational constraints.
+
+The paper's response is therefore a **hybrid architecture** rather than a purely model-based or purely learning-based solution.
+
+#### 2.3 Flexibility forecasting
+
+The paper also argues that conventional statistical methods may not capture the nonlinear and sequential relationships among renewable production, demand, weather, and net-load uncertainty. This motivates a data-driven CNN-LSTM quantile model for flexibility-requirement prediction.
+
+### 3. TVPP market and resource architecture
+
+The TVPP aggregates several types of Distributed Energy Resources (DERs):
+
+- PV panels;
+- wind turbines;
+- dispatchable DGs;
+- ESSs;
+- EVCSs;
+- fixed loads.
+
+It participates in two coupled markets:
+
+- **real-time energy market**, through buying and selling active power;
+- **flexibility market**, through selling upward and downward flexibility.
+
+The paper distinguishes a TVPP from a purely commercial VPP by explicitly incorporating **technical network constraints**, including nodal power balance, voltage limits, and line-loading limits.
+
+The objective for each interval maximizes TVPP profit from energy and flexibility transactions while accounting for DG production/flexibility costs, renewable purchases, and load-related revenues.
+
+A simplified representation is:
+
+\[
+\max \; \text{Energy-market profit}
++ \text{Flexibility revenue}
++ \text{Load revenue}
+- \text{renewable purchase cost}
+- \text{DG operating and flexibility costs}.
+\]
+
+The important point is that **energy and flexibility are co-optimized**: the amount of flexibility a device can sell depends on its baseline energy schedule.
+
+### 4. Forecasting upward and downward flexibility requirements
+
+The paper derives flexibility requirements from predicted net-load movement plus forecast uncertainty.
+
+For interval \(i\), upward flexibility is:
+
+\[
+X_i^U = \max\left[(L^{pred}_{i+1}+\sigma^U_{i+1})-L^{pred}_i,0\right],
+\]
+
+and downward flexibility is:
+
+\[
+X_i^D = \max\left[L^{pred}_i-(L^{pred}_{i+1}-\sigma^D_{i+1}),0\right].
+\]
+
+Here:
+
+- \(L^{pred}\) is predicted net load;
+- \(\sigma^U\) and \(\sigma^D\) are upward/downward uncertainty margins;
+- \(X^U\) and \(X^D\) become the flexibility requirements used by the scheduling framework.
+
+The interpretation is straightforward: if the next interval may have a higher-than-expected net load, the system needs enough **upward capability**; if it may have a lower-than-expected net load, it needs enough **downward capability**.
+
+#### 4.1 CNN-LSTM quantile forecasting
+
+The CNN-LSTM predicts the 0.025, 0.5, and 0.975 quantiles of net-load components. The median gives the central forecast, while the distance to the lower and upper quantiles produces the uncertainty margins used in the flexibility equations.
+
+The quantile loss is:
+
+\[
+QL(\hat y,y;\tau)=
+\begin{cases}
+\tau(y-\hat y), & y\ge \hat y,\\
+(\tau-1)(y-\hat y), & y<\hat y.
+\end{cases}
+\]
+
+The paper therefore translates **forecast uncertainty directly into a market-relevant flexibility requirement**, rather than forecasting flexibility prices or DER actions directly.
+
+### 5. DER flexibility models — energy schedule determines available reserve
+
+#### 5.1 EVCS flexibility
+
+Each EV can charge, idle, or discharge. SOC evolves according to:
+
+\[
+SOC_{EV,k}(t)=SOC_{EV,k}(t-1)
++\frac{\Delta t}{C_k}
+\left(P_{charge,k}(t)-P_{discharge,k}(t)\right).
+\]
+
+The model prevents simultaneous charging and discharging and enforces charging/discharging power limits.
+
+The important flexibility logic is that an EV's ability to provide UF or DF depends on its **current baseline charging/discharging point** and remaining power/SOC headroom. The paper also evaluates SOC trajectories under hypothetical flexibility activation to ensure that offered flexibility does not violate feasible SOC ranges.
+
+A departure-SOC target represents customer service quality. This creates an important rebound mechanism: if EV charging is postponed to provide flexibility, the missing energy must still be recovered before departure.
+
+#### 5.2 ESS flexibility
+
+The ESS uses an analogous SOC model. Its upward and downward flexibility are bounded by both:
+
+- charging/discharging power headroom;
+- SOC headroom under the potential flexibility action.
+
+#### 5.3 DG flexibility
+
+DG output is constrained by capacity and inter-temporal ramping limits. Its flexibility is limited by both ramp capability and remaining upward/downward generation margin.
+
+### 6. Hybrid MAPPO-LP decomposition — RL handles adaptive discrete decisions, LP enforces system-level coordination
+
+The core framework is summarized in Fig. 2.
+
+![Hybrid decomposition of the original MILP into an RL/MAPPO component and an LP component. Source: Fig. 2 of ZareiJeliani et al. (2026).](papers/p033-zareijeliani2026-tvpp/figures/zareijeliani2026_tvpp/fig2_hybrid_framework.png){width=48%}
+
+The original scheduling formulation is described as an MILP. The authors decompose it as follows:
+
+**RL/MAPPO subproblem**  
+Handles EVCS and ESS decision variables, including binary/discrete charging and discharging behavior.
+
+**LP subproblem**  
+Handles the remaining system-level operation, including market transactions, DG dispatch, flexibility balance, and network constraints after the RL decisions are fixed.
+
+The two components are not independent. The RL actions are passed into the LP, and the LP returns feasibility and objective information to the learning process. The authors therefore describe the method as a **constraint-aware cooperative optimization framework**.
+
+This architecture is central to the paper's contribution:
+
+> Instead of encoding every physical constraint inside a reward function, the method leaves difficult system-wide feasibility checks to mathematical optimization.
+
+### 7. MAPPO with Centralized Training and Decentralized Execution (CTDE)
+
+The EVCS and ESS are modeled as separate RL agents. The final cooperative learner uses **Multi-Agent Proximal Policy Optimization (MAPPO)** under **Centralized Training and Decentralized Execution (CTDE)**.
+
+![CTDE architecture coupling pretrained EVCS/ESS actors, a centralized critic, and mathematical-optimization feedback. Source: Fig. 3 of ZareiJeliani et al. (2026).](papers/p033-zareijeliani2026-tvpp/figures/zareijeliani2026_tvpp/fig3_ctde_mappo_lp.png){width=72%}
+
+During training:
+
+- each EVCS/ESS actor produces local actions;
+- a shared centralized critic evaluates their joint behavior;
+- the mathematical optimization layer checks system-wide feasibility/performance;
+- LP feedback is embedded in the global reward.
+
+During online execution:
+
+- the trained actors make decisions using their local observations;
+- the paper describes the online decisions as instantaneous;
+- the centralized critic is not required for decentralized action selection.
+
+The global reward is defined as:
+
+\[
+R_{global}(t)
+=\alpha R_{EVCS}(t)
++\beta R_{ESS}(t)
++\gamma C_{feedback}(t).
+\]
+
+The LP feedback is:
+
+\[
+C_{feedback}(t)=
+\begin{cases}
+\epsilon-C_{Obj}(t), & \text{if feasible},\\
+-\delta-C_{Obj}(t), & \text{if infeasible}.
+\end{cases}
+\]
+
+Thus the agents are rewarded not only for their local operating objectives, but also for producing actions that are compatible with the global optimization problem.
+
+### 8. PPO pre-training and transfer learning
+
+Training a multi-agent policy from scratch can be unstable and slow. The paper therefore first trains two **single-agent PPO policies**:
+
+- one for EVCS operation;
+- one for ESS operation.
+
+These pretrained actor parameters are then transferred to the MAPPO framework and fine-tuned jointly. All layers remain trainable during the multi-agent stage.
+
+The intended logic is:
+
+**simple single-agent environment**  
+→ learn basic charging/discharging behavior  
+→ transfer actor parameters  
+→ cooperative multi-agent fine-tuning  
+→ faster/stabler convergence.
+
+This is an important practical design choice because the multi-agent learner does not need to discover elementary ESS/EV behavior from random initialization.
+
+### 9. State, action, and reward design
+
+#### 9.1 EVCS state
+
+The EVCS state includes:
+
+- current time;
+- renewable generation;
+- current market price;
+- next-period predicted price;
+- average predicted future price over a selected window;
+- EV SOC;
+- remaining time to departure;
+- deviation from target departure SOC;
+- upward and downward system flexibility requirements.
+
+#### 9.2 ESS state
+
+The ESS state uses the same market/renewable/flexibility information but replaces EV-specific departure variables with ESS SOC.
+
+#### 9.3 Actions
+
+For each EV or ESS, the action set is discrete:
+
+\[
+\{-P_{max},0,+P_{max}\},
+\]
+
+representing discharging, idling, or charging.
+
+#### 9.4 Reward structure
+
+Local rewards combine:
+
+- energy-arbitrage incentives based on current and predicted prices;
+- rewards/penalties for flexibility contribution;
+- SOC-limit penalties;
+- flexibility-related SOC feasibility penalties;
+- for EVs, a strong departure-SOC penalty.
+
+The reward coefficients are not analytically derived. The authors state that they were selected through **iterative sensitivity analysis** to obtain stable convergence and comparable gradient magnitudes across objectives.
+
+### 10. Distribution-network feasibility
+
+The model incorporates a DistFlow-based network representation. The paper explicitly refers to:
+
+- nodal active-power balance;
+- reactive-power relations;
+- voltage bounds \(V_{min}\le V_i(t)\le V_{max}\);
+- line-loading limits.
+
+This is an important difference from many VPP or aggregator papers that optimize only an aggregate power balance. Here, market actions are intended to remain feasible within the physical distribution network.
+
+However, several detailed DistFlow expressions are referred back to the authors' previous work rather than fully reproduced in this paper.
+
+### 11. Case study and training setup
+
+The main test system is the **IEEE 33-bus distribution network**.
+
+#### Data
+
+- weather: temperature, wind speed, and solar radiation;
+- power-system time series: fixed load, market price, WT output, and PV output;
+- Austrian data covering **2015–2018**;
+- EV behavior from the **ACN dataset**;
+- original 15-minute data are stated to be **refined to 5-minute resolution**;
+- real-time energy/flexibility transactions use 5-minute intervals.
+
+#### Flexibility forecasting model
+
+CNN-LSTM architecture:
+
+- Conv1D: 5 filters, kernel size 5, ReLU;
+- MaxPooling1D: pool size 2;
+- LSTM: 20 units, tanh;
+- Dense output layer;
+- quantiles: 0.025, 0.5, 0.975;
+- trained using three years of data.
+
+Reported test metrics for net-load prediction are:
+
+| Prediction | RMSE | \(R^2\) | MAE | MAPE |
+|---|---:|---:|---:|---:|
+| Mean | 46.0923 | 0.9942 | 32.1877 | 1.84% |
+| Lower boundary | 57.6923 | 0.9909 | 45.7101 | 2.67% |
+| Upper boundary | 60.6352 | 0.9900 | 47.5235 | 2.87% |
+
+#### RL dataset and training split
+
+- 44-day dataset for the RL experiments;
+- **34 days training**;
+- **10 days testing**;
+- the detailed operating example uses **Day 41**.
+
+#### PPO pre-training
+
+- two hidden layers with 64 neurons each;
+- learning rate: \(3\times10^{-4}\);
+- discount factor: \(\gamma=0.99\);
+- GAE parameter: \(\lambda=0.95\);
+- batch size: 64;
+- n-steps: 288;
+- entropy coefficient: 0.01.
+
+#### MAPPO fine-tuning
+
+- centralized critic: three hidden layers, 256 neurons each;
+- learning rate: \(1\times10^{-5}\);
+- \(\gamma=0.99\);
+- \(\lambda=0.95\);
+- entropy coefficient: 0.01;
+- global reward weights reported as \(\alpha=0.35\), \(\beta=0.35\), \(\gamma=1\), \(\delta=500\), and \(\epsilon=5\).
+
+#### Software
+
+- Python;
+- PyTorch for DL/DRL;
+- PuLP with CBC solver for LP optimization.
+
+### 12. Main findings
+
+#### 12.1 Flexibility forecasting is accurate on the reported test data
+
+The quantile CNN-LSTM achieves \(R^2\) values close to 0.99 for the mean, lower, and upper net-load boundaries. The median and uncertainty bounds are then converted directly into UF/DF requirements.
+
+The main value of this forecasting stage is therefore not merely predicting net load; it produces the uncertainty margins that determine how much flexibility the TVPP should retain.
+
+#### 12.2 PPO pre-training provides stable initial policies
+
+The individual EVCS and ESS reward trajectories increase rapidly at the beginning and then stabilize. These policies are used to initialize the MAPPO actors rather than starting the cooperative learner from random policies.
+
+#### 12.3 LP feedback helps cooperative training recover from early constraint violations
+
+The MAPPO global reward initially drops when the pretrained single-agent policies are first coupled. The paper attributes this to early infeasibility and coordination conflicts. The reward later recovers and stabilizes as the agents adapt to the shared critic and LP feedback.
+
+The authors report smoother convergence and higher steady-state reward than independently trained PPO controllers under the same environment.
+
+#### 12.4 EVCS and ESS supply much of the short-term flexibility
+
+On the detailed test day, EVs and ESSs provide much of the required upward/downward flexibility through charging/discharging adjustments, while DGs become important during intervals with attractive flexibility prices.
+
+This illustrates an important flexibility principle: **energy-limited assets can provide rapid short-term flexibility, while dispatchable generation supplies additional capacity when market signals justify it.**
+
+#### 12.5 Proposed method reports 10%–35% higher normalized profit than the mathematical-optimization benchmark
+
+![Normalized profit comparison between the paper's intra-hourly optimization benchmark and the proposed method across the ten test days. Source: Fig. 15 of ZareiJeliani et al. (2026).](papers/p033-zareijeliani2026-tvpp/figures/zareijeliani2026_tvpp/fig15_profit_comparison.png){width=68%}
+
+Across test Days 35–44, the proposed method is reported to achieve approximately **10%–35% higher system profit**, with the authors attributing the improvement mainly to more effective exploitation of EV and ESS flexibility.
+
+The paper normalizes the profit values and states that objective-function components were balanced to provide consistent comparisons.
+
+#### 12.6 Computational comparison
+
+Table II reports:
+
+| Method | Training time | Online decision time |
+|---|---:|---:|
+| PPO (EVCS) | 1.34 s/episode | Instantly |
+| PPO (ESS) | 0.3 s/episode | Instantly |
+| Proposed MAPPO-LP | 12.93 s/episode | Instantly |
+| MILP | N/A | 0.12 s/interval |
+
+The authors argue that the proposed method is attractive for dynamic real-time operation because most computation is shifted to offline training and the learned actors can produce immediate decisions online.
+
+### 13. What this paper teaches
+
+#### Lesson 1 — flexibility forecasting and flexibility dispatch are two distinct problems
+
+Before an aggregator can sell flexibility, it must determine how much flexibility is actually needed. The paper explicitly connects probabilistic net-load forecasting to the later market and dispatch problem.
+
+#### Lesson 2 — energy schedules define flexibility headroom
+
+An ESS, EV, or DG does not have a fixed flexibility value. Its available UF/DF depends on its current operating point, SOC, power limits, and future obligations. Therefore, energy and flexibility should be co-optimized.
+
+#### Lesson 3 — hybrid RL + optimization can separate adaptation from feasibility
+
+The paper's most transferable methodological idea is to let RL learn uncertain sequential behavior while leaving network and system-wide constraints to mathematical optimization. This can be more reliable than forcing every constraint into a reward function.
+
+#### Lesson 4 — pre-training is useful when multi-agent learning contains recognizable single-agent subproblems
+
+EVCS and ESS control can first be learned separately. Those policies then provide informed initialization for multi-agent coordination, reducing the difficulty of joint training from scratch.
+
+#### Lesson 5 — CTDE can coordinate multiple flexible assets without requiring the centralized critic during online execution
+
+Centralized information is useful during training, while decentralized actors can later operate with local observations. This is especially attractive when many DER controllers must act quickly.
+
+#### Lesson 6 — a TVPP is more than a market aggregator when network feasibility is included
+
+The paper emphasizes the **technical** VPP concept: profitable market participation must remain compatible with voltage, line, and nodal constraints inside the distribution network.
+
+### 14. Limitations / what remains unsolved
+
+#### A. Future work explicitly stated by the authors
+
+The paper identifies the following extensions:
+
+- additional flexibility products, especially **frequency regulation**;
+- more detailed physical models of other flexible demand, such as **thermostatically controlled loads**;
+- explicit economic models of **user participation and incentives**.
+
+#### B. Further research space visible from the model
+
+- **Forecast-to-decision uncertainty propagation:** the CNN-LSTM produces quantile bounds, but the downstream RL/LP framework does not formulate an explicit chance-constrained, robust, or distributionally robust optimization problem based on those predictive distributions.
+- **5-minute data construction:** the source data are described as 15-minute series "refined" to 5-minute resolution, but the paper does not clearly specify the resampling/interpolation procedure or quantify the uncertainty introduced by this transformation.
+- **Reward engineering:** many coefficients are manually tuned through sensitivity analysis. Policy performance may therefore depend materially on reward scaling and parameter tuning.
+- **EV user economics:** charging is offered for free and user satisfaction is represented mainly through departure SOC. Willingness to participate, compensation, inconvenience, and battery degradation are not explicitly priced.
+- **Battery degradation:** ESS and EV cycling costs are not explicitly modeled in the reported objective/reward structure.
+- **Market-price uncertainty:** predicted prices enter the RL states, but the paper does not formulate an explicit market-price uncertainty model or risk measure.
+- **Real-world validation:** results are simulation-based on IEEE 33-bus and historical datasets; no HIL or field deployment is reported.
+- **Scalability evidence:** polynomial scalability is argued conceptually, but the paper does not present a scaling experiment over progressively larger networks or DER populations.
+- **Communication imperfections:** CTDE and LP feedback assume reliable information exchange; latency, packet loss, and asynchronous updates are not examined.
+
+### 15. Critical reading
+
+1. **The reported profit comparison with MILP needs careful interpretation.** Fig. 15 reports a 10%–35% profit improvement over the mathematical-optimization benchmark. If both methods solved the exact same deterministic optimization problem with identical information, constraints, and objective, an optimal MILP should not be outperformed. The paper attributes the gain to adaptability and higher EV/ESS utilization, but it does not fully clarify whether the benchmark and proposed method use exactly the same information set and decision formulation. This comparison should therefore not be interpreted automatically as "RL is more optimal than MILP."
+
+2. **The computational argument is not purely a speed comparison.** The paper reports **0.12 s per interval** for MILP, which is already much shorter than a 5-minute operational interval. The proposed method is described as instantaneous online, but no numerical inference latency is reported. Its main claimed advantage is better adaptability/scalability after offline training, rather than a demonstrated need to replace a 0.12-s MILP for this particular test case.
+
+3. **The statement around Day 41 market behavior appears economically counterintuitive.** The text states that "as prices rise above DG fuel costs, market purchases increase while DG operation decreases," followed later by a statement that a sharp price surge forces DGs to full output. If the market price is above DG marginal fuel cost, one would normally expect the economic dispatch tendency to move toward more DG output and less purchase, all else equal. The paper does not explain this apparent inconsistency, so it should not be silently corrected.
+
+4. **Network feasibility depends on a partially externalized model.** The paper states that DistFlow voltage/reactive-power/line-loading relationships are included, but several details are referred to Ref. [15]. Reproduction therefore requires consulting the earlier model.
+
+5. **"Guarantees network feasibility" is stronger than what the RL part alone provides.** Feasibility is supplied through the LP layer and feedback architecture, not intrinsically by the learned policy. If execution were detached from the optimization layer or exposed to out-of-distribution conditions, the same claim would require additional validation.
+
+6. **Notation is overloaded in several places.** For example, \(\gamma\) denotes the RL discount factor and is also used as a weight in the global reward. This is manageable but can obscure interpretation during implementation.
+
+### 16. Research idea triggers
+
+#### Idea 1 — Risk-aware TVPP using forecast distributions directly
+
+The paper already produces 2.5%, 50%, and 97.5% net-load quantiles. A natural extension is:
+
+**quantile forecast → scenario/distribution construction → chance constraints / CVaR / DRO → risk-aware energy + flexibility scheduling**.
+
+This would connect uncertainty prediction to an explicit reliability or financial-risk measure rather than using the forecast bounds mainly as state inputs and flexibility requirements.
+
+#### Idea 2 — Hierarchical MPC / rolling optimization + MARL
+
+Replace one-step real-time action logic with a rolling-horizon layer:
+
+**forecast → multi-step flexibility requirement → MAPPO local actions → MPC/LP network coordination → receding-horizon update**.
+
+This could better represent the inter-temporal value of SOC, EV departure obligations, and future flexibility prices.
+
+#### Idea 3 — Flexibility bidding instead of self-scheduling only
+
+The current framework mainly determines TVPP energy/flexibility quantities given market prices. A further electricity-market direction is to make the TVPP strategic:
+
+**quantity/price bidding → market clearing → activated flexibility → settlement → real-time redispatch**.
+
+This would connect the technical VPP directly to endogenous price formation and market power questions.
+
+#### Idea 4 — User-centric EV flexibility market
+
+Add explicit user participation variables, compensation, battery degradation, and inconvenience costs. Then study:
+
+**TVPP profit ↔ EV-owner utility ↔ flexibility availability ↔ participation equilibrium**.
+
+This directly follows the authors' stated future-work direction on incentives.
+
+#### Idea 5 — Safe RL with hard feasibility certificates
+
+The paper uses LP feedback to guide policies. A stronger extension could combine MAPPO with:
+
+- action projection;
+- control barrier functions;
+- feasibility layers;
+- constrained policy optimization;
+- differentiable optimization layers.
+
+The research question becomes whether online actors can remain feasible **without repeatedly solving the full coordination LP**.
+
+#### Idea 6 — Adaptive / continual learning under structural changes
+
+Study changes in:
+
+- DER population;
+- EV behavior;
+- price regime;
+- renewable penetration;
+- network topology.
+
+A drift-detection and continual-learning mechanism could determine when the pretrained policies should be updated instead of assuming a fixed training distribution.
+
+#### Idea 7 — Multi-service flexibility stacking
+
+The authors explicitly mention frequency regulation as future work. A broader extension is:
+
+**energy + ramping flexibility + frequency regulation + congestion relief + voltage support**,
+
+with explicit accounting for the fact that the same SOC/power headroom cannot be sold independently to multiple services.
+
+#### Idea 8 — Scalability benchmark against decomposition-based optimization
+
+Rather than comparing only with a monolithic MILP, compare:
+
+**MAPPO-LP vs. rolling LP/MILP vs. ADMM/Benders/decomposition methods**
+
+across increasingly large DER populations and feeders. This would directly test the paper's scalability claim.
+
+### 17. Position in the broader literature map
+
+This paper sits at the intersection of **Virtual Power Plants (VPPs)**, **real-time flexibility markets**, **probabilistic forecasting**, **multi-agent reinforcement learning**, and **network-constrained DER coordination**.
+
+Relative to local-market papers such as those focused on peer-to-peer trading, its central question is different: the TVPP is a coordinated technical aggregator that must translate a portfolio of heterogeneous DERs into reliable **energy and flexibility market products** while respecting internal grid constraints.
+
+Relative to pure DRL scheduling papers, its distinctive idea is the **hybrid learning–optimization decomposition**:
+
+> forecasting tells the TVPP what flexibility is needed; RL controls highly dynamic EV/ESS decisions; LP coordinates the remaining system and enforces technical feasibility.
+
+**Problem-map tags:** `technical virtual power plant` · `real-time energy market` · `flexibility requirement` · `flexible ramping` · `energy-flexibility co-optimization` · `network constraints` · `DER aggregation` · `multi-agent reinforcement learning` · `MAPPO` · `CTDE` · `transfer learning` · `hybrid RL-optimization` · `forecast uncertainty` · `constraint feasibility` · `EV flexibility` · `storage flexibility` · `real-time dispatch` · `scalability`
+:::

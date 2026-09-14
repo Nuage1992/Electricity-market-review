@@ -1,0 +1,562 @@
+::: {.callout-note collapse="true" icon=false}
+## [P036] Ravi et al. (2023) — Stochastic Strategic Participation of Active Distribution Networks With High-Penetration DERs in Wholesale Electricity Markets
+
+**Journal:** IEEE Transactions on Smart Grid, Vol. 14, No. 2, March 2023  
+**DOI:** 10.1109/TSG.2022.3196682  
+**Main topics:** Active Distribution Network (ADN); strategic bidding; price-maker behavior; wholesale energy and reserve markets; stochastic bilevel optimization; Distributed Energy Resources (DERs); Electric Vehicle Charging Station (EVCS); Mathematical Program with Equilibrium Constraints (MPEC); Mixed-Integer Second-Order Cone Programming (MISOCP)
+
+### Quick takeaway
+
+This paper asks what changes when a distribution network with a high penetration of Distributed Energy Resources (DERs) is no longer treated as a passive load or a price-taker, but instead becomes a **strategic price-maker** in wholesale electricity markets. The Active Distribution Network (ADN) can coordinate solar, wind, Energy Storage Systems (ESSs), and Electric Vehicle Charging Stations (EVCSs), and then choose energy bids/offers and reserve offers that influence the Independent System Operator (ISO) market-clearing outcome.
+
+The proposed model is a **stochastic bilevel optimization**. At the upper level, the ADN minimizes its expected operating cost by dispatching DERs and selecting strategic offers/bids while respecting distribution-network constraints and DER uncertainty. At the lower level, the ISO jointly clears the day-ahead energy and reserve markets. Because the ADN's decision changes market prices and the market prices change the ADN's optimal operation, the two layers are interdependent.
+
+The main methodological value is the explicit coupling of **distribution-level physical feasibility** with **transmission-level market clearing**. The authors use a convex second-order-cone representation of the radial ADN, scenario-based uncertainty for renewable generation and EV availability, and KKT/strong-duality reformulation to convert the bilevel problem into a Mixed-Integer Second-Order Cone Programming (MISOCP) model. The results show that an ADN with enough DER flexibility can strategically reduce the energy Locational Marginal Price (LMP) when it is a net buyer while increasing reserve prices when it is a reserve seller.
+
+This paper is therefore useful for understanding a deeper electricity-market question: **DER aggregation can create market power, not only flexibility**. The economic value of DERs depends not only on their ability to supply energy, but also on how their aggregated bids shift congestion, marginal units, LMPs, and reserve prices.
+
+### 1. Problem addressed — when a distribution network becomes a strategic market participant
+
+Traditional distribution networks are usually modeled as Load-Serving Entities (LSEs) that purchase electricity from the wholesale market. With increasing DER penetration, this assumption can become restrictive because a distribution network may have enough controllable generation and storage to:
+
+- reduce or increase its net import;
+- export energy to the wholesale market;
+- provide operating reserve;
+- use DER reactive-power capability for local voltage support; and
+- influence wholesale market prices through its bid/offer quantities and prices.
+
+The paper therefore studies an ADN as a **price-maker (PM)** rather than a **price-taker (PT)**.
+
+The difficult part is that the ADN does not optimize in isolation. Its bid changes the ISO dispatch and market prices, while the ISO-cleared LMP and reserve price determine the economic value of the ADN's DER dispatch. This creates a leader-follower relationship:
+
+\[
+\text{ADN bid/offer}
+\rightarrow
+\text{ISO market clearing}
+\rightarrow
+\text{LMP/reserve price}
+\rightarrow
+\text{ADN profit and DER dispatch}.
+\]
+
+At the same time, the ADN must respect distribution-network voltage and power-flow constraints and cope with uncertainty in solar, wind, and EV availability.
+
+### 2. Why existing approaches are not enough
+
+The paper identifies several limitations in earlier work.
+
+First, many DER-aggregator, Virtual Power Plant (VPP), and Distribution Company (DisCo) bidding models treat the distribution-side participant as a **price-taker**. This is appropriate when the resource is small relative to the wholesale market, but it cannot represent an ADN whose aggregated DER fleet is large enough to influence marginal prices.
+
+Second, some price-maker models omit detailed distribution- and transmission-network constraints. In that case, strategic trades may be economically attractive but physically infeasible because they can create congestion or unacceptable voltage conditions.
+
+Third, DER availability is uncertain. Solar and wind output vary, while the usable flexibility of EVCSs depends on vehicle occupancy and the aggregate state of charge of connected vehicles. A deterministic strategic bidding model may therefore overestimate how much energy or reserve can be reliably offered.
+
+Finally, DERs are multi-service resources. A unit of inverter, battery, or renewable headroom allocated to reserve cannot necessarily be used simultaneously for energy. The ADN must jointly allocate DER capability between **energy, reserve, and local grid support**.
+
+### 3. Overall framework — ADN as the leader, ISO market clearing as the follower
+
+![Stochastic bilevel framework linking ADN dispatch and strategic offers to ISO energy and reserve market clearing. Source: Fig. 2 of Ravi et al. (2023).](papers/p036-ravi2023-strategic-adn/figures/ravi2023_strategic_adn/fig2_bilevel_framework.png){width=78%}
+
+The paper separates the problem into two decision-making systems.
+
+#### Upper level — strategic ADN
+
+The ADN controls:
+
+- solar distributed generators;
+- wind distributed generators;
+- ESSs;
+- EVCSs with Vehicle-to-Grid (V2G) capability;
+- reactive-power support from inverter-based DERs;
+- the energy bid/offer submitted to the ISO; and
+- the reserve offer submitted to the ISO.
+
+Its objective is to minimize expected total operating cost, equivalently improving its market profit. The objective includes DER production cost, ESS/EV battery degradation, market energy settlements, and reserve revenue.
+
+#### Lower level — ISO day-ahead market
+
+The ISO jointly clears:
+
+- energy supplied by Generation Companies (GenCos) and the ADN;
+- energy purchased by retailers and the ADN; and
+- operating reserve supplied by GenCos and the ADN.
+
+The ISO minimizes market operating cost / maximizes social welfare subject to energy balance, reserve balance, generation limits, ADN limits, and transmission branch-flow constraints.
+
+The lower-level solution returns the wholesale **energy LMP** and **reserve price**. These prices enter the upper-level ADN objective, which is why the problem cannot be solved as two independent optimizations.
+
+### 4. Price-maker behavior — the ADN deliberately considers its impact on market prices
+
+The central economic distinction in this paper is:
+
+- **Price-taker ADN:** takes LMP and reserve price as externally fixed signals and only optimizes its response.
+- **Price-maker ADN:** anticipates that changing its own bid/offer can change congestion, the marginal generator, LMP, and reserve price.
+
+This means that the ADN may not simply maximize physical DER output. For example, when it is a net buyer, it can strategically alter its wholesale energy bid so that transmission congestion is reduced and the LMP at the ADN's connection node decreases. When it is selling reserve, it may instead offer reserve in a way that moves the system to a higher-priced marginal reserve resource.
+
+This creates an important market-design lesson: **the same DER fleet can be used to reduce one market price and increase another, depending on whether the ADN is buying or selling the product.**
+
+### 5. Stochastic DER representation
+
+The paper models uncertainty in the upper-level ADN problem through scenarios. The uncertain quantities are:
+
+- solar DG output;
+- wind DG output;
+- EVCS occupancy; and
+- the change in aggregate EVCS state of charge caused by EV arrivals and departures.
+
+The upper-level objective is scenario-weighted. For example, expected ADN energy and reserve transactions link the stochastic ADN model to the deterministic ISO market-clearing problem.
+
+For the first test system, 365 scenarios are generated and then reduced to three representative scenarios using a fast-forward scenario reduction method based on Kantorovich distance. The final scenario probabilities are:
+
+\[
+0.4466,\qquad 0.3726,\qquad 0.1808.
+\]
+
+The scenario reduction substantially lowers the size of the stochastic MISOCP while retaining representative renewable and EV availability patterns.
+
+### 6. Distribution-network feasibility — energy-market profitability is constrained by physics
+
+The ADN is modeled as a radial distribution network using convex Second-Order Cone Programming (SOCP) power-flow constraints. The model includes:
+
+- nodal active-power balance;
+- nodal reactive-power balance;
+- branch active/reactive flows;
+- voltage-drop equations;
+- nodal voltage limits; and
+- inverter apparent-power limits.
+
+A key constraint is the nodal active-power balance, which combines local load, renewable generation, ESS charging/discharging, EVCS charging/discharging, and energy exchanged with the ISO.
+
+The conceptual point is more important than reproducing every equation:
+
+\[
+\text{wholesale-market schedule}
+\quad\text{must also satisfy}\quad
+\text{distribution-network feasibility}.
+\]
+
+DERs that are not used for energy or reserve can also provide reactive power. In the case studies, this capability helps maintain ADN nodal voltages within the specified range.
+
+### 7. Energy and reserve compete for the same DER headroom
+
+For renewable DERs, reserve is limited by available renewable generation. A simplified representation is:
+
+\[
+P^{PV}_{s,t,\gamma}+r^{PV}_{s,t,\gamma}
+\le P^{PV,Forecast}_{s,t}.
+\]
+
+Therefore, allocating more available renewable capability to reserve can require curtailing scheduled energy output.
+
+For an ESS, the scheduled discharge and reserve must both fit within stored energy and inverter limits. Hence:
+
+\[
+\text{Energy dispatch}
++\text{Reserve headroom}
+\le\text{physical capability}.
+\]
+
+This is why the optimal strategy can shift DER capacity between energy and reserve as relative prices and internal DER operating costs change.
+
+### 8. EVCS model — fleet occupancy makes flexibility time-varying
+
+The EVCS is represented as an aggregate fleet resource. Its charging, discharging, reserve, active-power, reactive-power, and apparent-power capacities depend on the number of connected EVs.
+
+For example, charging capability is bounded by:
+
+\[
+0\le P^{EVCS,ch}_{f,\gamma,t}
+\le O_{f,\gamma,t}P^{EV,max}_{unit}B1_{f,\gamma,t},
+\]
+
+where \(O_{f,\gamma,t}\) is EVCS occupancy.
+
+The aggregate EVCS state of charge evolves with charging/discharging plus a stochastic term representing energy entering or leaving the station when vehicles arrive or depart.
+
+This model allows the EVCS to provide:
+
+- V2G active power;
+- reserve; and
+- reactive-power support.
+
+The first test case assumes a medium-duty fleet with 20 EVs, each with 200 kWh battery capacity and 150 kWh usable energy, served by twenty 150 kW chargers. Vehicle departure time is generated with mean 7:00 and standard deviation 1 hour, arrival time with mean 19:00 and standard deviation 1 hour, and arriving EV energy with mean 45 kWh and standard deviation 5 kWh.
+
+### 9. Lower-level ISO market clearing
+
+The ISO jointly clears energy and reserve. Its energy-balance condition is conceptually:
+
+\[
+\sum_g P^{gen}_{g,t}
+-\sum_r P^{Ret}_{r,t}
+-P^{ADN,in}_t
++P^{ADN,out}_t
+=0.
+\]
+
+Reserve balance requires:
+
+\[
+\sum_g r^{gen}_{g,t}+r^{ADN}_t=R^{sys}_t.
+\]
+
+Transmission congestion is represented using generation shift factors. Thus, the LMP is affected not only by energy scarcity but also by branch congestion.
+
+This is crucial to the strategic mechanism: changing ADN import/export can relieve or create transmission congestion, thereby changing the marginal unit and the LMP at the ADN interconnection bus.
+
+### 10. Bilevel model to MPEC to MISOCP
+
+Directly solving the leader-follower formulation is difficult because the upper-level ADN anticipates the optimal response of the lower-level ISO.
+
+The authors replace the lower-level linear market-clearing problem with its Karush-Kuhn-Tucker (KKT) optimality conditions, including:
+
+- primal feasibility;
+- dual feasibility;
+- stationarity; and
+- complementary slackness.
+
+A generic complementarity condition
+
+\[
+0\le x\perp y\ge0
+\]
+
+is linearized using a binary variable and sufficiently large constants. Strong duality is also used to remove bilinear products involving market prices and cleared quantities.
+
+The final formulation is a **Mixed-Integer Second-Order Cone Programming (MISOCP)** problem because it combines:
+
+- binary variables from complementarity reformulation and EVCS operating states;
+- linearized market-equilibrium constraints; and
+- SOCP constraints from the ADN AC power-flow relaxation.
+
+### 11. Case studies and key settings
+
+#### Case ISO5-ADN9
+
+- Wholesale system: modified PJM 5-bus system.
+- Distribution system: modified radial 9-node ADN.
+- Wholesale peak load: 1070 MW.
+- ADN peak load: 53 MW.
+- Market participants: 5 GenCos plus one strategic ADN; other retailers are non-strategic.
+- Time horizon: 24 hours.
+- Uncertainty: solar, wind, EVCS occupancy, and EVCS SOC change.
+- Original scenarios: 365; reduced scenarios: 3.
+- ESS degradation cost: 30 $/MWh.
+- EV battery degradation cost: 50 $/MWh.
+- ESS efficiency: 98%; EV efficiency: 95%.
+- Two DER-cost cases are studied: Case 0 assumes zero DER active/reactive generation cost; Case 1 uses nonzero DER generation cost.
+
+#### Case ISO30-ADN33
+
+- Wholesale system: IEEE 30-bus transmission network.
+- Distribution system: IEEE 33-node ADN.
+- Transmission peak load: 168 MW.
+- ADN DER portfolio includes 3 MW wind, 2.2 MW ESS, and a 3 MW EVCS.
+- GenCo reserve capacity is set to 15% of generation capacity.
+- The ADN has sufficiently high DER penetration to switch between net consumer and net producer behavior.
+
+#### Software and computation
+
+The model is implemented in MATLAB/YALMIP and solved with Gurobi.
+
+- ISO5-ADN9: 6495 continuous variables + 168 binary variables; 60 s solution time.
+- ISO30-ADN33: 65,928 continuous variables + 2832 binary variables; 147 s solution time.
+
+The SOCP relaxation gaps reported are \(1.5\times10^{-4}\) MW and \(6.3\times10^{-6}\) MW for the two systems, respectively.
+
+### 12. Main findings
+
+#### Finding 1 — a relatively small ADN can still influence reserve prices
+
+In ISO5-ADN9, the ADN's energy exchange is small relative to total system energy, but its available reserve is significant relative to the system reserve requirement. The ADN becomes the marginal reserve participant during periods 18-20.
+
+Its strategic reserve offer raises the ISO reserve price from the marginal offer of GenCo #3 to the price associated with GenCo #2, even though GenCo #2 is not actually supplying reserve in those periods. The model therefore shows how an aggregated DER portfolio can obtain market power through **marginality**, not simply through a large share of total energy production.
+
+#### Finding 2 — strategic bidding can lower energy LMP when the ADN is a buyer
+
+In the energy market, the ISO5-ADN9 ADN is primarily a net consumer. Its strategic bid changes congestion patterns and lowers the LMP at its interconnection node, reducing wholesale energy-purchase cost.
+
+The reported market payment is:
+
+- Price-maker ADN: **$8,720**;
+- Price-taker ADN: **$21,211**.
+
+The paper reports a **58.8% reduction** in the ADN's energy-purchase cost relative to the price-taker case.
+
+This result illustrates that market power does not always appear as a seller increasing prices; a large flexible buyer can also strategically reduce the price it pays.
+
+#### Finding 3 — DER operating cost changes the allocation between energy and reserve
+
+When nonzero DER generation cost is introduced, the ADN purchases more energy from the ISO while allocating more of its DER capability to the reserve market. The economic explanation is that reserve can provide revenue while avoiding some direct DER energy-production cost.
+
+Thus:
+
+\[
+\text{higher internal energy cost}
+\rightarrow
+\text{less DER energy dispatch}
++\text{more reserve allocation}.
+\]
+
+#### Finding 4 — storage and EVs are valuable mainly as reserve resources in the second case
+
+In ISO30-ADN33, wind generation is used in both energy and reserve markets, while ESS and EVCS are mainly assigned to reserve because battery degradation makes frequent energy cycling less attractive.
+
+The paper notes that EVCS is the third reserve choice because EV battery degradation cost is higher than ESS degradation cost. EVCS reserve also falls to zero during periods 8-17 when occupancy is zero.
+
+#### Finding 5 — renewable energy may be deliberately curtailed to sell reserve
+
+In ISO30-ADN33, the model curtails 3 MW of wind energy in period 16 to offer 3 MW of reserve, with similar behavior during periods 18-21. This occurs because energy and reserve prices are comparable and wind production cost is assumed to be zero.
+
+Therefore:
+
+> Maximum renewable energy production is not necessarily the profit-maximizing market strategy when reserve has an opportunity value.
+
+#### Finding 6 — price-maker behavior strengthens as DER penetration increases
+
+![Increasing DER penetration gives the ADN more ability to become the marginal reserve participant and influence the reserve price. Source: Fig. 12 of Ravi et al. (2023).](papers/p036-ravi2023-strategic-adn/figures/ravi2023_strategic_adn/fig12_der_penetration_market_power.png){width=76%}
+
+The authors test 40%, 70%, and 100% DER penetration.
+
+- At 40% penetration, the ADN sets the reserve price in period 18.
+- At 70%, it sets the reserve price in periods 14, 16, and 17.
+- At 100%, it sets the reserve price in periods 10, 14, 15, 16, and 17.
+
+The mechanism is straightforward: higher DER penetration gives the ADN more dispatchable energy/reserve headroom and therefore greater ability to become marginal in the wholesale market.
+
+#### Finding 7 — price-maker and price-taker ADNs can behave very differently
+
+![Energy exchange, LMP, and reserve-price comparison between price-maker and price-taker ADNs in ISO30-ADN33. Source: Fig. 11 of Ravi et al. (2023).](papers/p036-ravi2023-strategic-adn/figures/ravi2023_strategic_adn/fig11_pm_vs_pt.png){width=76%}
+
+For ISO30-ADN33, the table reports the net payment to the ISO market as:
+
+- PM-ADN: **-$1,300**;
+- PT-ADN: **$193.41**.
+
+Under the table's sign convention, the strategic ADN moves from making a positive payment to the ISO to a negative net payment, consistent with the paper's conclusion that the price-maker earns greater profit from ISO interactions.
+
+### 13. Why the results occur
+
+The main results can be understood through three coupled mechanisms.
+
+#### Mechanism A — market position changes the desirable price direction
+
+When the ADN is buying energy:
+
+\[
+LMP\downarrow \quad\Rightarrow\quad purchase\ cost\downarrow.
+\]
+
+When the ADN is selling reserve:
+
+\[
+Reserve\ price\uparrow \quad\Rightarrow\quad reserve\ revenue\uparrow.
+\]
+
+A strategic ADN therefore optimizes its market position, not a single universal price objective.
+
+#### Mechanism B — DER flexibility changes marginality
+
+Storage, EVs, and renewables do more than offset local load. Their aggregated reserve/energy headroom can change which resource becomes marginal in the ISO market. Market value therefore comes from **marginal influence**, not only MWh production.
+
+#### Mechanism C — network congestion links distribution decisions to transmission prices
+
+The ADN's import/export affects transmission flows. When strategic bidding relieves congestion, the marginal congestion component of LMP can decrease. This explains why a distribution-level resource can influence transmission-level prices even when its energy volume is small relative to total system demand.
+
+### 14. What this paper teaches
+
+#### Lesson 1 — DER aggregation can create market power
+
+A large fleet of small DERs can become economically significant once coordinated by an ADN. Aggregation therefore changes both flexibility and competitive-market behavior.
+
+#### Lesson 2 — price-taker assumptions can become structurally wrong at high DER penetration
+
+If the ADN can change the marginal unit or congestion pattern, treating wholesale prices as exogenous misses an important feedback loop.
+
+#### Lesson 3 — energy value and reserve value compete for the same physical headroom
+
+A renewable generator, ESS, or EVCS cannot allocate the same capacity independently to all products. Joint energy-reserve optimization is essential.
+
+#### Lesson 4 — strategic market feasibility must also be network feasibility
+
+A profitable wholesale bid is insufficient if distribution voltages, inverter ratings, reactive-power capability, or line flows are violated.
+
+#### Lesson 5 — strategic behavior can move different prices in opposite directions
+
+A net-buying ADN may seek lower energy LMPs while simultaneously seeking higher reserve prices. Market power should therefore be analyzed product by product.
+
+#### Lesson 6 — more DER penetration does not only mean more renewable energy; it also changes bargaining power
+
+The 40%-70%-100% penetration study shows that DER deployment alters the competitive structure of the wholesale market.
+
+### 15. Critical reading
+
+#### 15.1 Equation (61) appears inconsistent with the original objective
+
+In Eq. (1), ESS battery degradation cost uses both charging and discharging power, and the EVCS term similarly contains both charging and discharging. In the transformed MISOCP objective in Eq. (61), the printed expression appears to repeat the charging-power variable in places where the original objective uses discharging power. This may be a typographical error in the reformulated objective. The paper does not explicitly discuss or correct it, so it should not be silently repaired when reproducing the formulation.
+
+#### 15.2 The paper models strategic bidding but does not model market-power mitigation
+
+The ADN intentionally changes LMP and reserve prices to improve its own economic position. This is the purpose of the price-maker formulation. However, the study does not introduce offer caps, conduct-and-impact tests, market-monitoring rules, or other market-power mitigation mechanisms. Therefore, the reported ADN profit improvement should not be interpreted as a social-welfare improvement.
+
+#### 15.3 Only the ADN is strategic
+
+Other GenCos and retailers are modeled as non-strategic participants. If multiple ADNs, VPPs, aggregators, or GenCos all bid strategically, the equilibrium structure could change substantially. The current model is therefore a leader-follower strategic bidding problem rather than a full multi-player equilibrium.
+
+#### 15.4 Scenario reduction is aggressive
+
+The uncertainty model reduces 365 scenarios to only three representative scenarios. This improves tractability, but the paper does not provide an out-of-sample test showing whether the reduced scenario set preserves rare but operationally important solar, wind, or EV events.
+
+#### 15.5 Reserve activation is represented more simply than full real-time delivery
+
+The model includes a reserve-calling probability, reserve headroom constraints, and degradation terms. However, it does not explicitly simulate a scenario-dependent sequence of realized reserve activation, SOC depletion/recovery, and subsequent real-time re-dispatch. Therefore, it is primarily a day-ahead reserve scheduling/bidding model rather than a full reserve-delivery simulation.
+
+#### 15.6 No terminal ESS energy condition is explicitly stated in the presented ESS constraints
+
+Eqs. (13)-(21) bound ESS power and energy and model intertemporal SOC evolution, but the formulation shown does not state an end-of-horizon SOC equality or recovery target. For a 24-hour scheduling problem, this could matter because terminal stored energy has economic value beyond the modeled horizon.
+
+#### 15.7 EV flexibility is highly aggregated
+
+The EVCS formulation captures occupancy and aggregate SOC uncertainty, which is useful for tractability. However, individual departure-SOC requirements, heterogeneous driver preferences, and individual charging deadlines are not explicitly optimized. User-service feasibility is therefore represented at an aggregate fleet level.
+
+### 16. Limitations / What remains unsolved
+
+#### A. Limitations or future work explicitly stated by the authors
+
+The authors state that future work can model DER control in a **decentralized** manner to reflect rapid restructuring and privatization of the power grid.
+
+#### B. Further research space visible from the model
+
+**Multiple strategic participants.** The current model has one strategic ADN. Multiple strategic ADNs, VPPs, or GenCos would require an equilibrium or equilibrium-constrained multi-leader framework.
+
+**Market-power mitigation.** The model quantifies the ability to manipulate prices but does not ask when that behavior would trigger mitigation or reduce market welfare.
+
+**Risk beyond expected value.** Stochastic uncertainty is evaluated through expected cost with three reduced scenarios. Tail-risk measures such as Conditional Value at Risk (CVaR) are not included.
+
+**Real-time reserve delivery.** Reserve calling and subsequent SOC recovery are not modeled as a detailed multi-stage process.
+
+**Richer EV behavior.** Individual charging requirements, departure deadlines, willingness to provide V2G, and participation incentives are outside the current aggregate EVCS model.
+
+**Longer horizon.** The case studies use a 24-hour market horizon. Inter-day storage value and strategic behavior over repeated market days are not examined.
+
+### 17. Research idea triggers
+
+#### Idea 1 — Strategic ADN + market-power mitigation
+
+Extend the bilevel price-maker model with realistic wholesale-market mitigation rules:
+
+\[
+\text{strategic bid}
+\rightarrow
+\text{market-power test}
+\rightarrow
+\text{mitigated offer}
+\rightarrow
+\text{market clearing}.
+\]
+
+This would distinguish technically possible price influence from economically permissible bidding behavior.
+
+#### Idea 2 — Multiple strategic ADNs / VPPs
+
+Replace the single leader with several competing DER aggregators. A natural question is whether increasing DER aggregation creates competition among flexible resources or simply transfers market power from conventional generators to aggregators.
+
+Possible methods include Equilibrium Problems with Equilibrium Constraints (EPECs), complementarity models, or multi-agent learning.
+
+#### Idea 3 — Stochastic bidding + CVaR / DRO
+
+The current scenario-based expected-cost model could be extended to explicitly price downside risk:
+
+\[
+\min \; \mathbb E[C]
++\lambda\,CVaR_\alpha(C).
+\]
+
+A Distributionally Robust Optimization (DRO) version could also address ambiguity in solar, wind, and EV scenario probabilities.
+
+#### Idea 4 — Day-ahead reserve offer + real-time activation and recovery
+
+Create a multi-stage model:
+
+\[
+\text{day-ahead energy/reserve bid}
+\rightarrow
+\text{uncertain reserve activation}
+\rightarrow
+\text{SOC change}
+\rightarrow
+\text{recovery/rebound}
+\rightarrow
+\text{next market interval}.
+\]
+
+This would make battery and EV reserve deliverability more explicit.
+
+#### Idea 5 — Strategic bidding with degradation-aware multi-service stacking
+
+Jointly allocate battery/EV capability among:
+
+- energy arbitrage;
+- spinning/flexible reserve;
+- frequency regulation;
+- reactive power support; and
+- local congestion relief.
+
+The key research question is the opportunity cost of reserving the same inverter/battery capacity for competing services.
+
+#### Idea 6 — Network-aware strategic DER market participation with distribution locational signals
+
+The current paper couples wholesale LMP with distribution-network feasibility, but it does not clear a Distribution Locational Marginal Price (DLMP)-based local market. A natural extension is:
+
+\[
+\text{wholesale LMP}
++\text{distribution DLMP}
++\text{strategic aggregator bidding}.
+\]
+
+This could reveal whether local congestion pricing amplifies or limits wholesale market power.
+
+#### Idea 7 — Strategic EV flexibility with user participation incentives
+
+Add heterogeneous EV owners who decide whether to make their batteries available for V2G. This links the paper naturally to benefit allocation and participation studies:
+
+\[
+\text{wholesale reserve revenue}
+\rightarrow
+\text{aggregator compensation}
+\rightarrow
+\text{EV participation}
+\rightarrow
+\text{available market power/flexibility}.
+\]
+
+### 18. Connections to the surrounding literature in this review
+
+This paper complements several nearby themes in the literature library.
+
+- Compared with **P031**, which coordinates many prosumers for local energy trading and flexibility services, P036 asks what happens when aggregated DER flexibility becomes large enough to **influence wholesale prices**.
+- Compared with **P033**, which focuses on real-time Technical Virtual Power Plant scheduling with energy/flexibility markets and network feasibility, P036 focuses more explicitly on **strategic price-making and bilevel ISO interaction**.
+- Compared with **P034**, which uses reinforcement learning for local/wholesale trading among interconnected microgrids, P036 uses an explicit market-clearing optimization model and therefore exposes the mechanism by which bids change **marginal units, congestion, LMP, and reserve price**.
+- Compared with **P035**, which addresses long-term robust capacity planning, P036 operates on the day-ahead market timescale and shows how an already-installed DER portfolio changes short-term market power.
+
+Together, these papers form a useful progression:
+
+\[
+\text{DER capacity}
+\rightarrow
+\text{aggregation and coordination}
+\rightarrow
+\text{market bidding}
+\rightarrow
+\text{price formation}
+\rightarrow
+\text{network feasibility}
+\rightarrow
+\text{market power and welfare}.
+\]
+
+### Problem-map tags
+
+**Problem-map tags:** `strategic bidding` · `price-maker ADN` · `market power` · `energy-reserve co-optimization` · `DER aggregation` · `renewable uncertainty` · `EV flexibility` · `battery degradation` · `transmission-distribution interaction` · `network constraints` · `locational marginal price` · `reserve price` · `bilevel optimization` · `scenario reduction` · `market-power mitigation gap`
+
+:::

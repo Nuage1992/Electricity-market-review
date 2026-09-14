@@ -1,0 +1,669 @@
+::: {.callout-note collapse="true" icon=false}
+## [P027] Yu et al. (2023) — Frequency Regulation Capacity Offering of District Cooling System: An Intrinsic-Motivated Reinforcement Learning Method
+
+**Journal:** IEEE Transactions on Smart Grid, 14(4), 2762–2773  
+**DOI:** 10.1109/TSG.2022.3220732  
+**Main topics:** district cooling system (DCS) · frequency regulation · regulation-capacity offering · Deep Reinforcement Learning (DRL) · Deep Deterministic Policy Gradient (DDPG) · intrinsic motivation · pseudo-count exploration · thermal inertia · demand response · PJM regulation market
+
+### Quick takeaway
+
+This paper studies a question that is easy to state but difficult to solve in practice: **how much frequency-regulation capacity should a District Cooling System (DCS) offer one hour ahead?** Offering too little wastes the large thermal flexibility of the cooling system and reduces market revenue. Offering too much can make the DCS unable to follow the regulation signal, lower its performance score, and potentially violate building comfort requirements.
+
+The problem is difficult because a DCS is not a simple controllable load. Its cooling station, pipelines, heat exchangers and buildings create **thermal inertia, ramp limits and transportation delay**. In addition, building cooling demand and real-time regulation signals are stochastic. The authors therefore formulate the hour-ahead capacity-offering problem as a **Markov Decision Process (MDP)** and use a model-free **Deep Deterministic Policy Gradient (DDPG)** agent to choose the continuous regulation-capacity offer.
+
+The distinctive contribution is not only using DRL, but adding **intrinsic motivation based on a pseudo-count of visited states**. Rarely visited states receive an exploration bonus, encouraging the agent to explore the state space more efficiently. In the reported simulations, this reduces score-constraint violations during training and produces a better converged policy than standard DDPG.
+
+The paper is especially useful for understanding three ideas: **(1) flexible thermal loads can be market resources, not only energy consumers; (2) regulation-capacity offering is a sequential decision problem because thermal flexibility is time-coupled; and (3) “model-free” DRL does not mean that physical feasibility disappears — the agent still interacts with a physical/simulation environment that determines temperature, power and regulation performance.**
+
+### 1. Problem addressed — how much regulation capacity can a DCS safely offer?
+
+A DCS supplies chilled water from one central energy station to multiple buildings. Because buildings and water networks have substantial thermal inertia, the electrical consumption of chillers can be temporarily moved up or down without immediately violating indoor-temperature requirements.
+
+This makes a DCS potentially valuable for frequency regulation. However, the market requires the resource to declare its regulation capacity in advance and then follow the system operator's real-time signal. The key decision is therefore not simply whether the DCS is flexible, but:
+
+> **Given the current thermal state, recent market information and uncertain future signals, what regulation capacity should the DCS offer for the next operating hour?**
+
+The decision contains a basic economic trade-off:
+
+```text
+larger offered capacity
+        ↓
+higher possible regulation revenue
+        ↓
+more difficult signal tracking
+        ↓
+higher risk of low performance score / comfort problems
+```
+
+The paper therefore aims to maximize cumulative regulation revenue while maintaining market-service quality and building comfort.
+
+### 2. Why existing approaches are not enough
+
+The authors identify three main difficulties.
+
+#### 2.1 Complex physical dynamics
+
+A DCS is a networked thermal system. Cooling is generated at the energy station and transported through long pipelines to multiple buildings. Important dynamics include:
+
+- chiller electricity-to-cooling conversion;
+- water mass-flow control;
+- building thermal capacity and resistance;
+- pipeline transportation delay;
+- water-flow inertia and ramp limits;
+- uncertain internal building heat gains.
+
+The authors argue that accurate parameters are difficult to obtain and change with environmental conditions. Therefore, detailed model-based optimization may be difficult to apply directly to a real DCS.
+
+#### 2.2 Regulation capacity is time-coupled
+
+Thermal inertia behaves somewhat like limited energy storage. If the DCS continuously provides one-direction regulation, the buildings may gradually approach their comfort limits. Therefore, using flexibility now changes the amount of flexibility available later.
+
+This means that a myopic strategy that only maximizes the next hour's revenue can be poor. The controller needs to consider **current and future rewards**.
+
+#### 2.3 Cooling demand and regulation signals are uncertain
+
+Two major uncertainties are emphasized:
+
+- random human behavior changes building cooling demand;
+- real-time regulation signals are stochastic and difficult to predict precisely.
+
+The probability distributions are not assumed to be known in a form convenient for stochastic optimization. This motivates a data-driven sequential decision method.
+
+### 3. Physical mechanism — why a cooling system can provide frequency regulation
+
+The DCS considered in the paper consists of one energy station, pipelines, heat exchangers and multiple buildings.
+
+![Schematic structure of the district cooling system. Source: Fig. 1 of Yu et al. (2023).](papers/p027-yu2023-dcs-regulation-rl/figures/yu2023_dcs_regulation_rl/fig1_dcs_structure.png){width=88%}
+
+The chillers convert electrical power into cooling. In simplified form,
+
+\[
+P^{\mathrm{ch}}_t = \frac{Q^{\mathrm{ch}}_t}{\mathrm{COP}},
+\]
+
+where \(P^{\mathrm{ch}}_t\) is chiller electrical power, \(Q^{\mathrm{ch}}_t\) is cooling power and COP is the coefficient of performance.
+
+Building indoor temperature follows a thermal-balance equation of the form
+
+\[
+D_i\frac{\partial T^A_{i,t}}{\partial t}
+=
+\frac{T^O_t-T^A_{i,t}}{R_i}
++\zeta_{i,t}
+-\eta^{II}_i Q_{i,t}.
+\]
+
+Here:
+
+- \(D_i\): thermal capacity of building \(i\);
+- \(R_i\): thermal resistance;
+- \(T^A_{i,t}\): indoor air temperature;
+- \(T^O_t\): ambient temperature;
+- \(\zeta_{i,t}\): uncertain internal heat load;
+- \(Q_{i,t}\): cooling delivered to the building.
+
+The practical meaning is more important than the exact equation: **indoor temperature does not respond instantaneously to chiller power.** This delay creates a short-term buffer that can be used for grid regulation.
+
+The paper also models water-flow ramp limits, inertia and pipeline transportation delay. Therefore, regulation capacity is constrained not only by instantaneous chiller power but also by the recent operating history of the DCS.
+
+### 4. Market layer — the DCS sells regulation capacity to PJM
+
+The paper uses the PJM regulation-market mechanism as the market setting. The DCS can revise its regulation-capacity offer until 60 minutes before the operating hour.
+
+The hourly regulation revenue is modeled as
+
+\[
+r^{\mathrm{DCS}}_t
+=
+C^{\mathrm{DCS}}_t s^{\mathrm{DCS}}_t p^{\mathrm{PJM}}_t,
+\]
+
+where:
+
+- \(C^{\mathrm{DCS}}_t\): offered regulation capacity;
+- \(s^{\mathrm{DCS}}_t\in[0,1]\): performance score;
+- \(p^{\mathrm{PJM}}_t\): regulation market-clearing price.
+
+The DCS is assumed to be a **price-taker**.
+
+The performance score combines three aspects used by PJM:
+
+1. precision;
+2. correlation;
+3. response delay.
+
+The paper adopts **0.75** as the required score because it is the PJM qualification-test threshold and is stricter than the 0.4 daily disqualification threshold discussed by the authors.
+
+The optimization goal is conceptually
+
+\[
+\max \sum_t C^{\mathrm{DCS}}_t s^{\mathrm{DCS}}_t p^{\mathrm{PJM}}_t
+\]
+
+subject to
+
+\[
+s^{\mathrm{DCS}}_t\ge 0.75,
+\qquad
+|T^A_{i,t}-T^{\mathrm{set}}_{i,t}|\le \Delta T_i.
+\]
+
+Thus, the largest possible capacity offer is not automatically the best offer. A large offer can reduce the performance score and eventually reduce total revenue.
+
+### 5. MDP formulation — converting capacity offering into a sequential decision problem
+
+The paper formulates the problem as a 5-tuple MDP \(\langle S,A,P,R,\gamma\rangle\).
+
+#### 5.1 Action — one continuous hour-ahead capacity offer
+
+The action is
+
+\[
+a_t=C^{\mathrm{DCS}}_t.
+\]
+
+It is a continuous variable. During the following operating hour, the real-time regulation signal lies in \([-1,1]\), so the DCS should be able to modulate power approximately within \([-a_t,a_t]\) around its baseline.
+
+This continuous action space is one reason the paper selects DDPG rather than a discrete-action method such as a basic DQN.
+
+#### 5.2 State — only information considered highly relevant to the offer
+
+The state contains six elements:
+
+\[
+s_t=
+\left[
+ t,
+ p^{\mathrm{PJM}}_{t-1},
+ P^{\mathrm{ch}}_{t-1},
+ \mathbb{E}[\Delta T_{i,t-1}],
+ \mathbb{E}[\sigma^s_{t-1}],
+ f(\sigma^s_{t-1})
+\right]^T.
+\]
+
+Their roles are:
+
+| State variable | Why it matters |
+|---|---|
+| time \(t\) | indirectly represents daily patterns of ambient temperature and cooling demand |
+| previous market price | provides recent market information |
+| previous DCS power | indicates available up/down regulation headroom |
+| mean indoor-temperature deviation | measures comfort state and remaining thermal flexibility |
+| mean previous regulation signal | summarizes signal direction/intensity |
+| maximum cumulative regulation feature | represents how strongly the previous signal continuously pushed the DCS in one direction |
+
+The authors deliberately do **not** include every DCS physical state. They treat omitted information as environmental uncertainty in order to simplify learning.
+
+#### 5.3 Reward — revenue when qualified, penalty when the score is violated
+
+The DRL reward is
+
+\[
+R_t
+=
+\beta_1\kappa_t C^{\mathrm{DCS}}_t s^{\mathrm{DCS}}_t p_t
+-
+\beta_2(1-\kappa_t)\frac{C^{\mathrm{DCS}}_t}{s^{\mathrm{DCS}}_t},
+\]
+
+where \(\kappa_t=1\) when the performance score satisfies the requirement and \(0\) otherwise.
+
+The first term rewards profitable qualified participation. The second term penalizes an offer that causes the performance score to fall below the required level.
+
+The discount factor \(\gamma\) makes the agent value future rewards, which is important because thermal flexibility used now changes future regulation capability.
+
+### 6. Why DDPG is used
+
+Deep Deterministic Policy Gradient (DDPG) is an actor–critic DRL algorithm for continuous actions.
+
+The **actor** learns the mapping
+
+```text
+observed DCS/market state → regulation-capacity offer
+```
+
+while the **critic** estimates the long-term value of a state–action pair.
+
+The agent learns from transitions
+
+\[
+(s_t,a_t,R_t,s_{t+1})
+\]
+
+stored in an experience replay buffer. The policy is updated to make high-value actions more likely.
+
+The important interpretation is that DDPG allows the controller to learn the combined consequences of:
+
+- offering a large or small regulation capacity;
+- the future thermal state;
+- uncertain market signals;
+- uncertain building cooling demand;
+- the resulting market performance score.
+
+The DRL agent itself does **not** use the explicit DCS equations when deciding the action. However, in the paper's numerical study, those physical equations are used to construct the simulation environment with which the agent interacts.
+
+### 7. Core contribution — pseudo-count intrinsic motivation
+
+A standard model-free DRL agent initially knows little about the environment. It therefore requires many trial-and-error interactions. In a physical energy system, poor exploration can produce unacceptable operating decisions.
+
+The authors add **intrinsic motivation** to encourage more efficient exploration.
+
+The intuitive idea is:
+
+```text
+frequently visited state
+    → little new information
+    → small exploration bonus
+
+rarely visited state
+    → more new information
+    → large exploration bonus
+```
+
+For discrete states, this could be implemented by counting visits directly. The DCS state is continuous, so exact states are almost never repeated. The paper therefore estimates a **pseudo-count** using a Gaussian Mixture Model (GMM) density estimator.
+
+The pseudo-count is calculated from the state probability before and after re-observing the state:
+
+\[
+\hat N_n(s_t)
+=
+\frac{\rho_n(s_t)[1-\rho'_n(s_t)]}
+{\rho'_n(s_t)-\rho_n(s_t)}.
+\]
+
+The empirical reward is then augmented by
+
+\[
+R_t^+
+=
+R_t
++
+\beta_3\left(\hat N_n(s_t)+0.01\right)^{-1/2}.
+\]
+
+A small pseudo-count produces a large bonus. Therefore, the agent is encouraged to visit less familiar regions of the state space instead of repeatedly exploring already familiar situations.
+
+The goal is **not** to make exploration more aggressive. The goal is to cover useful state space in fewer episodes so that the agent requires fewer harmful trial-and-error interactions overall.
+
+### 8. Overall strategy — market operation and DRL training are linked
+
+![Intrinsic-motivated DRL framework for hour-ahead DCS regulation-capacity offering. Source: Fig. 5 of Yu et al. (2023).](papers/p027-yu2023-dcs-regulation-rl/figures/yu2023_dcs_regulation_rl/fig5_intrinsic_drl_framework.png){width=86%}
+
+The operating loop is:
+
+```text
+observe DCS + market state
+        ↓
+agent offers one-hour regulation capacity
+        ↓
+DCS follows real-time regulation signal
+        ↓
+market calculates performance and revenue
+        ↓
+DCS state changes
+        ↓
+transition is stored for learning
+```
+
+During training, intrinsic motivation modifies the reward used for policy updates. During actual operation, the economic revenue and physical response still come from the DCS/market environment.
+
+### 9. Case study setup
+
+#### 9.1 Physical system
+
+- **DCS basis:** realistic system schematic from Hengqin, China.
+- **Simulation environment:** one energy station and **12 connected buildings**.
+- **Total cooling capacity:** **144 MW**.
+- **COP:** 5.
+- **Heat-transfer efficiencies:** 90%.
+- **Building thermal capacity:** approximately \(10^6\)–\(10^7\) kJ/°C.
+- **Building thermal resistance:** approximately 0.001–0.003 °C/kW.
+- **Indoor set temperature:** 20–23 °C.
+- **Comfort range:** ±1 °C.
+- DCS parameters are based on system technical guidelines and several Chinese national/local standards.
+
+#### 9.2 Market data
+
+- **Market:** PJM frequency regulation.
+- **Regulation signal:** real PJM RegA data.
+- **Hourly regulation price:** real PJM data.
+- **Required performance score:** 0.75.
+- **Minimum market-access capacity:** 1 MW.
+
+The physical DCS is Chinese while the market data/rules are from PJM. The study therefore combines a realistic DCS-based simulation environment with real market data rather than reproducing one existing field deployment.
+
+#### 9.3 Compared methods
+
+- **B1:** proposed DDPG + pseudo-count intrinsic motivation.
+- **B2:** standard DDPG without intrinsic motivation.
+- **B3:** Particle Swarm Optimization (PSO)-based heuristic strategy.
+- **B4:** equal-proportional offering based on recent DCS power, tested at 10%, 20% and 30%.
+
+#### 9.4 DRL training settings
+
+- training episodes: **7500**;
+- discount factor: \(\gamma=0.9\);
+- mini-batch size: 200;
+- actor hidden layers: 128 × 128;
+- critic hidden layers: 128 × 128;
+- actor learning rate: 0.001;
+- critic learning rate: 0.0001;
+- target-network smooth factor: 0.005;
+- exploration noise: Gaussian with \(\sigma=0.3\);
+- reward weights: \(\beta_1=0.005\), \(\beta_2=0.003\), \(\beta_3=0.05\);
+- implementation: Python/PyTorch, Intel Core i7 3.0 GHz, 16 GB memory.
+
+The paper states that \(\beta_1\), \(\beta_2\) and \(\beta_3\) were selected sequentially through reward-scale adjustment, penalty tuning and a coarse parameter sweep.
+
+### 10. Main findings
+
+#### 10.1 Intrinsic motivation improves training efficiency and reduces unsafe exploration
+
+Both B1 and B2 start from the same random policy and interact with the same simulation environment.
+
+The authors report that:
+
+- both agents become relatively stable after roughly **2000 episodes**;
+- B1 obtains higher episode rewards during training;
+- the final converged reward of B1 is higher than B2;
+- B2 continues to violate the performance-score requirement frequently during training;
+- B1 avoids **significant** score violations after approximately **150 episodes**.
+
+The authors explicitly state that neither converged DRL policy is guaranteed to be the global optimum.
+
+The key point is therefore not “B1 finds the mathematical optimum,” but:
+
+> **Intrinsic motivation reaches a useful policy with fewer harmful trial-and-error interactions.**
+
+#### 10.2 A fixed percentage of DCS power is not an effective capacity-offering rule
+
+The equal-proportional strategies expose a clear trade-off:
+
+- **B4-10%:** conservative, good performance score, but low revenue;
+- **B4-30%:** aggressive, many score violations and reduced revenue;
+- **B4-20%:** better balance, but still inferior to the learned policies.
+
+This shows that the best regulation offer is **state-dependent**, not a fixed percentage of current or historical power.
+
+#### 10.3 DRL outperforms the heuristic and proportional benchmarks
+
+The paper evaluates the trained policies over two months of simulated operation.
+
+![Distribution of daily regulation revenue and daily score-violation hours for the compared strategies. Source: Fig. 9 of Yu et al. (2023).](papers/p027-yu2023-dcs-regulation-rl/figures/yu2023_dcs_regulation_rl/fig9_revenue_score_comparison.png){width=84%}
+
+The reported ranking is clear:
+
+- B1 has the **highest average daily revenue**;
+- B1 also has the **smallest daily score-violation hours**;
+- B2 is second best;
+- PSO performs better than the fixed-percentage strategies but worse than the two RL methods.
+
+The reason given by the authors is that the learned agents use the DCS operating state and historical signal information to decide **whether and how strongly to participate**. They can therefore exploit thermal inertia through intermittent participation instead of blindly providing regulation every hour.
+
+#### 10.4 The DCS should not regulate continuously for too long
+
+On a representative operating day under B1:
+
+- the DCS participates in the regulation market for **15 hours**;
+- the longest continuous regulation period is **4 hours**;
+- after several hours of regulation, the policy tends to stop temporarily and allow thermal flexibility to recover.
+
+This behavior is physically meaningful. Thermal inertia is a limited flexibility resource, similar in some respects to an energy buffer. Continuous regulation can gradually push indoor temperatures toward their limits.
+
+#### 10.5 About 20% of operating power is a useful empirical scale, but not a fixed optimal rule
+
+From the numerical experiments, the authors state that the DCS can provide **approximately 20% of its operating power** as regulation capacity.
+
+This should not be interpreted as a universal constant. The rest of the paper shows that the optimal offer changes with thermal state, time of day and regulation-signal characteristics.
+
+#### 10.6 Night-time capacity is more stable than daytime capacity
+
+The authors observe that regulation-capacity offering during **22:00–08:00** is more stable than during the daytime.
+
+The explanation is that daytime human occupancy creates more uncertain and diverse internal cooling loads, which makes building temperatures and available flexibility more variable.
+
+#### 10.7 Comfort is maintained in the tested operation
+
+For the representative summer day:
+
+- ambient temperature varies approximately **28–32 °C**;
+- building set temperatures are 20–23 °C;
+- required comfort range is **±1 °C**;
+- all reported building temperature deviations remain within the required range under B1.
+
+This result is important because high regulation revenue would not be useful if it were obtained by sacrificing the cooling service that the DCS exists to provide.
+
+### 11. Additional regulation cost — the paper's supplementary check
+
+The main objective does not include additional electricity cost or equipment degradation from regulation. The authors justify this assumption with an additional analysis.
+
+Using one week of simulated operating data:
+
+- maximum daily power-consumption deviation between regulation and non-regulation operation is about **4.30%**;
+- average difference is **−13.2 MWh**, approximately **−0.70%** of average daily electricity consumption.
+
+The authors therefore argue that additional energy consumption is small because regulation makes power fluctuate around the original baseline rather than continuously increasing consumption.
+
+For equipment degradation, the paper does not build a quantitative lifetime model. It argues that compressor adjustment intervals remain the same and that ramp/time-delay limits prevent excessive adjustment. Hardware degradation is therefore **assumed** to be negligible in the main formulation.
+
+### 12. What this paper teaches
+
+#### Lesson 1 — Flexibility value depends on what you promise, not only what you physically possess
+
+A DCS may have large thermal flexibility, but the market problem is to choose a capacity that can be **reliably delivered**. Over-offering can be economically worse than conservative participation because poor tracking lowers the performance score.
+
+#### Lesson 2 — Thermal flexibility is an intertemporal resource
+
+The DCS cannot provide the same regulation capability indefinitely. Using thermal headroom now changes what remains later. Therefore, capacity offering naturally becomes a sequential optimization problem.
+
+#### Lesson 3 — Market participation and physical operation must be studied together
+
+A market offer affects real chiller operation, indoor temperatures and future flexibility. A purely economic bidding model that ignores these physical states can generate unrealistic offers.
+
+#### Lesson 4 — “Model-free” means the policy does not require an explicit model, not that physics is irrelevant
+
+The DDPG agent does not solve the DCS equations online. Nevertheless, its reward and next state still depend on physical system dynamics. In the paper, these dynamics are represented by a detailed simulation model.
+
+#### Lesson 5 — Safer exploration is different from safe control
+
+The proposed intrinsic motivation reduces the number of constraint violations during learning. The authors explicitly acknowledge that it **cannot guarantee zero violation of hard constraints**.
+
+This distinction is important:
+
+```text
+fewer unsafe trials
+        ≠
+formal safety guarantee
+```
+
+#### Lesson 6 — Intermittent market participation can be better than continuous participation
+
+The learned strategy frequently pauses regulation after several hours. The pause restores thermal headroom and enables later profitable participation. Flexibility scheduling is therefore partly a problem of **when not to participate**.
+
+### 13. Limitations / What remains unsolved
+
+#### A. Limitations and future work explicitly stated by the authors
+
+**1. No strict safety guarantee.**  
+The intrinsic-motivation method only decreases constraint violations by improving training efficiency. It is intended for soft-constraint problems and cannot guarantee zero hard-constraint violations.
+
+**2. Early online training is still unstable.**  
+At the beginning of training, reward is low and score violations can be substantial. The authors suggest high-quality pretraining and transfer learning as an important future direction.
+
+**3. Simulation-to-reality gap remains.**  
+All experiments are conducted in a simulation environment. Deployment of the DRL controller in a real DCS is explicitly left for future work.
+
+**4. Two market-performance thresholds may require different controllers.**  
+The paper uses 0.75 for both qualification and operation. The authors note that separate controllers for the qualification-test stage and daily-operation stage could be studied.
+
+**5. Additional operating costs could be modeled explicitly.**  
+Equipment degradation and additional operating cost are assumed to be small, but the paper states that they could be added in future work if necessary.
+
+#### B. Further research space visible from the model
+
+The points below are **further thoughts / possible extensions**, not claims made by the authors.
+
+**1. Intrinsic motivation → formally constrained / safe RL.**  
+A natural next step is to combine the economic RL policy with a safety layer that guarantees temperature and equipment constraints, e.g. constrained policy optimization, control-barrier methods, Lyapunov-based RL or an MPC safety filter.
+
+**2. Online RL → offline pretraining + online adaptation.**  
+The paper itself highlights the risk of early trial-and-error. Historical DCS data, simulation data and transfer learning could be used to initialize the policy before real deployment.
+
+**3. One regulation market → multi-market participation.**  
+The DCS could co-optimize energy cost, regulation capacity, regulation mileage, demand charges and possibly reserve products rather than treating regulation revenue in isolation.
+
+**4. Revenue-only objective → net profit including energy and degradation.**  
+The main objective neglects additional electricity cost and hardware degradation. A stronger market model would optimize net profit rather than gross regulation revenue.
+
+**5. Price-taker assumption → strategic bidding / market power.**  
+The current DCS does not influence market price. Aggregated large thermal systems or multiple DCSs could require price-responsive or strategic bidding models.
+
+**6. Single-agent capacity offering → hierarchical market/control architecture.**  
+A promising architecture is:
+
+```text
+upper layer: RL / stochastic optimizer
+hour-ahead capacity offer
+        ↓
+lower layer: MPC / robust controller
+real-time signal tracking + comfort guarantee
+```
+
+This separates the economic decision from the fast physical-control problem.
+
+**7. Point capacity offer → explicit flexibility envelope.**  
+Instead of directly learning one capacity number, a DCS could first estimate an uncertainty-aware feasible regulation region and then optimize the market offer inside that region.
+
+**8. One simulated DCS → cross-site generalization.**  
+A useful validation question is whether a learned policy transfers across building portfolios, weather conditions, pipeline structures or different regulation markets.
+
+### 14. Critical reading notes
+
+- **Model-free policy vs model-based environment:** the policy is model-free, but the numerical validation environment is built from an explicit thermal dynamic model. This distinction should be preserved when describing the contribution.
+- **Field validation:** the paper is based on a realistic Hengqin DCS schematic and real PJM market data, but the controller is not deployed in a real DCS. The validation is simulation-based.
+- **Training and testing environment:** the authors state that the DRL agent is trained and tested in the same environment, although the environment contains randomness. The paper does not report cross-environment or out-of-distribution testing.
+- **State simplification and Markov property:** the authors claim that omitted DCS information can be treated as uncertainty and that the selected six-dimensional state still satisfies the Markov property. Given the modeled thermal inertia and pipeline time delay, this is a strong assumption and would deserve further validation in a follow-up study.
+- **Potential Eq. (16) timing/notation issue:** the state at time \(t\) includes the historical feature \(f(\sigma^s_{t-1})\), but Eq. (16) multiplies the historical signal integral by \(C^{\mathrm{DCS}}_t\), the current-hour capacity symbol. Because the current offer is the action being decided, the notation appears potentially circular unless \(C_t\) is intended to denote a previously known capacity or the index is a typo. The paper does not clarify this point.
+- **Reward vs comfort constraint:** Eq. (15) lists both performance-score and indoor-temperature constraints, while the explicit RL reward in Eq. (17) penalizes performance-score violation but does not show a separate temperature-comfort penalty. Comfort is handled through the physical operating environment and resulting performance, but the exact mechanism by which Eq. (15)'s comfort condition is guaranteed in learning is not formulated as a separate hard RL constraint.
+- **Price notation:** market price is written as \(p_t^{\mathrm{PJM}}\) in the revenue model and state definition, while Eq. (17) uses \(p_t^M\). The paper does not explicitly explain this change in notation.
+- **Action lower bound vs market-access threshold:** Table I lists a minimum regulation capacity of 0 MW, while the case study states that at least 1 MW is required to enter the market. The paper does not detail how actions between 0 and 1 MW are treated by the agent beyond stating that participation requires more than 1 MW.
+- **Safety wording:** the paper describes the intrinsic-motivated method as “safer,” but later correctly limits this claim: it reduces violations and does not provide hard safety guarantees.
+- **Benchmark breadth:** the study compares against standard DDPG, PSO and fixed-percentage offering. It does not compare with model predictive control, stochastic optimization, robust optimization or constrained RL.
+- **Random-seed robustness:** B1 and B2 are initialized with the same random policy, but the paper does not report repeated multi-seed training statistics. This makes it difficult to separate algorithmic improvement from run-to-run DRL variability.
+
+### 15. Research idea triggers
+
+#### Idea 1 — Safe RL for DCS regulation offering
+
+```text
+intrinsic-motivated DDPG
+        +
+formal temperature / equipment safety layer
+        ↓
+profitable exploration with hard operational guarantees
+```
+
+Research question: *Can the DCS maximize regulation revenue while guaranteeing zero indoor-temperature violation during both training and deployment?*
+
+#### Idea 2 — TCFR/flexibility envelope + RL bidding
+
+A strong connection to feasible-region literature is to separate **physical capability estimation** from **economic offer selection**:
+
+```text
+physical DCS model / data
+        ↓
+uncertainty-aware feasible regulation envelope
+        ↓
+RL chooses economically attractive offer
+inside the feasible region
+```
+
+This can reduce the burden on RL to learn feasibility purely through trial and error.
+
+#### Idea 3 — Distributionally robust or risk-sensitive regulation capacity
+
+Instead of maximizing expected long-term reward only, introduce an explicit risk measure such as:
+
+- probability of score violation;
+- Conditional Value at Risk (CVaR);
+- Distributionally Robust Optimization (DRO) ambiguity set;
+- chance-constrained comfort guarantee.
+
+The resulting policy would trade revenue against a quantified reliability level.
+
+#### Idea 4 — Hierarchical RL + MPC
+
+Use RL for hour-ahead market participation and Model Predictive Control (MPC) for minute/second-level physical tracking:
+
+```text
+hour-ahead market state
+        ↓
+RL: capacity offer
+        ↓
+real-time regulation signal
+        ↓
+MPC: water flow / chiller power / comfort control
+```
+
+This exploits the strength of RL for uncertain economic decisions and the strength of MPC for explicit physical constraints.
+
+#### Idea 5 — Multi-market DCS scheduling
+
+Extend the DCS from a single regulation product to joint participation in:
+
+- energy market;
+- frequency regulation;
+- reserve;
+- demand response;
+- peak-demand management.
+
+The key research question becomes how to allocate limited thermal flexibility among competing revenue streams.
+
+#### Idea 6 — Sim-to-real transfer and adaptive capacity offering
+
+Use a detailed DCS digital twin for offline pretraining, then adapt the policy online with limited real data. This directly addresses the paper's acknowledged difficulty of unsafe early online training.
+
+#### Idea 7 — Explainable regulation-capacity decisions
+
+The DRL policy outputs a capacity but does not explicitly explain why. An interpretable layer could decompose the offer into contributions from:
+
+- current chiller power;
+- indoor-temperature headroom;
+- recent signal bias;
+- time of day;
+- expected market price.
+
+This would make the strategy easier for operators to trust and audit.
+
+### 16. Connection to P026 — from “what is feasible?” to “what should be offered?”
+
+P026 and P027 address two complementary layers of DER/flexibility participation.
+
+**P026** asks:
+
+> What aggregate power trajectories are physically feasible for a complex local market?
+
+Its answer is the Temporal-Coupled Feasible Region (TCFR).
+
+**P027** asks:
+
+> Given time-coupled flexibility and uncertainty, how much capacity should a flexible resource strategically offer to the market?
+
+Its answer is an intrinsic-motivated DRL policy.
+
+Together they suggest a useful research architecture:
+
+```text
+physical feasible-region estimation
+        ↓
+market-facing capacity/bid decision
+        ↓
+real-time physical control
+```
+
+This separation can be useful far beyond DCSs, including EV fleets, batteries, flexible buildings, virtual power plants and local electricity markets.
+
+**Problem-map tags:** `frequency regulation capacity offering` · `thermal flexibility` · `time-coupled flexibility` · `market performance risk` · `model uncertainty` · `stochastic regulation signal` · `safe exploration` · `DRL training efficiency` · `simulation-to-reality gap` · `comfort constraints` · `multi-market participation`
+
+:::

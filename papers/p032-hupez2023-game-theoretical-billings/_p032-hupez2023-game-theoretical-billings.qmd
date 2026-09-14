@@ -1,0 +1,412 @@
+::: {.callout-note collapse="true" icon=false}
+## [P032] Hupez et al. (2023) — Pricing Electricity in Residential Communities Using Game-Theoretical Billings
+
+**Journal:** IEEE Transactions on Smart Grid, Vol. 14, No. 2, March 2023, pp. 1621–1631  
+**DOI:** 10.1109/TSG.2022.3206912  
+**Main topics:** residential energy communities; electricity billing; fairness; game theory; Nash equilibrium; Vickrey-Clarke-Groves (VCG) mechanism; distributed optimization; demand-side management; prosumer flexibility; energy storage; photovoltaic generation; supplier tariffs
+
+### Quick takeaway
+
+This paper asks a deceptively simple but important question: **if a residential community is coordinated so that the total electricity cost is reduced, how should that cost be divided among individual prosumers?** The issue is difficult because prosumers share the same low-voltage network, their actions jointly determine nonlinear grid costs, and their DER portfolios differ substantially. A billing rule therefore does more than split a bill: it changes incentives, strategic behavior, flexibility provision, and ultimately the operating point of the whole community.
+
+The authors compare three game-theoretical billing schemes for day-ahead scheduling in a liberalized electricity market where each prosumer may choose its own supplier and may own photovoltaic (PV), storage (ST), electric vehicles (EV), and flexible appliances such as heat pumps (HP). Two schemes use **daily proportional billing** and reach the social optimum, while the third uses **continuous proportional billing** and gives stronger individual bargaining/decision incentives at the price of a small efficiency loss.
+
+The central lesson is that **fairness is not one-dimensional**. One billing can be system-efficient but weak in individual empowerment; another can better reward flexibility and individual behavior but permit strategic deviations from the social optimum. In the representative case study, continuous proportional billing has a mean daily inefficiency of only **1.97%**, while better exposing individuals to the consequences of their own timing and supplier choices.
+
+### 1. Problem addressed — optimal community operation does not automatically imply fair individual bills
+
+Residential prosumers increasingly share local infrastructure while owning heterogeneous Distributed Energy Resources (DERs). They may have PV generation, batteries, EVs, heat pumps, and other flexible loads. Their actions are interdependent because all of them use the same low-voltage network.
+
+A central or distributed scheduling mechanism can reduce the **aggregate community cost**, but this does not answer the allocation question:
+
+> If the community as a whole saves money, who should pay how much?
+
+This matters because different users contribute differently to the community outcome. A prosumer with storage may reduce peaks and grid costs. A PV owner may reduce imports but can also create reverse flows. A flexible user may shift demand to beneficial hours. Another consumer may contribute very little flexibility but still benefit from the collective schedule.
+
+Therefore, the paper studies the interaction between:
+
+- **system efficiency** — minimizing the total commodity and grid cost;
+- **fairness / cost allocation** — how the total cost is distributed among participants;
+- **individual empowerment** — whether a prosumer can improve its own bill through useful behavior;
+- **tractability** — whether the billing rule and equilibrium can be computed in a realistic distributed setting.
+
+### 2. Why existing approaches are not enough
+
+The authors identify several gaps in previous local-market and demand-side-management studies.
+
+First, many market designs focus on local spot markets or peer-to-peer mechanisms, while **network costs are difficult to allocate fairly**. Distribution Locational Marginal Prices (DLMPs) can reflect physical constraints, but their location-dependent prices may raise fairness concerns, and the paper instead explores billing rules that pass through the actual incurred commodity and grid costs.
+
+Second, much previous demand-side-management literature assumes a single utility and does not represent a **liberalized market** in which different households can contract different suppliers. In the paper, each supplier can offer a different time-varying commodity tariff, so supplier choice itself affects the bill.
+
+Third, previous fairness studies are often limited to one billing mechanism or one fairness dimension. The authors argue that the outcome depends strongly on the prosumer profile — especially PV ownership and flexibility — so different billing mechanisms need to be compared systematically under the same physical and economic setting.
+
+Finally, the authors extend earlier work by explicitly including **energy storage** and modern flexible-load profiles.
+
+### 3. Residential community and cost architecture
+
+The community consists of all prosumers connected behind the same low-voltage transformer. Each prosumer may select a different electricity supplier but shares the same distribution infrastructure with the others.
+
+![Demand-side architecture of the residential community. Source: Fig. 1 of Hupez et al. (2023).](papers/p032-hupez2023-game-theoretical-billings/figures/hupez2023_game_billings/fig1_demand_side_model.png){width=72%}
+
+For prosumer \(n\), the net load is
+
+\[
+\mathbf l_n = \mathbf d_n + \mathbf x_n + \mathbf s_n,
+\]
+
+where:
+
+- \(\mathbf d_n\) is the uncontrollable baseload minus PV generation;
+- \(\mathbf x_n\) is the flexible-appliance schedule;
+- \(\mathbf s_n\) is the storage charging/discharging schedule.
+
+The paper separates electricity costs into two parts.
+
+#### 3.1 Commodity cost
+
+Each prosumer is contracted with a supplier. Supplier \(i\) charges time-varying commodity price \(\gamma^t_{com,i}\) for positive net imports:
+
+\[
+C^t_{supp,i}(l_n^t)=\gamma^t_{com,i}l_n^{t+}\tau.
+\]
+
+A notable assumption is that suppliers **do not buy back exports** from prosumers; only positive net load is billed. The paper motivates this by the near-zero marginal generation cost of behind-the-meter renewable generation.
+
+#### 3.2 Grid cost
+
+All prosumers jointly determine the aggregate network loading
+
+\[
+L^t=\sum_{n\in\mathcal N}l_n^t.
+\]
+
+The grid cost is modeled as a quadratic function:
+
+\[
+C^t_{grid}=\gamma_{grid}(L^t\tau)^2.
+\]
+
+This quadratic form represents the nonlinear dependence of network-related costs on aggregate flow and, crucially, creates **interdependence**: one household's schedule changes the cost faced by the whole community.
+
+The model does not include explicit branch flows, voltage limits, or AC power flow. The community is represented as a single entity behind one transformer.
+
+### 4. Three billing philosophies
+
+The paper compares three methods. They are not merely accounting rules: each changes the incentives inside the scheduling game.
+
+#### 4.1 Net-load proportional billing (Net)
+
+The first method distributes the optimized daily community bill according to a fixed weight based on each prosumer's **minimum possible cumulative positive net load** \(L_n^*\):
+
+\[
+b_n^{Net}
+=
+\frac{L_n^*}{\sum_m L_m^*}f(\Lambda).
+\]
+
+Using the *minimum possible* positive net load rather than the realized load prevents a prosumer from strategically manipulating the distribution key after the scheduling decisions are made.
+
+**Interpretation:** this is the most egalitarian and computationally simple option, but it weakly rewards individual flexibility. Two users with very different temporal behavior can face the same average price if their allocation weights are similar.
+
+#### 4.2 Marginal-cost / VCG billing (VCG)
+
+The second daily scheme uses a normalized Vickrey-Clarke-Groves (VCG) idea. The weight of prosumer \(n\) is its marginal contribution to the optimal community cost:
+
+\[
+w_n=C^*_{\mathcal N}-C^*_{\mathcal N\setminus\{n\}}.
+\]
+
+Hence,
+
+\[
+b_n^{VCG}
+=
+\frac{C^*_{\mathcal N}-C^*_{\mathcal N\setminus\{n\}}}
+{\sum_m\left(C^*_{\mathcal N}-C^*_{\mathcal N\setminus\{m\}}\right)}
+f(\Lambda).
+\]
+
+The logic is: **how much does the community outcome change because this participant is present?** Participants that contribute useful flexibility can therefore obtain more favorable cost allocation.
+
+The method achieves the social optimum and has a truthful-strategy interpretation, but it is computationally expensive because it requires solving the full optimization problem plus one counterfactual problem for each participant, i.e., **\(N+1\) optimization problems**.
+
+#### 4.3 Continuous proportional billing (CP)
+
+The third method allocates costs at every time slot rather than once over the whole day:
+
+\[
+b_n^{CP}
+=
+\sum_{t\in\mathcal T}
+\left(
+\gamma^t_{com,i}l_n^{t+}\tau
++
+\gamma_{grid}l_n^tL^t\tau^2
+\right).
+\]
+
+This billing directly exposes each prosumer to:
+
+- the commodity price of its own contracted supplier;
+- its own time-varying net load;
+- the aggregate community load at the same time.
+
+Therefore, individual behavior is more visible in the final bill. The trade-off is that agents can strategically react to the billing formula, so the resulting Nash equilibrium is not guaranteed to coincide with the social optimum.
+
+### 5. Flexible resources — what creates bargaining power?
+
+The paper models four important household characteristics:
+
+- **PV:** treated as negative non-flexible load;
+- **ST:** energy storage that can charge in cheap periods or absorb PV surplus;
+- **EV:** partially flexible load with allowed charging windows and energy requirements;
+- **HP:** heat pump, simplified as a fully flexible load for the case study.
+
+Storage is modeled with energy capacity, charging/discharging efficiency, leakage, and power limits. Flexible appliances must satisfy their required daily energy while operating inside user-permitted time windows.
+
+The main conceptual point is that **flexibility changes both physical cost and bargaining position**. A flexible user can avoid expensive aggregate peaks and shift consumption toward cheaper commodity periods, while a PV owner without flexibility may reduce its own imports but still produce network flows that are not beneficial to the community under every billing rule.
+
+### 6. Game formulation — every prosumer minimizes its own bill
+
+The day-ahead scheduling problem is formulated as a non-cooperative game. Each prosumer is a player that chooses its flexible-load and storage schedule \(\Lambda_n\) while treating the others' schedules \(\Lambda_{-n}\) as given:
+
+\[
+\min_{\Lambda_n}
+\; b_n(\Lambda_n,\Lambda_{-n})
+\quad
+\text{s.t.}\quad \Lambda_n\in\Omega_n.
+\]
+
+A Nash equilibrium is reached when no prosumer can reduce its own bill by changing its schedule unilaterally.
+
+The paper establishes that the game has a non-empty, compact Nash-equilibrium set under the considered convex formulation, and that all Nash equilibria yield the same objective-function values.
+
+### 7. Distributed equilibrium computation
+
+The two billing classes require different algorithms.
+
+#### 7.1 Daily proportional billing — asynchronous best response
+
+For Net and VCG billing, minimizing each prosumer's bill also drives the cumulative community cost downward. Therefore, the Nash equilibrium corresponds to the minimum of the aggregate cost function.
+
+The paper uses an **asynchronous best-response algorithm**: at selected iterations, each participant optimizes its own schedule given the current schedules of all others.
+
+#### 7.2 Continuous proportional billing — proximal decomposition
+
+Pure best response is not sufficient for CP because an individual reduction of \(b_n^{CP}\) does not necessarily reduce the total community cost. The authors therefore use a **proximal decomposition algorithm**, adding a regularization term that stabilizes the iterative game:
+
+\[
+\min_{\Lambda_n}
+\left[
+ b_n(\Lambda_n,\Lambda_{-n})
+ +\frac{\kappa}{2}\|\Lambda_n-\bar\Lambda_n\|^2
+\right].
+\]
+
+Both distributed approaches require only aggregate-load information to be exchanged. The paper therefore describes them as privacy-preserving in the sense that detailed individual schedules do not need to be disclosed to a central third party.
+
+The paper does **not** provide a formal privacy guarantee such as differential privacy or cryptographic protection.
+
+### 8. Why the billing rules produce different behavior
+
+The qualitative comparison in Fig. 2 is particularly useful because it shows that the *same physical prosumer* can be rewarded very differently depending on the billing philosophy.
+
+![Prices and costs under Net, VCG, and continuous proportional billing for different prosumer profiles. Source: Fig. 2 of Hupez et al. (2023).](papers/p032-hupez2023-game-theoretical-billings/figures/hupez2023_game_billings/fig2_billing_comparison.png){width=95%}
+
+The four illustrative comparisons consider a reference consumer versus a prosumer with:
+
+1. PV only;
+2. EV + HP + ST;
+3. PV + EV + HP + ST;
+4. the same portfolio as Case 3 but with a different supplier tariff.
+
+Important observations are:
+
+- **PV alone does not automatically obtain favorable treatment under VCG.** Because PV by itself is not flexible, the VCG rule may not interpret it as a strong contributor to reducing the optimized community cost.
+- **Flexible DERs are rewarded by discriminative billings.** EV, HP, and storage can shift energy away from costly periods and therefore reduce the prosumer's effective price under VCG and CP.
+- **PV plus flexibility performs better than PV alone**, because storage/flexible demand can absorb surplus generation and avoid adverse network effects.
+- **Supplier choice matters strongly under CP**, because commodity and grid costs are explicitly separated at each time step. A tariff that matches the prosumer's load/PV profile can materially lower its bill.
+
+### 9. Case study setting
+
+The quantitative benchmark is based on residential data from the **Pecan Street project**.
+
+Key settings are:
+
+- **50 residential prosumers** in the representative community case study;
+- load profiles sampled from the Pecan Street residential dataset;
+- PV, ST, EV, and HP assigned in different combinations;
+- two suppliers with different cheaper-day / cheaper-night tariff structures;
+- **20 highest-PV days** and **20 lowest-PV days** analyzed separately;
+- deterministic day-ahead scheduling;
+- global optimum used as the efficiency benchmark;
+- the paper does not report a commercial solver in the main text for the comparative study;
+- full device parameters are delegated to an online companion source cited by the paper.
+
+The socially optimal mean price is reported as:
+
+- **15.0 c€/kWh** for high-PV days;
+- **22.4 c€/kWh** for low-PV days.
+
+### 10. Main findings
+
+#### 10.1 Billing discrimination matters mainly when DER interactions are strong
+
+On low-PV days, the three billing methods discriminate only weakly among different prosumer profiles. With little local generation, added flexible demand can still increase imports, so the benefit of flexibility is comparatively limited.
+
+On high-PV days, the differences become much larger because flexibility can absorb local PV surplus and mitigate reverse-flow-related grid cost. The billing rule therefore strongly affects who captures this value.
+
+For high-PV days, Table II reports the following relative changes in mean price:
+
+- under **VCG**, HP ownership: **-7.0%**; ST ownership: **-11.3%**; all considered DERs: **-8.5%**;
+- under **CP**, PV ownership: **-4.6%**; HP ownership: **-6.1%**; ST ownership: **-6.7%**; all considered DERs: **-3.9%**.
+
+A striking result is that **PV ownership alone produces a lower mean price only under CP** in the high-PV comparison. Under VCG, the PV owner's relative price is slightly higher (+0.2%), because VCG rewards contribution to the optimized community outcome rather than PV ownership per se.
+
+#### 10.2 Continuous proportional billing sacrifices little efficiency
+
+The paper measures CP inefficiency as
+
+\[
+\frac{\sum_n b_n^{CP}-C^*_{\mathcal N}}{C^*_{\mathcal N}}.
+\]
+
+![Distribution of continuous-proportional-billing inefficiency for high- and low-PV days. Source: Fig. 3 of Hupez et al. (2023).](papers/p032-hupez2023-game-theoretical-billings/figures/hupez2023_game_billings/fig3_inefficiency_histogram.png){width=58%}
+
+The key quantitative result is:
+
+- **mean daily inefficiency over the full dataset: 1.97%**;
+- with **no PV generation**, inefficiency is **below 0.01%** under the tested conditions;
+- the larger inefficiencies appear mainly on high-PV days.
+
+Why? Under CP, the grid-cost component is strategically sensitive. PV owners can increase self-consumption just enough to retain a favorable individual position relative to the aggregate load, creating bargaining power but moving the system away from the global optimum.
+
+#### 10.3 Tariff design changes both system cost and bargaining power
+
+The baseline supplier design yields mean prices of 15.0 c€/kWh on high-PV days and 22.4 c€/kWh on low-PV days. When the day/night price gap is reduced, the corresponding values become **15.7 / 21.6 c€/kWh**; under a flat tariff they become **16.8 / 21.4 c€/kWh**.
+
+The result shows that a tariff cannot be evaluated independently from the DER mix: making night energy more expensive hurts high-PV-day performance, while reduced daytime prices can help low-PV days.
+
+### 11. Efficiency, empowerment and tractability — no billing dominates on every dimension
+
+The paper's overall comparison can be summarized as follows:
+
+| Billing | System efficiency | Individual empowerment | Computational tractability |
+|---|---|---|---|
+| Net | Social optimum | Weak / neutral | Strong |
+| VCG | Social optimum | Rewards contribution | Moderate-to-low due to \(N+1\) solves |
+| CP | Slightly inefficient | Strong individual responsiveness | Moderate |
+
+This is the key conceptual result of the paper: **billing design is a multi-objective mechanism-design problem**. There is no universally "fairest" scheme unless fairness itself is defined first.
+
+### 12. What this paper teaches
+
+#### Lesson 1 — minimum total cost is not the same problem as fair cost allocation
+
+The community can have a unique or near-unique aggregate optimum while very different billing rules assign that outcome's benefits and burdens differently. Optimization and allocation should therefore be analyzed separately.
+
+#### Lesson 2 — fairness has competing interpretations
+
+A Net rule emphasizes equal treatment according to a fixed consumption-related key. VCG emphasizes **marginal contribution to the community**. CP emphasizes **individual agency and timing-sensitive responsibility**. These are different notions of fairness rather than different numerical implementations of the same concept.
+
+#### Lesson 3 — flexibility is economically valuable only if the billing rule recognizes it
+
+A user may own technically flexible DERs, but a billing scheme that does not link the final payment to useful flexibility can provide little incentive to expose that flexibility to the community.
+
+#### Lesson 4 — PV generation and flexibility are not equivalent
+
+PV can reduce imports but is not dispatchable in the paper's model. VCG can therefore value storage or flexible demand more strongly than PV alone, especially when the question is "who helped the community reduce the optimized total cost?"
+
+#### Lesson 5 — supplier tariffs and local network costs interact
+
+In a liberalized setting, users can contract different suppliers, but all still share the same physical grid. A good individual commodity tariff can therefore conflict with network-efficient scheduling, depending on the billing mechanism.
+
+#### Lesson 6 — distributed does not automatically mean formally private
+
+The algorithms reduce information sharing by requiring mainly aggregate-load information, but the paper does not establish a formal privacy guarantee.
+
+### 13. Limitations / what remains unsolved
+
+#### A. Limitations and future work explicitly stated by the authors
+
+- The current community is effectively represented behind a common transformer rather than through detailed meshed-network power flow.
+- The authors identify **partially or fully meshed networks** as an important extension.
+- Adding explicit power-flow constraints would introduce shared constraints and turn the problem into a **Generalized Nash Equilibrium Problem (GNEP)**.
+- The paper notes that a more cooperative framework with mutualized excess PV/community resources could yield more representative cost distributions, but this is beyond its scope.
+
+#### B. Further research space visible from the model
+
+- **Deterministic day-ahead setting:** uncertainty in PV, demand, prices, EV availability, and user behavior is not explicitly modeled.
+- **Simplified network representation:** the quadratic aggregate grid cost is not a substitute for branch-level congestion, voltage constraints, or losses from AC power flow.
+- **No export remuneration:** suppliers are assumed not to buy prosumer exports, which may not fit all regulatory environments.
+- **Supplier choice is exogenous:** prosumers are assigned/assumed to select suppliers rather than jointly optimizing supplier contract and operational schedule.
+- **Storage degradation is omitted:** cycling cost may materially change which users should be rewarded for flexibility.
+- **Simplified appliance representation:** the model avoids fixed-cycle appliances requiring binary variables; HP is treated as fully flexible in the illustrative analysis.
+- **No formal privacy guarantee:** only aggregate information exchange is required, but information leakage is not quantified.
+- **Fairness is assessed economically, not behaviorally:** long-term acceptance, participation, and strategic entry/exit are not modeled.
+- **Static community membership:** DER investment and flexibility consent are treated as given rather than endogenous responses to billing design.
+
+### 14. Critical reading
+
+1. **The network-cost model is intentionally stylized.** The quadratic aggregate-load term is useful for studying billing incentives, but the paper's claims about "grid cost" should not be interpreted as a full distribution-network feasibility model.
+
+2. **"Privacy-preserving" should be interpreted cautiously.** The algorithms avoid sharing detailed individual schedules and do not rely on a third-party centralized optimizer, but there is no differential-privacy, encryption, or information-theoretic privacy analysis.
+
+3. **VCG fairness depends on the chosen counterfactual and cost model.** The paper itself stresses that VCG is not intrinsically fair in every context; it rewards marginal contribution according to the modeled community objective.
+
+4. **There appears to be a wording inconsistency around empowerment in Section IV-E.** Table IV assigns the strongest empowerment rating ("++") to continuous proportional billing and only "+" to VCG, which is consistent with the surrounding discussion that CP gives prosumers more negotiation power. However, one sentence states that *marginal cost billing* has the best potential for mobilizing individual efforts. This appears inconsistent with Table IV and nearby text, so it should not be silently reconciled.
+
+5. **The CP inefficiency is highly scenario-dependent.** The reported mean value of 1.97% is convincing for the tested dataset, but it increases on high-PV days and is not a theoretical universal upper bound.
+
+### 15. Research idea triggers
+
+#### Idea 1 — Network-constrained game-theoretical billing
+
+Extend the single-transformer model to an explicit radial or meshed distribution network:
+
+**billing rule + AC/linearized power flow + voltage/congestion constraints → GNEP**.
+
+This would connect fairness directly to physical network feasibility rather than a quadratic proxy cost.
+
+#### Idea 2 — Distributionally robust or stochastic billing games
+
+Replace deterministic day-ahead inputs with uncertain PV, demand, EV availability, and prices. A natural direction is:
+
+**billing mechanism + stochastic/robust/DRO scheduling + fairness under uncertainty**.
+
+The key research question becomes whether a billing scheme remains fair when participants contribute differently to forecast risk.
+
+#### Idea 3 — Dynamic fairness over repeated days
+
+The current analysis is day-by-day. In practice, one household may contribute flexibility today and another tomorrow. A repeated-game or rolling-horizon design could enforce **inter-temporal fairness** instead of requiring every single day to be fair in isolation.
+
+#### Idea 4 — Endogenous flexibility participation
+
+Model the user's willingness to expose EV, storage, or thermal flexibility as a decision. This would test the paper's qualitative hypothesis that stronger empowerment can induce more flexibility and potentially offset a small efficiency loss.
+
+#### Idea 5 — Joint tariff selection and scheduling
+
+The paper shows supplier choice matters but treats it outside the main scheduling game. A richer model could jointly optimize:
+
+**supplier contract + DER schedule + community billing + network cost**.
+
+#### Idea 6 — Formal privacy-preserving distributed billing
+
+Combine the distributed game with differential privacy, secure aggregation, homomorphic encryption, or federated optimization and quantify the trade-off:
+
+**privacy protection ↔ billing accuracy ↔ convergence ↔ efficiency**.
+
+#### Idea 7 — Fairness with degradation and opportunity costs
+
+For batteries and EVs, include degradation and user inconvenience so that the "marginal contribution" reflects the private cost of providing flexibility, not only the system benefit.
+
+### 16. Position in the broader literature map
+
+This paper sits at the intersection of **energy communities**, **demand-side flexibility**, **mechanism design**, and **distributed game theory**. Compared with papers that focus mainly on finding the least-cost operating schedule, its distinctive question is:
+
+> Once a community has a shared physical cost, how should individual payments be designed so that efficiency, fairness, and behavioral incentives remain aligned?
+
+This makes it particularly useful as a bridge between technical DER scheduling and market-design studies on benefit allocation, P2P trading, local tariffs, and fairness.
+
+**Problem-map tags:** `cost allocation` · `billing fairness` · `prosumer incentives` · `community energy management` · `network cost allocation` · `Nash equilibrium` · `VCG mechanism` · `distributed optimization` · `flexibility valuation` · `supplier choice` · `strategic behavior` · `social optimum` · `privacy` · `network constraints`
+:::

@@ -53,3 +53,27 @@ Click on the title of the document to expand or collapse the full text. Subseque
 {{< include papers/p023-zhao2023-dlmp-uncertainty-coordination/_p023-zhao2023-dlmp-uncertainty-coordination.qmd >}}
 
 {{< include papers/p024-wang2025-ev-scheduling/_p024-wang2025-ev-scheduling.qmd >}}
+
+{{< include papers/p025-zhang2023-umbrella-constraints/_p025-zhang2023-umbrella-constraints.qmd >}}
+
+{{< include papers/p026-zhang2023-local-market-representation/_p026-zhang2023-local-market-representation.qmd >}}
+
+{{< include papers/p027-yu2023-dcs-regulation-rl/_p027-yu2023-dcs-regulation-rl.qmd >}}
+
+{{< include papers/p028-avramidis2023-flexicurity/_p028-avramidis2023-flexicurity.qmd >}}
+
+{{< include papers/p029-sun2025-dr-reluctance/_p029-sun2025-dr-reluctance.qmd >}}
+
+{{< include papers/p030-sun2025-adaptive-power-capping/_p030-sun2025-adaptive-power-capping.qmd >}}
+
+{{< include papers/p031-ye2023-madrl-lem/_p031-ye2023-madrl-lem.qmd >}}
+
+{{< include papers/p032-hupez2023-game-theoretical-billings/_p032-hupez2023-game-theoretical-billings.qmd >}}
+
+{{< include papers/p033-zareijeliani2026-tvpp/_p033-zareijeliani2026-tvpp.qmd >}}
+
+{{< include papers/p034-liu2023-v3dpg-microgrids/_p034-liu2023-v3dpg-microgrids.qmd >}}
+
+{{< include papers/p035-haghighat2024-robust-microgrid/_p035-haghighat2024-robust-microgrid.qmd >}}
+
+{{< include papers/p036-ravi2023-strategic-adn/_p036-ravi2023-strategic-adn.qmd >}}
