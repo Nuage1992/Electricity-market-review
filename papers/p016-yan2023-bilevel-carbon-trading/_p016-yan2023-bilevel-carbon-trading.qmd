@@ -1,0 +1,722 @@
+::: {.callout-note collapse="true" icon=false}
+## [P016] Yan et al. (2023) — Bi-Level Carbon Trading Model on Demand Side for Integrated Electricity-Gas System
+
+**Journal:** IEEE Transactions on Smart Grid, 14(4), 2681–2696, 2023  
+**DOI:** 10.1109/TSG.2022.3229278  
+**Main topics:** Integrated Electricity-Gas System (IEGS); demand-side carbon trading; Carbon Emission Rights; step-based carbon pricing; competitive auction; low-carbon demand response; Carbon Capture Power Plant (CCPP); Power-to-Gas (P2G); ADMM; Benders decomposition
+
+### Quick takeaway
+
+This paper moves carbon trading from the traditional **generation side** to the **demand side**.
+
+The main question is:
+
+**How can end-users be made responsible for the carbon emissions driven by their electricity and gas consumption, while avoiding excessive financial burden and still giving them an incentive to reduce emissions?**
+
+The paper proposes a **bi-level demand-side carbon market**:
+
+- **Upper-level market:** an emission-control sector customizes step-based carbon prices for different users.
+- **Lower-level market:** users with insufficient Carbon Emission Rights (CERs) buy CERs from low-emission users through a competitive auction.
+
+The market is coupled with low-carbon dispatch of an Integrated Electricity-Gas System (IEGS), flexible loads, Carbon Capture Power Plants (CCPPs), and Power-to-Gas (P2G).
+
+---
+
+### 1. Problem addressed
+
+Most carbon markets place the main responsibility on generators because carbon is physically emitted on the source side.
+
+However, the paper argues that:
+
+**energy consumption on the demand side is the underlying driver of these emissions.**
+
+If users face no carbon-related economic signal, they have little reason to:
+
+- reduce energy consumption;
+- shift consumption to cleaner periods;
+- switch between electricity and gas;
+- participate directly in emission mitigation.
+
+The paper therefore asks how to make demand-side users active participants in the carbon market.
+
+---
+
+### 2. Why a simple carbon tax is not enough
+
+A fixed carbon tax or fixed carbon price has two weaknesses.
+
+#### It ignores differences among users
+
+Users have different:
+
+- energy-consumption levels;
+- carbon intensities;
+- flexibility;
+- willingness to reduce emissions.
+
+A uniform carbon price may impose a heavy burden on low-demand or low-emission users.
+
+#### It gives limited trading incentives
+
+A tax only charges the user.
+
+A cap-and-trade mechanism also allows a low-emission user to **sell excess emission rights and earn revenue**.
+
+So the paper prefers:
+
+**carbon cap + tradable emission rights**
+
+over a simple demand-side carbon tax.
+
+---
+
+### 3. Bi-level demand-side carbon market
+
+![Bi-level carbon market framework linking the emission-control sector, carbon-trading exchange, MELAs, and the IEGS operator. Source: Fig. 1 of Yan et al. (2023).](papers/p016-yan2023-bilevel-carbon-trading/figures/yan2023_bilevel_carbon/fig1_bilevel_carbon_market_framework.png){width=80%}
+
+The demand-side users are represented by **Multi-Energy Load Aggregators (MELAs)**.
+
+A MELA may consume both:
+
+- electricity;
+- natural gas.
+
+The carbon market has two levels.
+
+#### Upper-level market
+
+The **emission-control sector**:
+
+- allocates carbon caps;
+- sets customized step-based carbon prices;
+- sells additional CERs to users that still have insufficient rights after lower-level trading.
+
+#### Lower-level market
+
+MELAs trade CERs with each other through a **carbon-trading exchange**.
+
+- low-emission MELA → seller;
+- high-emission MELA → buyer.
+
+The buyer compares the lower-level auction price with the upper-level penalty price before deciding where to buy CERs.
+
+---
+
+### 4. Why the two levels are needed
+
+The two markets perform different functions.
+
+#### Lower level
+
+Encourages direct trading among users.
+
+A low-emission user can monetize its surplus CERs.
+
+This transfers part of the emission cost from cleaner users to higher-emission users.
+
+#### Upper level
+
+Acts as a regulatory backstop.
+
+If a buyer cannot obtain enough CERs from other MELAs, it must purchase additional rights from the emission-control sector.
+
+The upper-level price therefore prevents a high-emission user from simply ignoring its carbon responsibility.
+
+The resulting logic is:
+
+**trade first with other users if attractive → buy remaining CERs from the regulator if necessary.**
+
+---
+
+### 5. Demand-side carbon emissions are calculated from energy-carbon flow
+
+A MELA's carbon emission is not determined only by its total energy demand.
+
+It also depends on the **carbon intensity of the energy supplied to its node**.
+
+The paper uses a carbon-emission flow model.
+
+For electricity and gas networks, node carbon intensity reflects the weighted average carbon embedded in incoming energy flows.
+
+The MELA's emission is then approximately:
+
+\[
+E^D_{t,j}
+=
+\rho^e_{t,j}P^D_{t,j}
++
+\rho^g_{t,j}Q^D_{t,j}
+\]
+
+where:
+
+- \(P^D\): electricity demand;
+- \(Q^D\): gas demand;
+- \(\rho^e\): electricity carbon intensity;
+- \(\rho^g\): gas carbon intensity.
+
+So the same amount of electricity can cause a different carbon cost at different locations or times.
+
+---
+
+### 6. Low-carbon price-based demand response
+
+The paper embeds carbon cost directly into the user's energy price.
+
+The effective energy price contains:
+
+**Energy Attribute Price (EAP) + carbon-price component**
+
+If a user's emissions remain within its carbon cap:
+
+> the carbon-price component is zero.
+
+If emissions exceed the cap:
+
+> the carbon price increases the effective electricity/gas price.
+
+Users therefore respond not only to energy price, but also to the carbon intensity of their consumption.
+
+This creates a direct link:
+
+**carbon intensity → user price → demand response → emissions**
+
+---
+
+### 7. Flexible loads considered
+
+The demand-side response contains two important types of flexibility.
+
+#### Time-shiftable loads
+
+Energy consumption can be moved from one time period to another while maintaining the total required energy.
+
+This is useful for:
+
+- avoiding high-carbon periods;
+- absorbing renewable energy;
+- reducing carbon-trading cost.
+
+#### Convertible loads
+
+Some demand can switch between electricity and natural gas.
+
+For example:
+
+**electricity demand ↔ gas demand**
+
+This allows users to choose the lower-carbon energy carrier depending on the current system condition.
+
+So the paper does not only reduce demand.
+
+It also changes:
+
+**when energy is consumed + which energy carrier is used.**
+
+---
+
+### 8. Upper-level innovation: customized step-based carbon prices
+
+A standard step-based carbon tariff may use the same steps for every user.
+
+The paper argues that this is inefficient because MELAs have very different:
+
+- consumption levels;
+- carbon intensities;
+- emissions.
+
+It therefore customizes the step structure for each MELA.
+
+Below the carbon cap:
+
+\[
+\tau^{pen}=0
+\]
+
+Above the cap, the carbon price increases step by step as emissions rise.
+
+The optimization decides both:
+
+- the emission range covered by each step;
+- the carbon price of each step.
+
+The goal is to balance:
+
+**strong emission-reduction incentives ↔ user affordability / social welfare**
+
+---
+
+### 9. Why customized steps are better than uniform steps
+
+Suppose two MELAs have different carbon intensities.
+
+A uniform price structure treats them identically.
+
+But the same price signal can be:
+
+- too weak for a high-emission user;
+- unnecessarily expensive for a relatively clean user.
+
+The customized model can instead create different:
+
+- low-price ranges;
+- price increments;
+- penalty slopes.
+
+This makes the demand-side carbon policy more targeted.
+
+A key point from the results is that high-carbon users can receive a wider low-price interval but steeper later price increments.
+
+This reduces excessive initial burden while still strongly discouraging very high emissions.
+
+---
+
+### 10. Lower-level market: competitive auction
+
+In the lower-level market, MELA-buyers and MELA-sellers trade CERs voluntarily.
+
+The auction gives priority to:
+
+- sellers with more excess CERs;
+- buyers with higher bids.
+
+A buyer can increase its bid to improve its trading priority.
+
+However, its bid cannot exceed the carbon price it would otherwise face in the upper-level market.
+
+This creates a natural ceiling:
+
+> if lower-level CERs become too expensive, the buyer simply purchases the remaining rights from the upper-level regulator.
+
+---
+
+### 11. Optimal carbon-trading strategy of a MELA
+
+Each MELA does more than submit a bid.
+
+It also adjusts its energy consumption while participating in the auction.
+
+The objective is to maximize **consumer surplus**:
+
+\[
+\text{consumer utility}
+-
+\text{energy cost}
+-
+\text{carbon-trading cost}
++
+\text{flexibility incentives}
+\]
+
+So carbon trading and energy use are jointly optimized.
+
+A buyer can respond to a high CER price by:
+
+- reducing consumption;
+- shifting loads;
+- converting electricity demand to gas or vice versa;
+- buying CERs in the lower-level market;
+- buying remaining CERs from the upper-level market.
+
+---
+
+### 12. Source-side low-carbon dispatch is still retained
+
+The demand-side carbon market does not replace source-side carbon control.
+
+The paper combines both.
+
+The IEGS operator performs low-carbon dispatch considering:
+
+- coal-fired units;
+- natural-gas units;
+- wind;
+- gas wells;
+- gas storage;
+- Carbon Capture Power Plant (CCPP);
+- Power-to-Gas (P2G);
+- flexible demand.
+
+This is important because demand-side behavior changes:
+
+- electricity demand;
+- gas demand;
+- renewable-energy accommodation;
+- generator dispatch;
+- node carbon intensity.
+
+So source and demand decisions are strongly coupled.
+
+---
+
+### 13. Role of CCPP and P2G
+
+#### Carbon Capture Power Plant (CCPP)
+
+A CCPP can decouple gross generation from net carbon emission by consuming part of its electricity for carbon capture.
+
+The paper allows the carbon-capture process to shift its power use across time.
+
+#### Power-to-Gas (P2G)
+
+P2G converts electricity into gas.
+
+It can absorb excess wind generation and increase electricity-gas coupling flexibility.
+
+Together, CCPP and P2G support low-carbon operation on the source side while the carbon market changes behavior on the demand side.
+
+---
+
+### 14. Solution architecture: ADMM + auction + Benders
+
+The overall model contains several interacting optimization layers.
+
+![Overall solution procedure combining the upper-level price-customization model, lower-level competitive auction, and Benders iteration. Source: Fig. 3 of Yan et al. (2023).](papers/p016-yan2023-bilevel-carbon-trading/figures/yan2023_bilevel_carbon/fig3_solution_flowchart.png){width=78%}
+
+Three main solution tools are used.
+
+#### ADMM in the upper-level source-demand coordination
+
+The **Alternating Direction Method of Multipliers (ADMM)** coordinates:
+
+- the IEGS operator;
+- demand-side MELAs.
+
+The source side and demand side solve their own subproblems and exchange only coupling variables such as electricity/gas quantities.
+
+This helps protect private information.
+
+#### Competitive auction in the lower-level carbon market
+
+MELAs repeatedly update:
+
+- CER demand;
+- bid price;
+- energy consumption.
+
+#### Benders decomposition across the bi-level model
+
+The upper-level model is treated as a master problem.
+
+The lower-level carbon-trading model acts as a subproblem.
+
+Benders cuts are added until the demand decisions of the two levels are consistent.
+
+---
+
+### 15. Main case-study design
+
+The illustrative system contains:
+
+- a 5-bus power system;
+- a 7-node gas system;
+- 4 MELAs;
+- coal and gas generators;
+- wind generation;
+- a CCPP;
+- a P2G facility.
+
+The paper compares five main carbon-control schemes.
+
+#### Case 1
+
+Traditional source-side carbon cap-and-trade only.
+
+#### Case 2
+
+Demand-side bi-level carbon market only.
+
+#### Case 3
+
+Source-side carbon trading + demand-side upper market with **uniform** step-based carbon prices.
+
+#### Case 4
+
+Source-side carbon trading + **customized** upper-level step-based carbon prices.
+
+#### Case 5
+
+Source-side carbon trading + full proposed **bi-level demand-side carbon market**.
+
+Case 5 represents the complete proposed framework.
+
+---
+
+### 16. Main result: source-side or demand-side control alone is not enough
+
+Reported total emissions are:
+
+- Case 1: **21,055.66 t**
+- Case 2: **20,447.13 t**
+- Case 5: **14,764.12 t**
+
+Case 5 achieves the lowest emission.
+
+The logic is clear:
+
+- source-side carbon trading changes generation;
+- demand-side trading changes consumption;
+- combining both attacks the problem from both directions.
+
+The paper also reports that Case 5 provides the highest social welfare among the compared schemes.
+
+---
+
+### 17. What happens in the lower-level carbon market
+
+In Case 5:
+
+- MELA-1 and MELA-4 are CER sellers;
+- MELA-2 and MELA-3 are CER buyers.
+
+MELA-2 faces a relatively high upper-level carbon price.
+
+It therefore bids aggressively in the lower-level market to obtain cheaper CERs from sellers.
+
+MELA-3 cannot obtain enough CERs from the lower-level market and must still buy some rights from the upper-level regulator.
+
+The total carbon-trading cost of MELA-2 and MELA-3 is reported as:
+
+**$51,037.42**
+
+which is lower than the corresponding cost under the simpler step-price cases.
+
+---
+
+### 18. Customized carbon prices change incentives
+
+The paper compares uniform and customized step-based carbon prices.
+
+The customized prices are linked to each MELA's carbon intensity.
+
+This allows the market to:
+
+- reduce financial pressure on users;
+- maintain stronger penalties at high emission levels;
+- improve the acceptability of demand-side carbon trading.
+
+However, customized upper-level prices alone are not enough.
+
+Case 4 reduces the financial burden but weakens the incentive to reduce emissions.
+
+The lower-level trading market in Case 5 is therefore needed to restore a stronger economic incentive.
+
+---
+
+### 19. CCPP and demand-side carbon trading reinforce each other
+
+The paper compares Case 5 with a Case 6 in which the CCPP is removed.
+
+Results:
+
+- Case 5 emissions: **14,764.12 t**
+- Case 6 emissions: **20,914.41 t**
+
+Carbon-trading cost:
+
+- Case 5: **$51,037.42**
+- Case 6: **$94,352.10**
+
+So source-side low-carbon technology and demand-side carbon trading are complementary.
+
+The demand response reduces and reshapes energy use, giving the CCPP more opportunity to capture carbon economically.
+
+At the same time, the CCPP lowers system carbon intensity and reduces users' carbon cost.
+
+---
+
+### 20. How flexible demand changes operation
+
+#### Time-shiftable loads
+
+Electricity and gas loads are shifted:
+
+**from peak/high-emission periods → valley/lower-emission periods**
+
+#### Convertible loads
+
+During high-wind periods:
+
+> gas demand can be converted toward electricity demand to absorb more wind power.
+
+When wind output decreases:
+
+> electricity demand can shift toward gas.
+
+So the proposed carbon mechanism actively changes the temporal and cross-energy structure of demand.
+
+---
+
+### 21. More carbon-price steps: better accuracy but more computation
+
+The paper tests:
+
+- 4 steps;
+- 6 steps;
+- 8 steps.
+
+As the number of steps increases:
+
+- the step tariff better approximates a continuous carbon-price curve;
+- upper-level carbon-trading cost decreases;
+- computation time increases.
+
+Reported values are approximately:
+
+| Carbon-price steps | Computation time | Upper-level carbon-trading cost |
+|---|---:|---:|
+| 4 | 86.21 s | $13,556.75 |
+| 6 | 112.48 s | $12,955.49 |
+| 8 | 164.10 s | $12,357.86 |
+
+So there is a clear trade-off:
+
+**price accuracy ↔ computational complexity**
+
+---
+
+### 22. Auction bid increment also creates a trade-off
+
+A small bid increment gives buyers more precise control over the final CER price.
+
+But it requires more auction rounds.
+
+The paper finds that when the bid increment becomes very small, computation time rises quickly while trading-cost improvement becomes minor.
+
+For the tested case, an increment of about:
+
+**$0.1**
+
+is suggested as a reasonable compromise between economic performance and auction efficiency.
+
+---
+
+### 23. User willingness to reduce emissions matters
+
+The paper uses parameter \(\beta\) to represent a user's willingness to change energy consumption for emission mitigation.
+
+A larger \(\beta\) means stronger willingness.
+
+As \(\beta\) increases from 0.01 to 0.05:
+
+- emissions decrease from **14,764.12 t to 13,278.65 t**;
+- total CER purchasing cost decreases from **$51,037.42 to $32,853.91**.
+
+This shows that carbon-market performance depends not only on technology and prices.
+
+It also depends on **behavioral response**.
+
+---
+
+### 24. Large-scale test
+
+The paper also tests a larger electricity-gas system based on the **Xinjiang power grid**.
+
+The power side contains:
+
+- 41 coal-fired units;
+- 5 natural-gas units;
+- 16 wind farms;
+- 3 CCPPs;
+- 3 P2G facilities.
+
+The gas side contains:
+
+- 6 gas wells;
+- 4 compressors;
+- 3 gas-storage facilities.
+
+The proposed scheme still improves total cost and social welfare in the large-scale case.
+
+---
+
+### 25. Convergence and computation
+
+The outer Benders algorithm converges in approximately:
+
+- **5 iterations** for the illustrative system;
+- **13 iterations** for the large-scale system.
+
+Reported total computation time:
+
+- illustrative system: **86.21 s**
+- large-scale system: **555.00 s**
+
+The authors argue that this is acceptable for:
+
+- day-ahead scheduling;
+- carbon-policy analysis.
+
+It is not designed as a second-by-second real-time controller.
+
+---
+
+### 26. What this paper teaches
+
+#### Lesson 1 — Carbon responsibility can be assigned to demand as well as generation
+
+Physical emissions occur at generators, but demand drives generation.
+
+Demand-side carbon pricing makes this responsibility visible to users.
+
+#### Lesson 2 — A carbon market is more powerful when users can both pay and earn
+
+Low-emission users can sell CERs.
+
+This gives users a positive financial reason to reduce emissions.
+
+#### Lesson 3 — Uniform carbon prices can be economically unfair
+
+Users with different carbon intensities and energy needs may require different price structures.
+
+#### Lesson 4 — Demand response and carbon trading should be designed together
+
+Carbon prices affect energy consumption.
+
+Energy consumption changes generation and network carbon intensity.
+
+So carbon trading cannot be treated independently from energy-system operation.
+
+#### Lesson 5 — Source-side technology and demand-side market design are complementary
+
+CCPP/P2G and demand-side carbon trading reinforce one another rather than acting as substitutes.
+
+---
+
+### 27. Limitations
+
+Important limitations include:
+
+- uncertainty in renewable generation, load, and prices is not modeled explicitly;
+- user response is represented through predetermined elasticity and utility parameters;
+- the carbon-pricing model is step-based rather than fully continuous;
+- the competitive auction assumes the proposed market rules and rational response behavior;
+- the main formulation is day-ahead rather than rolling or real time;
+- strategic behavior of the IEGS operator is not the main focus;
+- detailed market power and collusion in the carbon auction are not studied;
+- the model is computationally complex because it combines ADMM, auction iteration, and Benders decomposition.
+
+The authors specifically identify a more detailed **continuous piecewise carbon-price model** as future work.
+
+---
+
+### 28. Research idea triggers
+
+Possible extensions include:
+
+- stochastic or Distributionally Robust Optimization under wind/load uncertainty;
+- dynamic or continuous carbon pricing instead of discrete steps;
+- learning user-specific carbon-demand elasticity from real data;
+- carbon-market power and strategic bidding by large MELAs;
+- rolling-horizon electricity-gas-carbon co-optimization;
+- carbon trading with battery, EV, and thermal-storage flexibility;
+- electricity + gas + carbon + green-certificate joint markets;
+- privacy-preserving carbon trading;
+- decentralized demand-side carbon markets without a central auction exchange;
+- mechanism design considering fairness among heterogeneous users;
+- carbon-aware Virtual Power Plant (VPP) operation;
+- demand-side carbon trading for industrial parks, campuses, or data centers.
+
+**Problem-map tags:** `demand-side carbon trading` · `integrated electricity-gas system` · `carbon intensity` · `step-based carbon pricing` · `competitive auction` · `low-carbon demand response` · `CCPP-P2G` · `Benders decomposition`
+
+:::

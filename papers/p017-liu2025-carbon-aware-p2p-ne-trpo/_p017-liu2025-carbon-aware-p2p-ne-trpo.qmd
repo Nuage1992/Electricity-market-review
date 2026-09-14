@@ -1,0 +1,636 @@
+::: {.callout-note collapse="true" icon=false}
+## P017 — Carbon-Aware Peer-to-Peer Energy Trading in an Unbalanced Distribution Network via a Nash Equilibrium Discovery Deep Reinforcement Learning Approach
+
+**Author:** Xiao Liu, Yujian Ye, Sinan Li, Cuo Zhang, Qianyi Ma, and Jianguo Zhu  
+**Date:** 2025  
+**Categories:** peer-to-peer energy trading; carbon trading; unbalanced distribution network; carbon emission flow; multi-agent deep reinforcement learning; Nash equilibrium
+
+## Bibliographic information
+
+**Journal:** IEEE Transactions on Smart Grid, 16(4), 3392–3407, July 2025  
+**DOI:** 10.1109/TSG.2025.3561515
+
+## One-sentence takeaway
+
+This paper builds a **joint peer-to-peer electricity and carbon-permit market** for a **three-phase unbalanced distribution network**, traces carbon emissions at the **nodal-phase level**, and uses a **Nash-equilibrium-discovery multi-agent TRPO framework** to learn bidding and local energy-management strategies under stochastic market conditions.
+
+## 1. What problem does the paper solve?
+
+Most network-constrained P2P energy-trading studies simplify the physical grid as a **single-phase equivalent network**. That approximation is convenient, but it can become problematic when prosumers are connected to different phases and their distributed resources create phase-dependent power flows and carbon intensities.
+
+The paper therefore addresses four coupled issues:
+
+1. **Network accuracy:** P2P trading should respect a three-phase unbalanced distribution network rather than a single-phase approximation.
+2. **Carbon accounting:** carbon emissions should be traced from generators to prosumers according to the actual power-flow pattern.
+3. **Joint market operation:** electricity and carbon permits should be traded together without relying on a fully centralized market-clearing model.
+4. **Strategic bidding:** prosumers need a data-driven bidding method that can cope with stochastic and partially known market dynamics and converge to a stable strategic outcome.
+
+The key research question can be summarized as:
+
+```text
+How can prosumers trade both electricity and carbon permits
+while the DSO simultaneously guarantees network security,
+allocates emissions fairly in an unbalanced network,
+and provides economically meaningful price signals?
+```
+
+## 2. The three-layer market architecture
+
+The proposed framework contains three layers: a **physical layer**, a **P2P trading market layer**, and a **coordination layer**.
+
+![](papers/p017-liu2025-carbon-aware-p2p-ne-trpo/figures/fig1_trading_framework.png){fig-cap="Trading framework: physical unbalanced distribution network, joint electricity/carbon P2P market, and DSO coordination." width=85%}
+
+### Physical layer
+
+Each prosumer is connected to a specific **bus and phase** of the unbalanced distribution network and may own distributed resources such as:
+
+- renewable generation,
+- microturbines,
+- flexible demand,
+- local loads.
+
+The network itself is represented by a three-phase branch-flow model.
+
+### P2P trading market layer
+
+Each prosumer submits two sets of bids:
+
+```text
+Electricity bid = quantity + price
+Carbon-permit bid = quantity + price
+```
+
+The market is cleared through a **continuous double auction (CDA)**. Electricity and carbon permits are traded separately but within the same joint electricity-and-carbon trading framework.
+
+A useful feature is that the two trading roles are independent. A prosumer can simultaneously be, for example:
+
+```text
+Electricity seller
++
+Carbon-permit buyer
+```
+
+or the reverse.
+
+### Coordination layer
+
+The DSO sits above the P2P market and performs three main tasks:
+
+- ensures safe operation of the unbalanced network,
+- performs carbon-emission tracing and accounting,
+- provides electricity and carbon service prices to prosumers.
+
+The interaction between the DSO and prosumers is formulated as a bi-level coordination problem.
+
+## 3. Upper level: carbon-aware operation of the unbalanced distribution network
+
+The DSO first solves an unbalanced optimal power-flow problem. The model contains:
+
+- three-phase active/reactive power balances,
+- voltage-drop equations,
+- voltage limits,
+- second-order-cone current constraints.
+
+The formulation retains phase-specific variables and phase coupling, although a near-balanced voltage-angle approximation is introduced to obtain a tractable branch-flow representation.
+
+The DSO objective includes:
+
+```text
+excess carbon-permit purchase cost
++
+upstream electricity purchase cost
++
+network-loss cost
+```
+
+This becomes the paper's **carbon-aware optimal power flow (CAOPF)** model.
+
+## 4. Carbon emission flow is extended to the nodal-phase level
+
+A major contribution is the extension of **carbon emission flow (CEF)** from a conventional nodal formulation to a **nodal-phase formulation**.
+
+Instead of assigning one carbon intensity to an entire bus, the paper calculates:
+
+```text
+carbon intensity at bus j, phase a
+carbon intensity at bus j, phase b
+carbon intensity at bus j, phase c
+```
+
+The carbon intensity depends on:
+
+- locally injected generation,
+- carbon intensity of local generation technologies,
+- incoming line power flow,
+- line losses,
+- carbon intensity transported through upstream lines.
+
+The basic logic is:
+
+```text
+power flow determines where electricity comes from
+        ↓
+carbon emission flow follows the power flow
+        ↓
+carbon intensity is allocated at each node and phase
+        ↓
+prosumer carbon emissions are calculated from its actual phase connection
+```
+
+This is especially important for prosumers whose role can change between net consumer and net producer.
+
+## 5. Why single-phase carbon accounting can be unfair
+
+The paper explicitly demonstrates two possible errors when a three-phase network is replaced by a single-phase approximation.
+
+### Over-allocation
+
+If a high-carbon generator and a load are connected at the same bus but on different phases, the single-phase approximation may make the load appear more carbon intensive than it really is.
+
+Result:
+
+> the prosumer is assigned too much carbon responsibility and pays too much.
+
+### Under-allocation
+
+If low-carbon renewable generation is located at the same bus but another phase, averaging phases can dilute the true carbon intensity.
+
+Result:
+
+> the prosumer may be assigned too little carbon responsibility, while the DSO under-recovers the corresponding carbon cost.
+
+This is one of the strongest physical-network motivations of the paper: **carbon allocation is not only a market-design problem; it can also be a phase-level power-flow problem.**
+
+## 6. DLMPE and DLMPC: two locational price signals
+
+The CAOPF produces two key price signals.
+
+### DLMPE
+
+**Distribution Locational Marginal Price for Electricity** represents the location- and phase-dependent electricity service price.
+
+### DLMPC
+
+**Distribution Locational Marginal Price for Carbon** represents the location- and phase-dependent carbon service price.
+
+DLMPC is derived from the marginal value of the carbon-permit constraint and is further scaled by the local carbon intensity.
+
+The intuitive result is:
+
+```text
+higher local carbon intensity
+        ↓
+stronger carbon price signal
+        ↓
+stronger incentive to adjust local operation or P2P trading
+```
+
+Thus, carbon intensity is explicitly externalized as a price signal rather than remaining only an accounting indicator.
+
+## 7. Lower level: what each prosumer optimizes
+
+Each prosumer minimizes:
+
+```text
+P2P trading cost
++
+peer-to-grid settlement cost
++
+local operating cost
+```
+
+The local operating decisions include:
+
+- microturbine output,
+- demand-response quantity,
+- electricity bidding price,
+- carbon-permit bidding price.
+
+The net electricity bid is determined by:
+
+```text
+load
+− demand response
+− renewable generation
+− microturbine generation
+```
+
+The carbon-permit bid is determined by:
+
+```text
+actual prosumer carbon emissions
+− allocated local carbon cap
+```
+
+Therefore:
+
+```text
+positive carbon bid quantity  → carbon-permit buyer
+negative carbon bid quantity  → carbon-permit seller
+```
+
+## 8. Why use a continuous double auction?
+
+The CDA market continuously matches buyers and sellers according to price bids.
+
+For each auction round:
+
+1. buyers are ordered from high to low bidding price;
+2. sellers are ordered from low to high asking price;
+3. a trade occurs when the buyer's bid is no lower than the seller's ask;
+4. the cleared quantity is the smaller of the remaining buy/sell quantities;
+5. the transaction price is the midpoint of buyer and seller prices.
+
+Unmatched electricity is settled with the DSO using either the DLMPE or feed-in tariff. Carbon-permit deficits can also be purchased from the DSO, but surplus carbon permits are not sold back to the DSO.
+
+This arrangement creates a natural economic band for P2P prices:
+
+```text
+P2P electricity price:
+FiT  ≤ bid price ≤ mean DLMPE
+
+P2P carbon price:
+0    ≤ bid price ≤ mean DLMPC
+```
+
+## 9. Why the authors use multi-agent reinforcement learning
+
+The joint electricity-carbon CDA market is stochastic and changes after every bidding round. Each prosumer does not know the exact future decisions of the other prosumers or the exact DSO prices in advance.
+
+A conventional optimization model would require detailed information about:
+
+- all prosumers,
+- DSO operation,
+- rivals' bidding behavior,
+- future market-clearing prices.
+
+The authors therefore reformulate the market interaction as a **cooperative Markov game**.
+
+### Reward
+
+For each prosumer:
+
+```text
+reward = − total operating and trading cost
+```
+
+The joint reward is the sum of all prosumers' rewards.
+
+### Action space
+
+Each agent chooses:
+
+```text
+microturbine dispatch
++demand response
++electricity bid price
++carbon bid price
+```
+
+### Observation space
+
+The observation includes:
+
+- local nodal-phase carbon intensity,
+- local generation carbon intensity,
+- load,
+- renewable generation,
+- previous electricity/carbon bids,
+- previous DSO-cleared electricity/carbon prices.
+
+## 10. The key algorithmic contribution: Nash-equilibrium-discovery TRPO
+
+The paper argues that simply applying MADRL is not enough. In a bidding game, a useful stable solution should satisfy a Nash-equilibrium-type condition:
+
+> when other agents keep their policies fixed, no individual prosumer should be able to improve its return by unilaterally changing its own policy.
+
+The proposed method is therefore named **NE-TRPO**.
+
+The authors use a multi-agent advantage decomposition and sequential policy update rule inspired by mirror learning.
+
+![](papers/p017-liu2025-carbon-aware-p2p-ne-trpo/figures/fig3_sequential_update.png){fig-cap="Sequential multi-agent policy updates used to approach a Nash equilibrium." width=82%}
+
+The basic idea is:
+
+```text
+update prosumer 1
+        ↓
+prosumer 2 updates while considering prosumer 1's new policy
+        ↓
+prosumer 3 updates while considering prosumers 1 and 2
+        ↓
+randomize update order in later iterations
+        ↓
+approach a fixed point where unilateral policy changes are no longer beneficial
+```
+
+TRPO provides a trust-region constraint through KL divergence, limiting the policy update magnitude and improving training stability.
+
+## 11. How the two levels interact
+
+The paper's Fig. 2 summarizes the complete information loop.
+
+![](papers/p017-liu2025-carbon-aware-p2p-ne-trpo/figures/fig2_bilevel_interaction.png){fig-cap="Bi-level interaction between the DSO CAOPF environment and prosumer DRL agents." width=78%}
+
+The **upper level** sends to the lower level:
+
+- DLMPE,
+- DLMPC,
+- nodal-phase carbon intensity.
+
+The **lower level** sends back:
+
+- net active-power injection,
+- net local generation,
+- local generation carbon intensity.
+
+During reinforcement-learning training, the prosumers are the agents, while the DSO/network/auction process is treated as part of the environment.
+
+## 12. Case study design
+
+The method is tested on a modified **IEEE 123-bus unbalanced distribution network** with 10 prosumers.
+
+The prosumers include:
+
+- load-dominated prosumers,
+- PV-dominated prosumers,
+- wind-dominated prosumers,
+- balanced prosumers.
+
+Important settings include:
+
+- voltage limits: 0.95–1.05 p.u.;
+- local carbon cap: 0.05 tCO2 per prosumer;
+- DSO basic phase-level carbon permit: 0.10 tCO2;
+- excess carbon-permit price: 90 $/tCO2;
+- microturbine carbon intensity: 0.8 tCO2/MWh;
+- renewable carbon intensity: 0.1–0.2 tCO2/MWh;
+- maximum demand response: 10% of load.
+
+The proposed NE-TRPO is compared with:
+
+- MADDPG,
+- MAPPO,
+- vanilla multi-agent TRPO.
+
+## 13. Algorithm-performance results
+
+The proposed NE-TRPO converges in approximately **2610 training episodes**.
+
+Reported convergence episodes are:
+
+| Algorithm | Convergence episodes |
+|---|---:|
+| MADDPG | 4107 |
+| MAPPO | did not converge within 5000 |
+| Vanilla-TRPO | 3410 |
+| NE-TRPO | 2610 |
+
+The proposed method also shows the smallest reward variance among the compared methods, indicating more stable training.
+
+The main interpretation is not merely that TRPO is faster, but that the **sequential Nash-aware update structure** appears to improve stability relative to a naive multi-agent extension of TRPO.
+
+## 14. What the joint electricity-carbon market changes
+
+The paper compares several market settings:
+
+- **M1:** no P2P carbon-permit trading;
+- **M2:** no DSO carbon-emission regulation;
+- **M3:** single-phase network approximation;
+- **M4:** proposed joint electricity/carbon trading + DSO carbon regulation + unbalanced network model.
+
+For the daily test, the paper reports that the proposed market can reduce the amount of carbon permits purchased from the DSO while maintaining economically attractive P2P settlements.
+
+One particularly useful observation is that the carbon market is more volatile than the electricity market, strengthening the motivation for a data-driven bidding strategy.
+
+### A numerical inconsistency worth noting
+
+There appears to be an internal inconsistency in the reported results. The text states that M4 reduces carbon emissions by **0.51 tCO2 compared with M2**, whereas Table III prints both M2 and M4 as **20.79 tCO2**. The 0.51 tCO2 difference exactly matches M1 (21.30) versus M4 (20.79).
+
+For a literature review, it is safer to record this as a probable reporting/labeling inconsistency rather than quote the M2-vs-M4 reduction without qualification.
+
+## 15. Sensitivity to the local carbon cap
+
+The local carbon cap is treated as an exogenous market-design parameter.
+
+The sensitivity analysis shows:
+
+```text
+smaller local carbon cap
+        ↓
+less surplus permits available inside the P2P market
+        ↓
+more permits must be purchased from the DSO
+        ↓
+higher cost but stronger carbon constraint
+```
+
+Conversely, a looser carbon cap reduces the need to buy carbon permits from the DSO.
+
+This creates a clear policy trade-off:
+
+> **operating cost versus emission-regulation stringency**.
+
+The authors also acknowledge that there is currently no universal baseline/grid-code value for such local carbon caps.
+
+## 16. What is genuinely new in this paper?
+
+The paper's novelty is best understood as the combination of three layers of innovation rather than any single component.
+
+### Physical-network novelty
+
+```text
+three-phase unbalanced distribution network
++
+nodal-phase carbon emission flow
+```
+
+### Market novelty
+
+```text
+joint electricity and carbon-permit P2P trading
++
+continuous double auction
++
+DLMPE / DLMPC settlement with the DSO
+```
+
+### Algorithm novelty
+
+```text
+cooperative Markov game
++
+sequential multi-agent advantage decomposition
++
+TRPO trust region
++
+explicit Nash-equilibrium-discovery argument
+```
+
+This makes the paper a useful bridge between **power-flow physics, carbon accounting, market design, game theory, and deep reinforcement learning**.
+
+## 17. Critical reading and limitations
+
+Several points are worth remembering when citing or extending the paper.
+
+### 17.1 The unbalanced model is still an approximation
+
+Although the paper is much more detailed than a single-phase equivalent model, it introduces an approximation that assumes phase-voltage ratios remain close to their balanced angular relationship. It is therefore not a fully nonlinear three-phase AC formulation.
+
+### 17.2 Voltage unbalance factor is not explicitly constrained
+
+The authors list incorporation of a voltage-unbalance-factor constraint as future work. Thus, phase-specific power flow is modeled, but explicit VUF compliance is not yet enforced.
+
+### 17.3 Carbon caps are assumed rather than policy-calibrated
+
+The local carbon cap is selected as a model input and explored through sensitivity analysis. A future implementation would need a principled allocation rule based on regulation, fairness, historical consumption, or emissions targets.
+
+### 17.4 The NE result is tied to the training framework and assumptions
+
+The theoretical discussion is stronger than in many MADRL trading papers, but the practical neural-network training process remains an approximation to the idealized mirror-learning/TRPO framework. It is useful to distinguish between a theoretically NE-discoverable update structure and an independently verified global equilibrium of the full nonlinear market environment.
+
+### 17.5 Real-time information and privacy deserve further study
+
+The approach still requires the DSO to calculate and broadcast phase-level carbon intensities and locational price signals. Communication delays, privacy leakage, cyber risks, and imperfect measurements would be natural extensions.
+
+## 18. Relationship to P016
+
+P016 and P017 both move carbon responsibility toward the demand side, but they attack different layers of the problem.
+
+| Dimension | P016 | P017 |
+|---|---|---|
+| Main system | Integrated electricity-gas system | Distribution network |
+| Carbon-market structure | Demand-side bi-level carbon market | Joint P2P electricity + carbon market |
+| Carbon pricing | Customized step-based carbon prices | Nodal-phase DLMPC |
+| User-to-user trading | Competitive CER auction | Continuous double auction |
+| Physical carbon allocation | Carbon flow in integrated energy system | Three-phase nodal-phase carbon emission flow |
+| Main coordination method | ADMM + auction + Benders | CAOPF + MADRL/NE-TRPO |
+| Core concern | Designing demand-side carbon incentives | Fair carbon accounting + strategic P2P bidding under network unbalance |
+
+A useful way to connect them is:
+
+```text
+P016 asks:
+How should demand-side carbon rights and prices be designed?
+
+P017 asks:
+How should those carbon responsibilities be physically allocated
+and strategically traded in an unbalanced distribution network?
+```
+
+## 19. Research directions inspired by the paper
+
+### Direction 1: Uncertainty-aware carbon P2P market
+
+The paper already uses DRL for stochastic market dynamics, but the DSO-side physical model could explicitly include:
+
+- renewable forecast uncertainty,
+- load uncertainty,
+- carbon-intensity uncertainty.
+
+Possible extension:
+
+```text
+Three-phase CAOPF
++
+Wasserstein DRO / chance constraints
++
+P2P electricity-carbon market
+```
+
+### Direction 2: Battery and EV carbon arbitrage
+
+Storage can shift not only electricity cost but also embodied grid carbon intensity across time.
+
+A battery could therefore optimize:
+
+```text
+energy arbitrage
++
+carbon arbitrage
++
+P2P permit trading
+```
+
+This is a natural extension for VPPs, EV aggregators, and commercial buildings.
+
+### Direction 3: Endogenous carbon-cap allocation
+
+Instead of assuming the cap, determine it through:
+
+- grandfathering,
+- benchmarking,
+- fairness constraints,
+- Shapley-value allocation,
+- emission-reduction targets.
+
+This would convert the cap from a parameter into a market-design variable.
+
+### Direction 4: Carbon market + flexibility market
+
+The same prosumer flexibility could be sold simultaneously for:
+
+- energy,
+- carbon reduction,
+- voltage support,
+- congestion relief.
+
+This creates a multi-service transactive-energy problem.
+
+### Direction 5: More rigorous equilibrium validation
+
+A strong methodological extension would compare the trained policy with:
+
+- unilateral-deviation tests,
+- exploitability / NashConv metrics,
+- exact best-response optimization for small systems,
+- repeated-seed statistical validation.
+
+This could make the equilibrium claim more transparent and reproducible.
+
+## 20. Position in the literature problem map
+
+```text
+Low-carbon distribution energy market
+│
+├── P2P electricity trading
+├── P2P carbon-permit trading
+├── Joint electricity-carbon market            ← core
+├── Continuous double auction                   ← core
+├── Unbalanced three-phase distribution network ← core
+├── Carbon emission flow
+│   └── nodal-phase carbon intensity            ← core
+├── Carbon-aware optimal power flow
+├── DLMPE / DLMPC                               ← core
+├── Prosumer demand response
+├── Multi-agent deep reinforcement learning
+├── Nash equilibrium discovery                  ← core
+└── Fairness of carbon allocation across phases ← core
+```
+
+## 21. What to remember
+
+The most important conceptual message of P017 is:
+
+> **A carbon market in a distribution network should not be separated from the physical power-flow structure. If prosumers are connected to different phases, inaccurate network aggregation can create inaccurate carbon responsibility, which then distorts both prices and trading incentives.**
+
+The paper therefore links the following loop:
+
+```text
+three-phase power flow
+        ↓
+carbon emission flow
+        ↓
+nodal-phase carbon price
+        ↓
+P2P electricity/carbon bidding
+        ↓
+prosumer operation
+        ↓
+new network power flow and emissions
+```
+
+That closed-loop connection between **physics, carbon accounting, market incentives, and strategic learning** is the main reason this paper is valuable.
+
+
+:::

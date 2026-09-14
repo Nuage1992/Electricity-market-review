@@ -1,0 +1,375 @@
+::: {.callout-note collapse="true" icon=false}
+## [P007] Li et al. (2023) — A Data-Driven Joint Chance-Constrained Game for Renewable Energy Aggregators in the Local Market
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1430–1440, 2023  
+**DOI:** 10.1109/TSG.2022.3163131  
+**Main topics:** Local Energy Market (LEM); Renewable Energy Aggregator (REA); Cournot competition; overbidding risk; joint chance constraint; Distributionally Robust Optimization (DRO); Wasserstein ambiguity set; Nash equilibrium
+
+### Quick takeaway
+
+This paper studies how **Renewable Energy Aggregators (REAs)** should bid in a Local Energy Market when renewable generation is uncertain.
+
+The central problem is:
+
+**an REA wants to bid more to earn more, but renewable generation may be lower than the bid, creating overbidding and power-shortfall risk.**
+
+The paper combines:
+
+- a competitive quantity-bidding game;
+- distribution-network constraints;
+- a joint chance constraint for overbidding risk;
+- a data-driven Wasserstein ambiguity set when the true probability distribution is unknown.
+
+---
+
+### 1. Problem addressed
+
+The paper focuses on a one-hour-ahead Local Energy Market.
+
+Each REA aggregates excess renewable energy and submits a bid.
+
+The main difficulty is that the REA does not know exactly how much renewable power will be available.
+
+If:
+
+\[
+\text{bid} > \text{actual available renewable energy}
+\]
+
+the REA cannot fully deliver its promised energy.
+
+This is called **overbidding**.
+
+The market therefore needs to balance two competing goals:
+
+**higher bid → potentially higher profit**
+
+**lower bid → lower delivery risk**
+
+---
+
+### 2. Why existing approaches are not enough
+
+#### Price-taker models
+
+A large REA may have enough market power to influence the local clearing price.
+
+Treating every REA as a price taker can therefore miss strategic competition.
+
+#### Scenario-based stochastic methods
+
+These methods use sampled renewable-generation scenarios.
+
+However:
+
+- many samples may be required;
+- decisions can depend strongly on the selected scenarios;
+- good in-sample performance does not guarantee good out-of-sample risk control.
+
+#### Classical chance constraints
+
+These usually require the probability distribution of the uncertain renewable output to be known or assumed.
+
+In practice, the true distribution may be unknown.
+
+The paper therefore asks:
+
+**Can we control bidding risk using only a limited amount of historical data without assuming a known probability distribution?**
+
+---
+
+### 3. Local market and Cournot competition
+
+![Local Energy Market framework. Source: Fig. 1 of Li et al. (2023).](papers/p007-li2023-rea-game/figures/li2023_rea_game/fig1_market_framework.png){width=66%}
+
+The market contains:
+
+- Renewable Energy Aggregators (REAs);
+- Load Aggregators (LAs);
+- Local Market Operator (LMO);
+- Bulk Power System (BPS).
+
+The market process is:
+
+1. LAs report demand.
+2. REAs submit energy bids.
+3. The market is cleared under network and risk constraints.
+4. The local clearing price is published.
+5. Any remaining imbalance can be exchanged with the bulk power system.
+
+The REAs compete in **quantity**, so the paper uses a **Cournot game**.
+
+The clearing price is:
+
+\[
+p=\alpha-\beta\sum_i x_i
+\]
+
+where \(x_i\) is the bid of REA \(i\).
+
+This means:
+
+**more total renewable bids → lower market price.**
+
+So one REA's bidding decision affects the profits of the other REAs.
+
+---
+
+### 4. Core risk: renewable overbidding
+
+Each REA has an uncertain maximum renewable supply.
+
+The paper requires that all REAs can simultaneously deliver their bids with sufficiently high probability:
+
+\[
+P(\tilde{\xi}_i \ge x_i,\ \forall i) \ge 1-\epsilon
+\]
+
+This is a **joint chance constraint**.
+
+The important word is **joint**:
+
+the model does not only control each REA's risk separately.
+
+It controls the probability that the whole set of bids can be delivered together.
+
+The study uses a target risk tolerance of **10%** in its main cases.
+
+---
+
+### 5. Why the method is “data-driven distributionally robust”
+
+The true probability distribution of renewable output is assumed to be unknown.
+
+Only finite historical samples are available.
+
+The paper builds an empirical distribution from these samples and then considers many possible probability distributions around it.
+
+These possible distributions form a **Wasserstein ambiguity set**.
+
+The idea is:
+
+> Do not trust one estimated probability distribution completely.  
+> Make the bidding decision safe for a family of plausible distributions around the observed data.
+
+This is a form of **Distributionally Robust Optimization (DRO)**.
+
+---
+
+### 6. Meaning of the Wasserstein radius
+
+The parameter \(\delta\) controls the size of the ambiguity set.
+
+#### Small \(\delta\)
+
+The model stays close to the empirical data.
+
+Result:
+
+- less conservative bidding;
+- potentially higher bids;
+- higher sensitivity to the training samples.
+
+#### Large \(\delta\)
+
+More probability distributions are considered possible.
+
+Result:
+
+- more conservative bids;
+- lower overbidding risk;
+- stronger robustness.
+
+So \(\delta\) controls an important trade-off:
+
+**profit opportunity ↔ robustness**
+
+---
+
+### 7. Network constraints are included
+
+The bids are not cleared independently of the power network.
+
+The paper includes a linearized AC distribution-network model based on **LinDistFlow**.
+
+The market-clearing constraints include:
+
+- active-power balance;
+- reactive-power balance;
+- voltage limits;
+- line apparent-power limits.
+
+This means an economically attractive bid is still rejected if it violates the distribution network.
+
+---
+
+### 8. Game equilibrium and solution method
+
+Each REA maximizes its own profit.
+
+The profit contains:
+
+- market revenue;
+- aggregation cost.
+
+Because the players share network and chance constraints, this is a **Generalized Nash Equilibrium Problem (GNEP)** rather than a standard Nash game.
+
+The paper proves that a generalized Nash equilibrium exists.
+
+A **best-response seeking algorithm** based on the Nikaido-Isoda function is then used to find a normalized Nash equilibrium.
+
+The basic logic is:
+
+1. start from a feasible bidding strategy;
+2. find a better response;
+3. update the bids;
+4. repeat until the changes become sufficiently small.
+
+---
+
+### 9. Case study
+
+Two radial distribution systems are tested:
+
+- modified IEEE 33-node network with **4 REAs**;
+- modified IEEE 69-node network with **8 REAs**.
+
+For the main synthetic-data study:
+
+- 1000 renewable-output samples are generated;
+- 50 samples are used for training;
+- the remaining samples are used for out-of-sample testing.
+
+The paper also validates the model using historical wind and PV data from the Australian Energy Market Operator (AEMO).
+
+---
+
+### 10. Effect of the Wasserstein radius
+
+![Effect of the Wasserstein radius on bids, profits, overbidding risk, and convergence in the 33-node case. Source: Fig. 4 of Li et al. (2023).](papers/p007-li2023-rea-game/figures/li2023_rea_game/fig4_wasserstein_results.png){width=76%}
+
+In the 33-node case, increasing \(\delta\) from 0.01 to 0.07 reduces the bids of REA1–REA4 by:
+
+- **38%**
+- **68%**
+- **27%**
+- **26%**
+
+The total renewable bid decreases, and the clearing price increases from:
+
+**97.60 $/MWh → 108.28 $/MWh**
+
+The less reliable REA reduces its bid more strongly.
+
+More reliable REAs can retain more of their bids and may earn higher profit.
+
+This means the risk-control mechanism naturally favors participants that can deliver energy more reliably.
+
+---
+
+### 11. Risk-control performance
+
+A major result is that increasing the Wasserstein radius reduces the out-of-sample overbidding rate.
+
+For the main 33-node and 69-node studies, the overbidding rate remains below the target **10% risk tolerance**.
+
+The paper also shows that very small training datasets can be dangerous.
+
+For example, with only **10 training samples** in the 69-node case:
+
+- training overbidding rate: **0%**
+- testing overbidding rate: nearly **12%**
+
+So a model can appear perfectly safe on training data but still fail on unseen data.
+
+This is an important warning for data-driven market models.
+
+---
+
+### 12. Comparison with CVaR-based stochastic game
+
+The benchmark uses **Conditional Value-at-Risk (CVaR)** in a scenario-based stochastic game.
+
+A risk-weight parameter \(\gamma\) must be manually selected to balance:
+
+- profit;
+- overbidding risk.
+
+The proposed Wasserstein-based method instead puts the risk requirement directly in the feasible set.
+
+For the main comparison with \(\delta=0.03\):
+
+- proposed method training overbidding rate: **0%**
+- proposed method testing overbidding rate: **3.6%**
+
+The reported testing risk is lower than the compared CVaR cases.
+
+The paper therefore concludes that the proposed method provides better risk-averse and out-of-sample performance.
+
+---
+
+### 13. What this paper teaches
+
+#### Lesson 1 — Renewable bidding is a profit-risk problem
+
+Bidding more is not always better.
+
+An unreliable REA should bid more conservatively.
+
+#### Lesson 2 — Competition changes the uncertainty problem
+
+Each REA is not optimizing alone.
+
+Its bid changes:
+
+- the market price;
+- competitors' incentives;
+- network conditions.
+
+#### Lesson 3 — Historical data do not define the true distribution perfectly
+
+A model built only around one empirical distribution can be overconfident.
+
+The Wasserstein ambiguity set adds protection against distribution errors.
+
+#### Lesson 4 — Robustness has a price
+
+A larger ambiguity set reduces risk but also reduces bidding opportunities.
+
+Choosing the robustness level is therefore an economic decision, not only a mathematical one.
+
+---
+
+### 14. Limitations
+
+Important limitations include:
+
+- the Wasserstein radius must still be selected by the modeler;
+- the inner approximation of the joint chance constraint can introduce conservatism;
+- the local market uses a specific linear Cournot pricing function;
+- renewable uncertainty is represented mainly through maximum available supply;
+- transmission loss and ancillary services are not included in the market design;
+- the model is validated numerically rather than through a real market experiment.
+
+The authors identify improved chance-constraint approximation, transmission losses, and ancillary services as future work.
+
+---
+
+### 15. Research idea triggers
+
+Possible extensions include:
+
+- adaptive or data-driven selection of the Wasserstein radius;
+- Distributionally Robust Optimization with correlated PV, wind, load, and price uncertainty;
+- multi-period bidding with storage and inter-temporal constraints;
+- battery-enabled REAs that use storage to reduce overbidding risk;
+- strategic market participation of multiple VPPs instead of only renewable aggregators;
+- joint energy and reserve-market bidding;
+- network-aware peer-to-peer or local market trading;
+- comparison of Wasserstein DRO, stochastic optimization, robust optimization, and chance-constrained methods under the same data;
+- learning-based bidding combined with hard chance constraints;
+- real-time or rolling-horizon market clearing.
+
+**Problem-map tags:** `local energy market` · `renewable bidding` · `overbidding risk` · `Cournot game` · `joint chance constraint` · `Wasserstein DRO` · `out-of-sample performance` · `network constraints`
+
+:::

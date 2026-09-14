@@ -1,0 +1,385 @@
+::: {.callout-note collapse="true" icon=false}
+## [P008] Mu et al. (2023) — A Decentralized Market Model for a Microgrid With Carbon Emission Rights
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1388–1402, 2023  
+**DOI:** 10.1109/TSG.2022.3173520  
+**Main topics:** Carbon Emission Rights (CER); decentralized microgrid; electricity trading; energy storage; distributed optimization; Tracker-Based Distributed Algorithm (TBDA)
+
+### Quick takeaway
+
+This paper asks:
+
+**How can a microgrid trade electricity and carbon emission rights at the same time, without relying on a central market coordinator?**
+
+The proposed model combines:
+
+- local electricity trading;
+- Carbon Emission Rights (CER) trading;
+- Energy Storage (ES);
+- a microgrid-wide carbon-emission cap;
+- a fully distributed optimization algorithm.
+
+The key idea is that users optimize locally and exchange information only with neighbors, while the whole microgrid still reaches power balance and satisfies the total carbon limit.
+
+---
+
+### 1. Problem addressed
+
+A low-carbon microgrid needs to consider both:
+
+- **economic operation**: users want low electricity cost and trading profit;
+- **carbon responsibility**: high-emission generators should face a cost for their emissions.
+
+A simple carbon-emission constraint can limit emissions, but it does not create a market incentive for users to trade and reduce emissions continuously.
+
+The paper therefore introduces CER trading into a decentralized electricity market.
+
+A second problem is coordination.
+
+Many distributed methods still need a central coordinator to update global information. This creates concerns about:
+
+- information privacy;
+- market manipulation;
+- dependence on a central agent.
+
+The paper aims to remove this central layer.
+
+---
+
+### 2. Decentralized electricity–carbon market
+
+![Structure of the decentralized microgrid with electricity trading, CER trading, energy storage, and information sharing. Source: Fig. 1 of Mu et al. (2023).](papers/p008-mu2023-cer-market/figures/mu2023_cer/fig1_decentralized_microgrid.png){width=70%}
+
+The microgrid contains different types of users, including:
+
+- micro-gas-turbine generators;
+- photovoltaic generators;
+- wind generators;
+- general prosumers and consumers.
+
+Users can:
+
+- generate electricity;
+- buy or sell electricity;
+- charge or discharge storage;
+- buy or sell CER.
+
+There is **no central trading institution**.
+
+Each user solves its own local problem and exchanges limited information with neighboring users.
+
+---
+
+### 3. How CER trading works
+
+A generator receives an initial amount of CER.
+
+Its daily carbon emission depends on its electricity generation.
+
+#### If actual emissions exceed its CER
+
+The generator first buys additional CER from the market.
+
+If CER supply is still insufficient, it pays an emission penalty.
+
+#### If actual emissions are below its CER
+
+The unused CER can be sold to other generators.
+
+The basic logic is:
+
+**low-emission generator → surplus CER → sell CER**
+
+**high-emission generator → insufficient CER → buy CER / pay penalty**
+
+The whole microgrid must also satisfy a total carbon-emission cap.
+
+So there are two levels of carbon control:
+
+1. individual CER balance;
+2. microgrid-wide emission limit.
+
+---
+
+### 4. Electricity trading and pricing
+
+Users can also buy and sell electricity inside the microgrid.
+
+The paper uses a **Mid-Market Rate (MMR)** pricing method.
+
+The local trading price is set between:
+
+- the price for selling surplus electricity to the external grid;
+- the retail price for buying electricity from the grid.
+
+This creates incentives for local trading:
+
+- sellers can receive more than the external feed-in price;
+- buyers can pay less than the retail grid price.
+
+The model minimizes the total user cost, including:
+
+- generation cost;
+- electricity purchase cost;
+- electricity sales revenue;
+- CER purchase/sales cost;
+- carbon-emission penalties.
+
+---
+
+### 5. Role of energy storage
+
+Energy Storage (ES) is included for every user in the case study.
+
+It helps users:
+
+- shift electricity across time;
+- reduce purchases during expensive periods;
+- store energy during low-demand periods;
+- respond to peak demand.
+
+The model includes:
+
+- charging/discharging limits;
+- State of Charge (SOC) limits;
+- charging/discharging efficiency;
+- final energy reserve requirement.
+
+An interesting result is that the authors prove that the optimal solution **does not need an additional binary constraint to prevent simultaneous charging and discharging**.
+
+Because of storage losses and the cost structure, simultaneous charging and discharging cannot be optimal.
+
+This keeps the model convex and avoids adding extra binary variables.
+
+---
+
+### 6. Why a fully distributed algorithm is needed
+
+Traditional centralized optimization can solve the joint electricity-carbon problem.
+
+However, a central coordinator would collect large amounts of private information and continuously update global variables.
+
+The authors argue that this may create:
+
+- privacy concerns;
+- dependence on the scheduling center;
+- risk of information manipulation.
+
+The paper therefore develops a **Tracker-Based Distributed Algorithm (TBDA)**.
+
+Each user calculates locally and communicates only with neighbors.
+
+---
+
+### 7. Four types of constraints in TBDA
+
+The model contains four different types of constraints.
+
+#### Local Inequality Constraints (LIC)
+
+Examples:
+
+- generator limits;
+- trading limits;
+- battery limits;
+- CER trading limits.
+
+These belong to one user.
+
+#### Local Equality Constraints (LEC)
+
+Examples:
+
+- local power balance;
+- individual CER accounting.
+
+#### Global Equality Constraints (GEC)
+
+Examples:
+
+- total electricity bought = total electricity sold;
+- total CER bought = total CER sold.
+
+These require balance across all users.
+
+#### Global Inequality Constraints (GIC)
+
+The main example is:
+
+- total microgrid carbon emissions must remain below the carbon cap.
+
+Handling both global equality **and** global inequality constraints without a central coordinator is one of the main algorithmic contributions.
+
+---
+
+### 8. Tracker-Based Distributed Algorithm
+
+![Main process of the Tracker-Based Distributed Algorithm. Source: Fig. 2 of Mu et al. (2023).](papers/p008-mu2023-cer-market/figures/mu2023_cer/fig2_tbda_process.png){width=72%}
+
+The basic process is:
+
+1. classify and reconstruct the different constraints;
+2. each user solves its own local optimization problem;
+3. local trackers estimate the status of global constraints;
+4. neighboring users exchange tracker information;
+5. decision variables and multipliers are updated;
+6. the process repeats until global balance is achieved.
+
+The tracker allows each user to estimate system-wide information without directly obtaining all users' private data.
+
+The authors also provide a convergence analysis.
+
+---
+
+### 9. Case study
+
+The test microgrid contains:
+
+- **14 users**;
+- 6 prosumers;
+- 8 consumers;
+- distributed storage for all users;
+- both physical power connections and communication links.
+
+The scheduling horizon is:
+
+- 24 hours;
+- 1-hour time steps.
+
+The distributed TBDA result is compared with a centralized solution obtained using Gurobi.
+
+---
+
+### 10. Main findings
+
+#### Electricity and CER markets reach balance
+
+The electricity market converges after about **356 iterations**.
+
+Final electricity bought and sold:
+
+**1937.8 kWh**
+
+The CER market reaches equilibrium faster, after about **120 iterations**.
+
+Final CER bought and sold:
+
+**0.17 kg**
+
+#### Carbon-emission cap is satisfied
+
+Total microgrid carbon emission:
+
+**3.21 kg**
+
+Emission limit:
+
+**3.5 kg**
+
+Compared with the case without the global carbon constraint, total carbon emissions are reduced by:
+
+**4.8%**
+
+#### Distributed result is close to the centralized optimum
+
+Total cost:
+
+- TBDA: **$101.89**
+- centralized Gurobi solution: **$101.28**
+
+The difference is below **1%**.
+
+This shows that the fully distributed method can achieve a result close to centralized optimization.
+
+---
+
+### 11. How CER changes generator dispatch
+
+This is one of the most useful results of the paper.
+
+A generator with cheap electricity but high carbon emissions may lose its economic advantage after CER costs are included.
+
+For example:
+
+- User 4 has the lowest generation cost: **0.218 $/kWh**;
+- but it has high unit carbon emissions;
+- it sells only **167.9 kWh**.
+
+In contrast, User 3 has a higher generation cost but very low carbon emissions.
+
+It sells:
+
+**371.5 kWh**
+
+So CER trading changes the dispatch rule from:
+
+**only generation cost matters**
+
+to:
+
+**generation cost + carbon performance matter together**
+
+This is the main mechanism by which the carbon market changes microgrid operation.
+
+---
+
+### 12. What this paper teaches
+
+#### Lesson 1 — Carbon limits and carbon markets are different
+
+A carbon cap only says how much can be emitted.
+
+A CER market also creates an economic signal that changes individual generator behavior.
+
+#### Lesson 2 — Low-cost generation is not always the preferred generation
+
+When carbon has a price, a cheap but dirty generator may become less competitive.
+
+#### Lesson 3 — Carbon and electricity can be traded together
+
+Electricity trading handles physical energy balance.
+
+CER trading handles the economic responsibility for emissions.
+
+They are different products but influence the same dispatch decisions.
+
+#### Lesson 4 — Distributed does not always mean fully decentralized
+
+Many “distributed” methods still use a central coordinator.
+
+This paper specifically tries to remove that layer by using local trackers and neighbor-to-neighbor communication.
+
+---
+
+### 13. Limitations
+
+Important limitations include:
+
+- carbon price and penalty parameters are predefined;
+- uncertainty in renewable generation and load is not explicitly modeled;
+- the market uses a simple MMR electricity-pricing mechanism rather than strategic price formation;
+- network power-flow constraints are simplified compared with a full AC distribution-network model;
+- all users are assumed to communicate through a connected and reliable communication graph;
+- communication delay, packet loss, and cyberattacks are not considered;
+- validation is numerical rather than based on HIL or a field microgrid.
+
+---
+
+### 14. Research idea triggers
+
+Possible extensions include:
+
+- stochastic or Distributionally Robust Optimization for renewable and load uncertainty;
+- dynamic CER prices instead of fixed carbon prices;
+- game-theoretic electricity and carbon price formation;
+- battery degradation-aware electricity-carbon trading;
+- AC-network-constrained decentralized carbon trading;
+- communication failures and asynchronous distributed optimization;
+- privacy-preserving or encrypted TBDA;
+- electricity + CER + green certificate joint markets;
+- carbon-aware Virtual Power Plant (VPP) operation;
+- rolling-horizon carbon-aware microgrid Energy Management Systems (EMS).
+
+**Problem-map tags:** `carbon emission rights` · `electricity-carbon market` · `decentralized trading` · `distributed optimization` · `TBDA` · `energy storage` · `carbon cap` · `low-carbon dispatch`
+
+:::

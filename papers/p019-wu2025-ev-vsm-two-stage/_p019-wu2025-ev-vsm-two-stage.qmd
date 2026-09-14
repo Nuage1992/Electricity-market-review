@@ -1,0 +1,691 @@
+::: {.callout-note collapse="true" icon=false}
+## [P019] Wu et al. (2025) — Consensus Algorithm-Based Two-Stage Frequency Regulation Strategy With EVs Participating as VSMs
+
+**Journal:** IEEE Transactions on Smart Grid, 16(2), 1562–1574, 2025  
+**DOI:** 10.1109/TSG.2024.3507012  
+**Main topics:** Electric vehicles; Virtual Synchronous Machine (VSM); frequency regulation; isolated grid; inertial response; primary frequency control; secondary frequency control; day-ahead economic dispatch; real-time consensus algorithm; charging stations; battery swapping stations
+
+### Quick takeaway
+
+This paper investigates how large populations of EVs can support the frequency stability of an **isolated grid with high renewable penetration**.
+
+The central idea is to make EV charging stations (CSs) and battery swapping stations (BSSs) behave like **Virtual Synchronous Machines (VSMs)** rather than ordinary converter-connected loads.
+
+The control architecture then combines two time scales:
+
+- **Day-ahead stage (DAS):** solve an economic dispatch problem to obtain an operating baseline for generation units, CSs, and BSSs.
+- **Real-time stage (RTS):** use an electricity-price-guided consensus algorithm to allocate frequency-regulation power among multiple units.
+
+The result is a coordinated scheme that tries to achieve both:
+
+**frequency stability + economic operation**.
+
+---
+
+### 1. Problem addressed
+
+Isolated grids are especially vulnerable to frequency disturbances because they have:
+
+- limited generation capacity;
+- no support from a large interconnected system;
+- relatively large load variations;
+- increasing shares of inverter-based renewable generation;
+- lower effective rotational inertia.
+
+At the same time, large numbers of EVs are connected through power-electronic converters.
+
+Conventional converter-connected EV charging does not naturally provide the electromechanical inertia of synchronous machines.
+
+The paper therefore asks:
+
+**Can EV charging infrastructure be controlled so that it contributes both active-power regulation and virtual rotational inertia, while still operating economically?**
+
+---
+
+### 2. Why EVs are attractive frequency-regulation resources
+
+EV charging infrastructure is flexible because charging power can be adjusted over short time scales.
+
+When system frequency is below nominal:
+
+- generators can increase output;
+- CSs/BSSs can reduce charging demand;
+- bidirectional charging resources can increase discharge.
+
+When system frequency is above nominal:
+
+- generators can decrease output;
+- CSs/BSSs can increase charging demand;
+- discharge can be reduced.
+
+Thus EVs can act as controllable demand-side frequency-regulation resources.
+
+However, using EVs only as fast controllable loads does not solve the declining-inertia problem.
+
+That motivates the use of VSM control.
+
+---
+
+### 3. Why VSM control is introduced
+
+A conventional EV frequency-response model mainly follows a power command.
+
+This gives fast active-power control, but the response is largely independent of the physical frequency dynamics of the grid.
+
+The proposed VSM-based model instead imitates the swing behavior of a synchronous machine.
+
+Its basic virtual inertia equation is:
+
+\[
+J\frac{d\omega}{dt}
+=
+\frac{P_m-P_e}{\omega}
+-D(\omega-\omega_g)
+\]
+
+where:
+
+- \(J\): virtual rotational inertia;
+- \(D\): damping coefficient;
+- \(\omega\): virtual angular frequency;
+- \(\omega_g\): measured grid angular frequency;
+- \(P_m\): virtual mechanical power;
+- \(P_e\): electromagnetic power.
+
+The mechanical-power reference is also equipped with droop behavior:
+
+\[
+P_m=P_{ref}+K_f(\omega_0-\omega_g)
+\]
+
+So EV charging infrastructure can respond to both:
+
+**frequency deviation + power command**.
+
+---
+
+### 4. The isolated-grid system considered
+
+The system-frequency-response model contains several types of resources.
+
+Generation side:
+
+- Biogas Power Plant (BPP);
+- Small Hydropower Plants (SHPs);
+- Run-off Hydropower Plants (RHPs);
+- wind farm;
+- photovoltaic power station.
+
+Demand / flexible side:
+
+- EV Charging Stations (CSs);
+- Battery Swapping Stations (BSSs).
+
+Wind and PV are connected through inverters, while CSs and BSSs are connected through the proposed VSM-based converters.
+
+This creates a useful test bed for studying a low-inertia isolated grid with both renewable generation and flexible EV demand.
+
+---
+
+### 5. Proposed VSM-based frequency-response model
+
+![Single-area system-frequency-response model showing the BPP, hydropower units, renewable generation, and CS/BSS resources connected through VSM-based frequency-response dynamics. Source: Fig. 5 of Wu et al. (2025).](papers/p019-wu2025-ev-vsm-two-stage/figures/wu2025_ev_vsm_two_stage/fig5_sfr_vsm_model.png){width=92%}
+
+After linearization and Laplace transformation, the change in EV-side VSM power is related to both frequency change and reference-power change.
+
+The paper derives:
+
+\[
+\Delta P_{e1}(s)=
+\frac{J\omega_0S_Vs+K_fS_V}
+{J\omega_0s^2+Ds+S_V}
+\Delta\omega_g(s)
+\]
+
+and
+
+\[
+\Delta P_{e2}(s)=
+\frac{S_V}
+{J\omega_0s^2+Ds+S_V}
+\Delta P_{ref}(s)
+\]
+
+where:
+
+\[
+S_V=\frac{EV_g}{X_f}
+\]
+
+This makes the VSM-FR model a second-order dynamic system rather than a simple first-order command-following model.
+
+---
+
+### 6. What virtual inertia means here
+
+The EVs do not contain rotating masses that are mechanically synchronized with the grid.
+
+The inertia is therefore **emulated through converter control**.
+
+When frequency falls, the VSM-controlled CS/BSS reduces its power consumption according to the frequency response.
+
+When frequency rises, it increases consumption.
+
+The resulting converter response mimics part of the inertial and droop behavior of a synchronous generator.
+
+So the paper is not claiming that EV batteries physically create rotating inertia.
+
+Instead, they provide:
+
+**synthetic / virtual inertia through active-power modulation.**
+
+---
+
+### 7. Main architecture: two-stage frequency regulation
+
+![Two-stage framework: day-ahead economic dispatch, real-time consensus-based power allocation, and the final system-frequency-response layer. Source: Fig. 2 of Wu et al. (2025).](papers/p019-wu2025-ev-vsm-two-stage/figures/wu2025_ev_vsm_two_stage/fig2_two_stage_framework.png){width=82%}
+
+The complete method is divided into two scheduling stages.
+
+#### Day-ahead stage
+
+Forecast:
+
+- wind generation;
+- PV generation;
+- system load.
+
+Then solve a multi-unit economic dispatch model.
+
+This creates the baseline operating schedule.
+
+#### Real-time stage
+
+The actual system will deviate from the forecast because of:
+
+- renewable uncertainty;
+- load fluctuations;
+- real-time disturbances.
+
+A consensus network therefore reallocates regulation power among the available units in real time.
+
+The two stages are designed to work together rather than independently.
+
+---
+
+### 8. Why day-ahead dispatch is needed before real-time consensus
+
+A purely real-time consensus algorithm can react quickly, but it does not necessarily consider the full 24-hour economic context.
+
+For example, if it only reacts to the current regulation price, it may ignore:
+
+- high-price periods later in the day;
+- storage-like constraints of hydropower reservoirs;
+- biogas availability;
+- operating limits of CS/BSS resources.
+
+The day-ahead economic dispatch therefore provides a **coarse optimal operating trajectory**.
+
+The real-time consensus controller then performs fine corrections around this trajectory.
+
+The structure is essentially:
+
+**day-ahead economic baseline → real-time frequency correction**.
+
+---
+
+### 9. Day-ahead economic dispatch model
+
+The day-ahead objective minimizes the total system operating cost:
+
+\[
+\min C^{grid}
+\]
+
+with cost contributions from:
+
+- RHPs;
+- SHP;
+- BPP;
+- charging stations;
+- battery swapping stations;
+- system load.
+
+The model also includes:
+
+- biogas storage and production constraints;
+- hydropower flow constraints;
+- reservoir constraints;
+- CS/BSS operating-power constraints;
+- system-wide power balance.
+
+The authors solve the optimization using:
+
+**YALMIP + CPLEX in MATLAB.**
+
+---
+
+### 10. Economic modeling of CSs and BSSs
+
+For a charging station, the daily cost is modeled as electricity-purchase cost minus charging-service income:
+
+\[
+C_i^{CS}
+=
+\sum_t
+(\lambda_t^{buy}-\alpha_{i,t}^{sell})P_{i,t}^{CS}
+\]
+
+A similar structure is used for BSSs.
+
+This is important because the EV infrastructure is not treated merely as a technical frequency-control device.
+
+Its own commercial operation is explicitly represented.
+
+That makes the real-time regulation problem an economic allocation problem as well as a control problem.
+
+---
+
+### 11. Real-time consensus network
+
+In the RTS, all controllable units form a communication graph.
+
+The paper assigns:
+
+- the **BPP as leader**;
+- the remaining units as followers.
+
+Each unit exchanges information only with neighboring agents.
+
+The consensus variable is the **regulation cost**.
+
+The aim is to distribute the required frequency-regulation power so that units with more favorable real-time regulation economics take a larger share of the command.
+
+This gives the scheme a distributed rather than purely centralized character.
+
+---
+
+### 12. Regulation cost signal
+
+For a generator, the regulation cost is represented approximately as:
+
+\[
+r_{i,t}=c_{i,t}\Delta P_{i,t}
+\]
+
+For CSs and BSSs, the unit regulation price includes:
+
+- electricity purchase price;
+- regulation-market benefit;
+- charging-service revenue.
+
+So the dispatch priority is not based only on available power capacity.
+
+It depends on the **marginal economic effect of regulation at that moment**.
+
+A lower regulation unit price leads to a larger allocated regulation power.
+
+---
+
+### 13. Why price normalization is necessary
+
+Real-time electricity and regulation prices can cause the effective unit regulation cost to become negative.
+
+A conventional consensus allocation method may not work properly when the allocation index crosses zero.
+
+The paper therefore transforms the real-time regulation price using:
+
+\[
+c'_{i,t}
+=
+\frac{c_{i,t}-\min(C_t)}
+{\Phi[\max(C_t)-\min(C_t)]}
+\]
+
+This transformation:
+
+- maps the regulation-price signal to positive values;
+- preserves the relative ordering among units;
+- allows the consensus allocation rule to remain valid even when the original market price is negative.
+
+This is one of the practical modifications made to the standard consensus method.
+
+---
+
+### 14. Dispatchable capacity is still respected
+
+Economic preference alone cannot determine the allocation.
+
+Each unit has physical frequency-regulation limits.
+
+For generators, up/down regulation is limited by available generating headroom.
+
+For CSs and BSSs, the available regulation depends on their current operating power and charging/discharging limits.
+
+Importantly, CS/BSS capacity is updated in real time because EV connection and charging behavior are uncertain.
+
+Thus the final allocation combines:
+
+**economic priority + real-time dispatchable capacity**.
+
+---
+
+### 15. Leader-follower consensus update
+
+The leader receives the global regulation requirement and frequency information.
+
+Its update includes:
+
+- mismatch between total command and allocated regulation power;
+- current frequency deviation;
+- neighboring-agent consensus information.
+
+Followers update their regulation-cost states from neighboring units.
+
+The conceptual structure is:
+
+```text
+PI / frequency-regulation command
+            ↓
+          Leader
+            ↓
+   neighboring information
+            ↓
+       Followers
+            ↓
+ consensus on regulation cost
+            ↓
+  power command for each unit
+```
+
+This allows the system to redistribute the regulation requirement among heterogeneous resources.
+
+---
+
+### 16. Real-time communication and scheduling assumptions
+
+The case study includes a communication delay of:
+
+**0.04 s per unit**.
+
+The RTS scheduling cycle is:
+
+**4 s**.
+
+The authors report that the consensus iteration is completed in approximately:
+
+**2 s**,
+
+leaving additional time margin within each scheduling cycle.
+
+This is important because the method is intended for fast secondary / real-time frequency regulation rather than only hour-ahead scheduling.
+
+---
+
+### 17. Simulation system and data
+
+The case study is based on an isolated grid associated with **Qingyuan, Guangdong, China**.
+
+The model contains a 36-node system with:
+
+- BPP;
+- SHP;
+- four RHPs;
+- three charging stations;
+- two BSSs;
+- wind power;
+- PV generation;
+- system load.
+
+The paper uses real-system data for:
+
+- load;
+- wind generation;
+- PV generation.
+
+EV charging behavior is generated using Monte Carlo simulation based on historical operating data.
+
+---
+
+### 18. VSM model versus conventional EV frequency-response model
+
+The paper compares:
+
+- **IM-FR model:** conventional individual EV frequency-response model;
+- **VSM-FR model:** proposed virtual-synchronous-machine response model.
+
+Under a step power command, the conventional model follows the target more rapidly.
+
+The VSM model rises more gradually because it intentionally reproduces second-order synchronous-machine-like dynamics.
+
+This slower command response is not treated as a defect.
+
+It is the mechanism through which the converter emulates inertia.
+
+---
+
+### 19. Response to frequency variations
+
+The difference becomes clearer when frequency itself changes.
+
+The conventional IM-FR response is mainly command-driven.
+
+The VSM-FR model changes power according to:
+
+- frequency deviation;
+- rate of frequency change;
+- droop response.
+
+Therefore, the VSM-controlled EVs contribute during the inertial-response stage before the slower frequency-regulation layers fully act.
+
+This is the main technical reason why the authors report lower frequency excursions with the VSM interface.
+
+---
+
+### 20. Effect of increasing EV participation
+
+The authors test cases with increasing EV access.
+
+The qualitative trend is:
+
+**more EVs participating as VSMs → more controllable demand-side power → smaller frequency deviation.**
+
+The conclusion reports that when the number of participating EVs is increased by a factor of four:
+
+- the frequency nadir improves by approximately **33.3%**;
+- the positive frequency peak decreases by approximately **41.2%**.
+
+This demonstrates that the benefit of the VSM approach increases with the aggregate EV capacity available for regulation.
+
+---
+
+### 21. Consensus convergence behavior
+
+The paper also checks the iterative behavior of the real-time consensus network.
+
+For a sample frequency-regulation command, the agents' regulation costs converge and the allocated powers approach the requested total command.
+
+The appendix further tests different initial scheduling costs and powers.
+
+The reported errors for the example CS are below approximately:
+
+**0.1%**.
+
+So the authors use both numerical convergence and sensitivity to initial conditions to support the stability of the consensus iteration.
+
+---
+
+### 22. Four main comparison cases
+
+The daily simulation compares four strategies.
+
+#### Case 1 — Day-ahead ED only
+
+Units follow the DAS schedule without real-time frequency-regulation correction.
+
+#### Case 2 — Consensus regulation only
+
+Units use the real-time consensus allocation without the proposed two-stage combination.
+
+#### Case 3 — Day-ahead ED + equal allocation algorithm
+
+The DAS schedule is combined with a conventional dispatchable-capacity-based Equal Allocation Algorithm (EAA).
+
+#### Case 4 — Proposed method
+
+The full method combines:
+
+**day-ahead ED + real-time price-guided consensus allocation + VSM-based EV participation.**
+
+---
+
+### 23. Frequency-deviation comparison
+
+![Daily frequency deviation under the four operating strategies. The proposed Case 4 maintains the smallest overall deviation. Source: Fig. 14 of Wu et al. (2025).](papers/p019-wu2025-ev-vsm-two-stage/figures/wu2025_ev_vsm_two_stage/fig14_frequency_deviation_cases.png){width=72%}
+
+Case 1 has the worst overall regulation performance because forecast error and renewable uncertainty cannot be corrected sufficiently in real time.
+
+The largest reported deviation in Case 1 is approximately:
+
+**−0.034 Hz at 13:00.**
+
+Case 2 performs better during much of the day because consensus regulation reacts to real-time disturbances.
+
+However, without the day-ahead baseline, a fixed-gain PI-based real-time scheme has difficulty following rapid load changes.
+
+Cases 3 and 4 combine day-ahead and real-time scheduling and therefore perform more consistently.
+
+---
+
+### 24. Main quantitative comparison
+
+The paper reports the following daily results:
+
+| Case | Average frequency deviation \(|\Delta f|\) (Hz) | Frequency-deviation cumulant | Operational cost (RMB) |
+|---|---:|---:|---:|
+| Case 1 | 0.0098 | 850.15 | 11,819.10 |
+| Case 2 | 0.0066 | 572.45 | 8,340.96 |
+| Case 3 | 0.0071 | 614.18 | 19,398.43 |
+| Case 4 | **0.0044** | **380.79** | **15,579.30** |
+
+Case 4 has:
+
+- **55.1% lower average frequency deviation** than Case 1;
+- **55.2% lower deviation cumulant** than Case 1;
+- **33.5% lower deviation cumulant** than Case 2.
+
+It does not have the lowest operating cost.
+
+That distinction belongs to Case 2.
+
+So the proposed strategy should be interpreted as a **stability-economy compromise**, not a pure minimum-cost solution.
+
+---
+
+### 25. Economic trade-off with the conventional two-stage strategy
+
+Case 3 and Case 4 are particularly useful for judging the proposed real-time allocation rule.
+
+Compared with Case 3:
+
+- average frequency deviation falls from **0.0071 Hz to 0.0044 Hz**;
+- operating cost falls from **19,398.43 RMB to 15,579.30 RMB**.
+
+These correspond to approximately:
+
+- **38% reduction in average frequency deviation**;
+- **19.69% reduction in operating cost**.
+
+This is the strongest evidence that the price-guided consensus allocation improves on a simple capacity-based equal-allocation strategy.
+
+---
+
+### 26. Why the proposed method works
+
+The performance improvement comes from combining three mechanisms.
+
+#### VSM control
+
+Adds fast virtual inertia and droop-like support from EV charging infrastructure.
+
+#### Day-ahead economic dispatch
+
+Places the system near an economically reasonable operating point before disturbances occur.
+
+#### Real-time consensus allocation
+
+Redistributes regulation effort according to both:
+
+- current frequency needs;
+- real-time economic signals.
+
+The paper therefore combines:
+
+**physical dynamics + scheduling + distributed economic coordination**.
+
+---
+
+### 27. What this paper teaches
+
+#### Lesson 1 — EVs can provide more than conventional demand response
+
+With suitable converter control, EV charging resources can emulate synchronous-machine behavior and contribute to inertial response.
+
+#### Lesson 2 — Frequency regulation is a multi-timescale problem
+
+Day-ahead scheduling and second-level regulation should not be designed independently.
+
+#### Lesson 3 — Dispatchable capacity alone is not enough for resource allocation
+
+Two units with similar available regulation capacity may have very different real-time economic costs.
+
+#### Lesson 4 — Consensus control can embed market signals
+
+The consensus variable does not have to be only physical power; it can be constructed from economic regulation cost.
+
+#### Lesson 5 — The best frequency strategy is not necessarily the cheapest strategy
+
+The proposed method explicitly demonstrates the trade-off between system stability and operating economy.
+
+---
+
+### 28. Limitations
+
+Important limitations include:
+
+- the study is simulation-based rather than demonstrated through hardware-in-the-loop or field experiments;
+- EV availability and charging behavior are represented through Monte Carlo simulation rather than fully coupled travel-behavior uncertainty models;
+- battery degradation cost is not a major part of the economic objective;
+- user willingness and charging inconvenience caused by frequency regulation are not modeled in detail;
+- the VSM parameters are treated as predefined rather than optimally or adaptively tuned;
+- communication failures, packet loss, cyberattacks, and asynchronous updates are not extensively considered;
+- the real-time market and regulation-price model is simplified relative to a full ancillary-service market;
+- the network is modeled mainly through a single-area SFR framework rather than detailed AC power-flow constraints;
+- the study focuses on an isolated grid, so behavior in a large interconnected system is not directly demonstrated;
+- the interaction between thousands of individual EV battery constraints and aggregate CS/BSS-level VSM behavior could be modeled in greater detail.
+
+---
+
+### 29. Research idea triggers
+
+Possible extensions include:
+
+- adaptive VSM inertia and damping tuning based on system inertia conditions;
+- MPC-based coordination of EV VSMs with frequency constraints;
+- stochastic or Distributionally Robust Optimization for uncertain EV availability and RES generation;
+- battery degradation-aware frequency-regulation bidding;
+- joint energy + frequency-regulation + reserve market participation;
+- hierarchical control from individual EV → CS/BSS aggregator → grid operator;
+- distributed optimization with communication delay and packet loss;
+- cyber-resilient consensus control for EV frequency services;
+- data-driven estimation of real-time EV regulation capacity;
+- reinforcement learning for dynamic regulation-price bidding;
+- joint VSM control of EVs, BESS, wind, and PV in low-inertia systems;
+- frequency-security-constrained economic dispatch with endogenous virtual inertia requirements;
+- comparison of grid-forming, grid-following, and VSM-based EV charging converters;
+- integration with V2G degradation, user travel requirements, and charger availability;
+- multi-area frequency regulation with EV aggregators and tie-line power constraints.
+
+**Problem-map tags:** `EV frequency regulation` · `virtual synchronous machine` · `virtual inertia` · `isolated grid` · `day-ahead economic dispatch` · `real-time consensus control` · `charging station` · `battery swapping station` · `frequency stability` · `distributed control`
+
+:::

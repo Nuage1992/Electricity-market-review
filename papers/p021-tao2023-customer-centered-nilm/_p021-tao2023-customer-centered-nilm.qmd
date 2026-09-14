@@ -1,0 +1,855 @@
+::: {.callout-note collapse="true" icon=false}
+## [P021] Tao et al. (2023) — Customer-Centered Pricing Strategy Based on Privacy-Preserving Load Disaggregation
+
+**Journal:** IEEE Transactions on Smart Grid, 14(5), 3401–3412, 2023  
+**DOI:** 10.1109/TSG.2023.3238029  
+**Main topics:** demand response; thermostatically controlled loads (TCLs); non-intrusive load monitoring (NILM); sequence-to-now learning; privacy preservation; distributed learning; DR potential estimation; price elasticity; bi-level pricing; local transactive energy and capacity markets; CVaR
+
+### Quick takeaway
+
+This paper connects **load disaggregation** with **retail electricity pricing**.
+
+The key question is:
+
+**Can a retailer infer customers' flexible-load behavior from smart-meter data, preserve customer privacy, and then use the inferred demand-response potential to formulate better DR prices?**
+
+The proposed framework has three main layers:
+
+1. **Privacy-preserving NILM** separates thermostatically controlled load (TCL) consumption from whole-house smart-meter readings.
+2. **Data-driven DR potential and price responsiveness estimation** converts NILM outputs into a customer-response model.
+3. A **bi-level pricing model** uses that response model to optimize the retailer's retail price, energy-market participation, capacity-market participation, and risk.
+
+The main conceptual contribution is not NILM alone. It is the complete chain:
+
+**smart-meter data → appliance-level flexibility → customer response → market bidding → optimal retail pricing**.
+
+---
+
+### 1. Problem addressed
+
+Price-based demand response requires the retailer to know how customers will react to electricity prices.
+
+Conventional formulations often assume that the retailer knows each customer's:
+
+- demand elasticity;
+- utility function;
+- cost function;
+- comfort preference;
+- flexible-load limits.
+
+These assumptions are difficult to satisfy in practice.
+
+The paper therefore proposes a data-driven alternative:
+
+> instead of assuming the customer's flexibility model is known, infer it from historical smart-meter and contextual data.
+
+The focus is on **thermostatically controlled loads (TCLs)** because they have thermal inertia and can shift or reduce consumption while maintaining indoor comfort.
+
+---
+
+### 2. Why TCLs are suitable DR resources
+
+The paper begins from the standard thermal-dynamics logic of a heating load:
+
+\[
+T^{in}_{t+1}
+=
+T^{in}_{t}e^{-1/RC}
++
+\left(RP^H_t+T^O_t\right)
+\left(1-e^{-1/RC}\right)
+\]
+
+subject to a comfort band:
+
+\[
+T^H_t-\delta
+\leq T^{in}_t
+\leq T^H_t+\delta.
+\]
+
+The important point is that TCL demand is not perfectly rigid.
+
+Its operation can be adjusted by changing:
+
+- thermostat setpoint;
+- operating time;
+- power level;
+
+while still satisfying a comfort range.
+
+This gives TCLs **scheduling elasticity**, which can be converted into DR capability.
+
+---
+
+### 3. Overall NILM-integrated pricing framework
+
+![Overall framework linking historical data, NILM-based TCL usage identification, DR-potential and price-elasticity estimation, and the bi-level pricing model. Source: Fig. 1 of Tao et al. (2023).](papers/p021-tao2023-customer-centered-nilm/figures/tao2023_customer_centered_nilm/fig1_nilm_pricing_framework.png){width=82%}
+
+The framework uses historical information including:
+
+- renewable-energy generation;
+- wholesale electricity prices;
+- smart-meter data;
+- environmental-state data;
+- customer-characteristic data.
+
+The data are used in two directions.
+
+First, the retailer uses NILM to estimate:
+
+- TCL usage;
+- DR potential;
+- price elasticity.
+
+Second, scenario information is used in a bi-level optimization model that represents:
+
+- customer response;
+- market clearing;
+- retailer pricing.
+
+The final output is the retailer's **optimal customer-centered DR price**.
+
+---
+
+### 4. What “customer-centered pricing” means here
+
+The phrase does not simply mean offering different tariffs to different households.
+
+Its deeper meaning is:
+
+> the pricing strategy is formulated based on the observed usage behavior and estimated flexibility of customers rather than relying only on assumed analytical response models.
+
+The retailer tries to estimate the **true DR level** of customers before choosing prices.
+
+The paper therefore shifts from:
+
+**assumed rational response**
+
+ toward
+
+**data-inferred response capability**.
+
+---
+
+### 5. NILM: from total smart-meter load to TCL load
+
+Non-intrusive load monitoring decomposes the total smart-meter reading into appliance-level consumption.
+
+For this study, the important decomposition is:
+
+\[
+\text{Whole-house load}
+=
+\text{Baseload}
++
+\text{TCL load}.
+\]
+
+The paper treats:
+
+- baseload as inelastic;
+- TCL load as elastic and available for DR.
+
+This makes NILM a bridge between raw smart-meter data and the flexibility model required by the pricing optimizer.
+
+---
+
+### 6. Sequence-to-now (S2N) rather than S2S or S2P
+
+The paper develops a **sequence-to-now (S2N)** architecture.
+
+Previous NILM approaches include:
+
+- sequence-to-sequence (S2S): map a sequence of aggregate load to a sequence of appliance load;
+- sequence-to-point (S2P): predict the midpoint appliance value of a window.
+
+The proposed S2N instead predicts the **latest/current appliance reading** using the current rolling input window:
+
+\[
+x_{t+W-1}
+=
+\Phi(Y_{t:t+W-1})+\tau.
+\]
+
+This is important for online monitoring because it avoids depending on future smart-meter readings to estimate the current state.
+
+The authors therefore position S2N as more suitable for real-time DR applications.
+
+---
+
+### 7. Multi-type features instead of smart-meter readings only
+
+A major design choice is that the neural network does not use only aggregate meter readings.
+
+Three feature channels are used.
+
+#### Channel 1 — Smart-meter readings
+
+These contain the aggregate household electricity signal.
+
+#### Channel 2 — Environmental states
+
+The selected variables include:
+
+- outdoor temperature;
+- moisture;
+- precipitation;
+- wind speed;
+- atmospheric pressure.
+
+This is especially important for TCLs because weather strongly affects heating/cooling demand.
+
+#### Channel 3 — Customer characteristic identifications
+
+The paper includes 13 characteristics from three groups:
+
+- occupant information;
+- dwelling properties;
+- appliance properties.
+
+Examples include age, employment status, number of children, number of residents, home type, ownership, bedroom number, building age, and appliance counts.
+
+The intuition is straightforward:
+
+> households with similar aggregate power traces may still have different flexible-load behavior because their weather sensitivity and household characteristics differ.
+
+---
+
+### 8. Multi-channel CNN-LSTM architecture
+
+![Multi-channel S2N neural architecture. Meter readings and environmental states pass through CNN and LSTM blocks, while customer-characteristic features pass through fully connected layers before feature fusion. Source: Fig. 2 of Tao et al. (2023).](papers/p021-tao2023-customer-centered-nilm/figures/tao2023_customer_centered_nilm/fig2_s2n_multichannel_architecture.png){width=88%}
+
+The three feature types are processed separately because they have different structures.
+
+For meter readings and environmental states:
+
+**CNN blocks → LSTM blocks**
+
+are used to extract local and temporal features.
+
+For customer characteristics:
+
+**fully connected layers**
+
+are used because these features do not form a time series.
+
+The channels are then merged and passed through fully connected layers to estimate the current TCL power.
+
+The rolling window is **24 h**.
+
+At a 1-minute smart-meter resolution, the raw meter-input dimension is therefore 1440 × 1.
+
+PCA reduces this to 512 × 1 before it enters the neural network.
+
+---
+
+### 9. Why privacy is a central issue
+
+A NILM model can reveal much more than total electricity consumption.
+
+Detailed smart-meter and household-characteristic data can potentially expose:
+
+- occupancy patterns;
+- appliance-use habits;
+- household routines;
+- socio-economic characteristics.
+
+A centralized deep-learning scheme would require customers' raw data to be collected and stored by a central entity.
+
+The paper therefore introduces privacy protection at two stages:
+
+1. **feature extraction**;
+2. **model training**.
+
+---
+
+### 10. Privacy layer 1: encrypted distributed PCA
+
+PCA is used to reduce the meter-data dimension.
+
+However, directly calculating a global covariance matrix would normally require pooling all customer data.
+
+The paper decomposes the covariance calculation across multiple retailers.
+
+Each retailer computes local intermediate matrices, encrypts them, and passes only encrypted aggregated information through the retailer chain.
+
+The final retailer sends the encrypted sums to the server.
+
+The server uses its private key to recover only the aggregated quantities needed to calculate the covariance matrix and principal components.
+
+The important privacy logic is:
+
+- the server does not directly receive each retailer's raw customer data;
+- one retailer cannot decrypt another retailer's private data;
+- all retailers can still obtain a common principal-component basis.
+
+---
+
+### 11. Privacy layer 2: distributed collaborative learning
+
+The neural-network training is also decentralized.
+
+Each retailer:
+
+- keeps its private local dataset;
+- downloads selected global parameters;
+- performs local stochastic-gradient updates;
+- uploads only part of the gradient/parameter information.
+
+The central server maintains the latest global parameters.
+
+This is conceptually similar to distributed collaborative learning and shares the privacy motivation of federated-learning architectures, although the paper describes its own selective upload/download procedure rather than simply applying standard FedAvg.
+
+The key idea is:
+
+**share learning information, not raw customer data.**
+
+---
+
+### 12. Privacy protection comes with an accuracy cost
+
+The case study explicitly shows a privacy-performance trade-off.
+
+With more training agents/retailers, each agent receives a smaller share of the fixed dataset.
+
+The reported NILM performance gradually deteriorates.
+
+For example, as the number of retailers increases from 1 to 5:
+
+- MAE rises from **0.140** to **0.194**;
+- RMSE rises from **0.026** to **0.064**;
+- EpD rises from **8.31** to **9.38**;
+- \(R^2\) falls from **0.988** to **0.955**.
+
+However, distributed training remains much better than the standalone case in which each retailer trains independently without cooperation.
+
+So the paper's message is not that privacy is free.
+
+It is:
+
+> modest learning-performance loss can buy a meaningful reduction in raw-data sharing.
+
+---
+
+### 13. From NILM to DR potential: changing-point model
+
+After separating the TCL load, the paper estimates the relationship between TCL consumption and outdoor temperature.
+
+For a heating system:
+
+\[
+P^H_{i,n,t}
+=
+\beta^H_{i,n}
+\max\left(T^H_{i,n,t}-T^O_t,0\right)
++\varepsilon_{i,n}.
+\]
+
+Here:
+
+- \(P^H_{i,n,t}\): TCL power obtained from NILM;
+- \(T^H_{i,n,t}\): thermostat setpoint;
+- \(T^O_t\): outdoor temperature;
+- \(\beta^H_{i,n}\): temperature-response slope.
+
+Historical TCL consumption and outdoor temperature are used to regress the household's temperature-response behavior.
+
+The reported median temperature-response slope is approximately:
+
+**77.5 W/°C**.
+
+A larger slope generally means stronger temperature sensitivity and therefore greater DR potential.
+
+---
+
+### 14. Estimating DR potential
+
+The paper defines the TCL DR potential by comparing the preferred thermostat setting with a minimum acceptable indoor temperature.
+
+Conceptually:
+
+\[
+\text{DR potential}
+\approx
+\text{temperature sensitivity}
+\times
+\text{available comfort adjustment}.
+\]
+
+A household with:
+
+- high temperature sensitivity;
+- a large allowable comfort band;
+
+can provide more flexible load reduction than a less sensitive household.
+
+The case study reports that the estimated DR potential is close to the ground truth, with a tendency toward slight under-estimation.
+
+The authors argue that conservative under-estimation is preferable to over-estimation because exaggerated flexibility could lead the retailer to promise DR capacity that customers cannot actually deliver.
+
+---
+
+### 15. Price responsiveness is also estimated from data
+
+The paper does not stop at estimating technical flexibility.
+
+It also models how strongly a customer changes TCL demand in response to price.
+
+The response model uses:
+
+- DR potential;
+- price elasticity;
+- actual retail DR price;
+- nominal retail price.
+
+The final customer-response expression combines:
+
+**baseline temperature-driven TCL demand − price-induced DR adjustment.**
+
+The elasticity coefficient is estimated from historical data through an error-correction model.
+
+So there are two distinct quantities:
+
+- **DR potential:** how much flexibility physically exists;
+- **price elasticity:** how much of that flexibility the customer is willing to activate in response to a price signal.
+
+This distinction is important.
+
+---
+
+### 16. Bi-level pricing model
+
+![Bi-level formulation. The retailer maximizes profit in the upper level, while customer response and the system operator's energy/capacity market-clearing problem appear in the lower level. Source: Fig. 3 of Tao et al. (2023).](papers/p021-tao2023-customer-centered-nilm/figures/tao2023_customer_centered_nilm/fig3_bilevel_pricing_model.png){width=80%}
+
+The pricing problem is formulated from three perspectives:
+
+- retailer;
+- customers;
+- system operator.
+
+The retailer is the upper-level decision maker.
+
+The lower level contains:
+
+1. customer response to the retailer's DR price;
+2. system-operator market clearing.
+
+This captures the feedback loop:
+
+**retail price → customer demand → market clearing → market price → retailer profit → retail price**.
+
+---
+
+### 17. Upper-level objective: retailer profit with risk control
+
+The retailer maximizes expected profit.
+
+The main economic components are:
+
+#### Revenue from customers
+
+Electricity is sold to residential customers at the DR retail price.
+
+#### Capacity-market revenue
+
+The retailer aggregates TCL flexibility and offers reserve capacity to the local capacity market.
+
+#### Energy-purchase costs
+
+The retailer purchases electricity from:
+
+- the local transactive market;
+- the wholesale market.
+
+#### Reliability cost
+
+Load curtailment is penalized.
+
+#### Risk term
+
+The model includes **Conditional Value at Risk (CVaR)**.
+
+This means the retailer is not optimized only for expected profit.
+
+It also penalizes unfavorable tail outcomes.
+
+So the upper-level problem balances:
+
+**profitability ↔ reliability ↔ risk**.
+
+---
+
+### 18. Lower-level customer problem is not a conventional optimization model
+
+In many DR studies, every customer solves an explicit cost-minimization problem.
+
+The retailer would therefore need to know the customer's:
+
+- utility function;
+- disutility function;
+- thermal parameters;
+- comfort cost;
+- demand elasticity.
+
+This paper deliberately avoids that structure.
+
+The customer-response model is instead reconstructed from NILM and historical data.
+
+This is one of the paper's strongest methodological ideas:
+
+> replace hard-to-obtain private behavioral models with observable data-driven response models.
+
+---
+
+### 19. Lower-level market clearing: joint energy and capacity market
+
+The local transactive market jointly clears:
+
+- energy;
+- reserve capacity.
+
+Generators offer energy and capacity.
+
+The retailer:
+
+- bids to purchase energy;
+- offers TCL-based reserve capacity.
+
+The reserved TCL capacity is explicitly bounded by the **estimated DR potential**.
+
+This makes NILM accuracy economically important.
+
+If flexibility is over-estimated, the retailer may over-offer reserve.
+
+If it is under-estimated, profitable capacity-market opportunities may be lost.
+
+---
+
+### 20. Distribution-network constraints are included
+
+The lower-level market-clearing model is not purely economic.
+
+It includes distribution-network constraints for:
+
+- active-power balance;
+- reactive-power balance;
+- nodal voltage;
+- active-power line limits;
+- reactive-power line limits.
+
+Therefore the retailer's DR pricing can indirectly affect network operation and congestion through the customers' TCL response.
+
+This is why the paper later reports both retailer-level and system-level benefits.
+
+---
+
+### 21. Case-study setup
+
+The NILM model is tested using public data from:
+
+- **Pecan Street**;
+- **Irish CER** smart-meter dataset.
+
+Customers are mapped to the **IEEE 33-bus distribution system**.
+
+Market signals and clearing results are taken from the **Australian Energy Market Operator (AEMO)** dataset.
+
+The reported computational settings include:
+
+- NILM training time: **41.3 min**;
+- optimization time: **4.2 min**;
+- market/settlement interval used in the study: **15 min**.
+
+The NILM training is offline, so its longer training time is considered acceptable by the authors.
+
+---
+
+### 22. TCL demand aligns with an important evening DR period
+
+The daily TCL-consumption distribution peaks approximately during:
+
+**15:00–20:00**.
+
+This period overlaps with:
+
+- declining solar generation;
+- rising residential demand.
+
+Therefore TCLs are particularly useful for evening peak management.
+
+This is reflected later in the optimized DR price, which rises strongly in the evening.
+
+---
+
+### 23. NILM accuracy: proposed S2N model performs best in the reported comparison
+
+The proposed S2N CNN-LSTM architecture is compared with:
+
+- AlexNet;
+- deep autoencoder (dAE);
+- GRU;
+- S2P CNN.
+
+The reported metrics for the proposed model are:
+
+- MAE: **0.140**;
+- RMSE: **0.026**;
+- EpD: **8.31**;
+- \(R^2\): **0.988**.
+
+The paper attributes the improvement mainly to the inclusion of:
+
+- environmental states;
+- customer characteristics;
+
+in addition to meter readings.
+
+The figures also show that the multi-feature model follows TCL peaks more closely than the meter-only model.
+
+---
+
+### 24. Important reporting issue in Table II
+
+There is a metric-consistency issue worth flagging before reusing the reported values.
+
+For the proposed model, Table II reports:
+
+- MAE = **0.140**;
+- RMSE = **0.026**.
+
+Under the standard definitions of MAE and RMSE, calculated on the same observations and in the same units, RMSE should not be smaller than MAE.
+
+The same pattern also appears for some benchmark models.
+
+Therefore, one of the following may be true:
+
+- the metrics are normalized differently;
+- the table labels are inconsistent;
+- the values were reported using different scaling;
+- there is a typographical/reporting error.
+
+The paper itself does not resolve this point.
+
+So these values should be quoted as **reported by the authors**, rather than interpreted as directly comparable under standard error definitions without further verification.
+
+---
+
+### 25. NILM-integrated pricing is close to the fully model-based ideal case
+
+![Retail DR price and TCL scheduling under NILM-integrated, fully model-based, and base TOU strategies. Source: Figs. 10–11 of Tao et al. (2023).](papers/p021-tao2023-customer-centered-nilm/figures/tao2023_customer_centered_nilm/fig10_11_price_and_tcl_response.png){width=72%}
+
+The paper compares three pricing cases:
+
+#### Base case
+
+No optimized DR program; TOU pricing is used.
+
+#### NILM-integrated pricing
+
+Customer flexibility and response are inferred from data.
+
+#### Fully model-based pricing
+
+The retailer is assumed to know the complete customer-response model.
+
+The optimized NILM-integrated retail price is very close to the fully model-based price.
+
+Both strategies increase price during the evening peak and reduce TCL demand compared with the TOU base case.
+
+This is the paper's main practical argument:
+
+> a data-driven method with weaker information assumptions can approach the economic performance of an idealized full-information model.
+
+---
+
+### 26. Main retailer-level economic results
+
+The reported comparison is:
+
+| Indicator | Base case | NILM-integrated | Fully model-based |
+|---|---:|---:|---:|
+| Energy purchase cost | $1452/day | $1433/day | $1430/day |
+| Retail-market revenue | $7821/day | $9046/day | $9113/day |
+| Capacity-market revenue | – | $1129/day | $1290/day |
+| Reliability cost | $1326/day | $576/day | $602/day |
+| Coefficient of covariance | 0.0561 | 0.0378 | 0.0380 |
+
+Compared with the base case, the NILM-integrated strategy:
+
+- reduces energy-purchase cost slightly;
+- increases retail revenue by about **15.7%**;
+- earns additional capacity-market revenue;
+- sharply reduces reliability cost;
+- reduces the reported risk indicator.
+
+The fully model-based case obtains slightly higher retail and capacity-market revenue.
+
+However, the NILM-integrated case actually reports a slightly **lower reliability cost and lower coefficient of covariance** than the fully model-based case.
+
+So the numerical results are better interpreted as **very close overall performance**, rather than the fully model-based method being uniformly superior in every metric.
+
+---
+
+### 27. Better NILM improves both retailer and grid outcomes
+
+![Impact of different NILM methods on retailer and distribution-system outcomes. Source: Fig. 12 of Tao et al. (2023).](papers/p021-tao2023-customer-centered-nilm/figures/tao2023_customer_centered_nilm/fig12_nilm_dr_impact.png){width=72%}
+
+The paper then replaces the proposed NILM model with weaker NILM benchmarks.
+
+The trend is consistent:
+
+more accurate NILM tends to produce:
+
+- lower retailer energy-purchase cost;
+- higher retailer revenue;
+- lower reliability cost;
+- improved risk performance;
+- lower system energy-production cost;
+- lower congestion cost.
+
+This demonstrates an important cross-layer effect:
+
+**prediction quality → flexibility estimation → pricing quality → market outcome → network outcome**.
+
+NILM accuracy is therefore not only an AI metric.
+
+It has measurable economic and power-system consequences.
+
+---
+
+### 28. What this paper teaches
+
+#### Lesson 1 — Load disaggregation becomes more valuable when linked to a decision problem
+
+The paper does not stop at reporting NILM accuracy.
+
+It converts NILM outputs into:
+
+- DR potential;
+- price elasticity;
+- reserve capacity;
+- retail pricing;
+- market bids.
+
+This is much stronger than treating NILM as an isolated prediction task.
+
+#### Lesson 2 — Data-driven models can replace some strong behavioral assumptions
+
+The retailer does not need perfect knowledge of every customer's utility and cost functions.
+
+Historical smart-meter and contextual data can provide a practical response model.
+
+#### Lesson 3 — Technical flexibility and behavioral responsiveness are different
+
+A household may technically be able to reduce TCL load but may respond weakly to price.
+
+Both DR potential and price elasticity matter.
+
+#### Lesson 4 — Privacy has an economic-performance trade-off
+
+Distributed learning protects raw information but reduces prediction accuracy as data become more fragmented.
+
+#### Lesson 5 — AI prediction quality should be evaluated by downstream system value
+
+A better NILM model improves not only MAE/RMSE-type metrics but also retailer profit, reliability cost, production cost, and congestion cost.
+
+#### Lesson 6 — Flexible demand can participate in multiple value streams
+
+The retailer earns from both:
+
+- selling retail energy;
+- providing capacity using aggregated TCL flexibility.
+
+---
+
+### 29. Limitations
+
+Important limitations include:
+
+- the study focuses mainly on TCLs, while other flexible appliances are treated less explicitly;
+- the customer-response model is still a fitted reduced-order model rather than a fully adaptive behavioral model;
+- distributed learning sacrifices prediction performance as the number of participating retailers increases;
+- the privacy framework is evaluated mainly through architectural privacy arguments and prediction accuracy rather than a formal differential-privacy budget;
+- the proposed NILM still has monitoring latency;
+- customer habits and environmental relationships may change over time, but the trained model is mainly offline;
+- the pricing formulation assumes the proposed local transactive energy/capacity market structure;
+- wholesale-market participation is not modeled in the same detail as the local transactive market;
+- retail competition is represented through price constraints rather than an explicit multi-retailer strategic game;
+- the paper does not deeply study strategic misreporting or adversarial behavior by customers/retailers;
+- the Table II error metrics appear to contain a reporting/scaling inconsistency that should be checked before direct reuse.
+
+The authors explicitly identify **low-latency NILM** and **online learning** as important future directions.
+
+---
+
+### 30. Research idea triggers
+
+Possible extensions include:
+
+- online/adaptive NILM that tracks changing household habits;
+- federated learning with formal differential privacy;
+- personalized DR prices under heterogeneous customer comfort preferences;
+- multi-retailer competition and strategic pricing;
+- mechanism design to ensure customer fairness and participation incentives;
+- distributionally robust pricing under uncertain DR potential;
+- chance-constrained reserve offering based on NILM uncertainty;
+- joint energy-capacity-carbon pricing using appliance-level flexibility;
+- NILM-based VPP aggregation of residential TCL, EV, battery, and water-heater flexibility;
+- reinforcement learning for retailer pricing using NILM-estimated states;
+- explicit modeling of rebound effects after TCL curtailment;
+- real-time MPC for TCL aggregation using NILM as the state estimator;
+- uncertainty-aware conversion from NILM prediction intervals to reserve-capacity bids;
+- privacy-preserving peer-to-peer flexibility trading;
+- explainable NILM so that customers can understand why they are classified as highly or weakly flexible.
+
+A particularly natural research direction is:
+
+**NILM + uncertainty quantification + rolling-horizon pricing/control**.
+
+Instead of passing only a point estimate of TCL load to the optimizer, the NILM model could output a prediction interval or probability distribution.
+
+The retailer could then solve:
+
+**stochastic / robust / distributionally robust DR pricing**
+
+based directly on uncertainty in appliance-level flexibility.
+
+---
+
+### 31. Position in the problem map
+
+```text
+Customer-centered electricity retail market
+│
+├── Smart-meter data
+│   └── NILM / load disaggregation
+│
+├── Privacy-preserving learning
+│   ├── encrypted PCA
+│   └── distributed collaborative learning
+│
+├── Flexible-load characterization
+│   ├── TCL usage
+│   ├── DR potential
+│   └── price elasticity
+│
+├── Retailer decision making
+│   ├── DR price
+│   ├── local energy bid
+│   ├── capacity bid
+│   └── CVaR risk control
+│
+├── Customer response
+│   └── price-based TCL adjustment
+│
+└── Distribution-level market
+    ├── energy clearing
+    ├── capacity clearing
+    ├── network constraints
+    └── congestion / reliability impacts
+```
+
+**Problem-map tags:** `NILM` · `privacy-preserving learning` · `TCL demand response` · `customer-centered pricing` · `distributed learning` · `DR potential` · `price elasticity` · `bi-level optimization` · `local transactive market` · `capacity market` · `CVaR`
+
+:::

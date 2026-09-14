@@ -1,0 +1,414 @@
+::: {.callout-note collapse="true" icon=false}
+## [P014] Rouhani et al. (2024) — Barrier-Function Adaptive Finite-Time Trajectory Tracking Controls for Cyber Resilience in Smart Grids Under an Electricity Market Environment
+
+**Journal:** IEEE Transactions on Smart Grid, 15(6), 6031–6047, 2024  
+**DOI:** 10.1109/TSG.2024.3417704  
+**Main topics:** cyber resilience; real-time electricity market; Automatic Generation Control (AGC); False Data Injection Attack (FDIA); Sliding Mode Control (SMC); finite-time tracking; barrier function; communication delay
+
+### Quick takeaway
+
+This paper studies a cyber-resilience problem at the interface between the **real-time electricity market** and **power-system frequency control**.
+
+The key question is:
+
+**When market contracts between Generation Companies (GENCOs) and Distribution Companies (DISCOs) change in real time, how can the power system maintain frequency stability if false data are injected into the control and measurement channels at the same time?**
+
+The authors propose a **barrier-function adaptive finite-time second-order sliding-mode controller**.
+
+Its main goals are to:
+
+- reject False Data Injection Attacks (FDIAs);
+- handle load variations and model uncertainty;
+- tolerate communication delay and governor dead-band nonlinearity;
+- avoid control chattering;
+- drive tracking errors into a small region in finite time.
+
+---
+
+### 1. Problem addressed
+
+In a deregulated electricity market, DISCOs can sign contracts with GENCOs in different control areas.
+
+These contracts can change with market prices.
+
+Changing contracts alter:
+
+- scheduled generation;
+- tie-line power;
+- Area Control Error (ACE);
+- generator reference signals.
+
+So even under normal conditions, real-time market operation creates frequent power-flow and frequency changes.
+
+This makes cyber defense harder because the controller must distinguish between:
+
+- legitimate market-driven changes;
+- load disturbances;
+- system uncertainty;
+- malicious false data.
+
+The paper focuses on keeping the system stable even when these effects occur together.
+
+---
+
+### 2. Why the real-time bidding market creates a cyber vulnerability
+
+The paper models contracts using a **DISCO Participation Matrix (DPM)**.
+
+Each element \(cpf_{ij}\) represents the contract between GENCO \(i\) and DISCO \(j\).
+
+When electricity prices change, the \(cpf_{ij}\) values change.
+
+This directly modifies the power commands used by AGC.
+
+The difficulty is that an attacker can inject false data during the same period in which contracts are changing.
+
+Therefore:
+
+**normal market fluctuation and malicious data can look similar to the controller.**
+
+This creates a useful attack window.
+
+![Conceptual structure of the real-time market and power-system control environment. Source: Fig. 1 of Rouhani et al. (2024).](papers/p014-rouhani2024-cyber-resilient-control/figures/rouhani2024_cyber_resilience/fig1_realtime_market_structure.png){width=78%}
+
+---
+
+### 3. Control objective
+
+The system output includes variables such as:
+
+- frequency deviation;
+- tie-line power deviation;
+- ACE.
+
+The controller should force the measured output \(y(t)\) to track a desired reference \(r(t)\).
+
+The tracking error is:
+
+\[
+e(t)=y(t)-r(t)
+\]
+
+The control target is not only asymptotic stability.
+
+The authors want the error to enter the desired region **within finite time**.
+
+This is important because cyber-attack rejection in AGC is a real-time task.
+
+---
+
+### 4. How FDIA is represented
+
+Cyber-attacks are modeled as unknown disturbances acting on system states and outputs.
+
+For numerical testing, the paper uses a random scaling attack:
+
+\[
+y(t)=(1+\zeta(t))y(t)
+\]
+
+during the attack period, with:
+
+\[
+\zeta(t)\in[-0.5,0.5]
+\]
+
+So the attacker can distort measurements by up to roughly 50% in either direction in the test setup.
+
+The simulations also include:
+
+- 10% system-parameter variation;
+- load disturbances;
+- communication time delay;
+- governor dead-band nonlinearity.
+
+---
+
+### 5. Moving attacked outputs into an augmented state model
+
+The paper first separates system outputs into:
+
+- outputs without direct attack;
+- outputs that may contain attack signals and direct market inputs.
+
+An orthogonal decomposition matrix and a stable filter are then used.
+
+The filter moves the attacked-output effect into an augmented state-space model.
+
+This creates a new system representation in which:
+
+- market/load variations appear mainly as matched disturbances;
+- cyber-attack effects can appear as unmatched disturbances.
+
+This reformulation makes the following sliding-mode controller easier to design.
+
+---
+
+### 6. Why conventional sliding-mode control is not enough
+
+Sliding Mode Control (SMC) is attractive because it is robust to uncertainty and disturbances.
+
+However, the paper highlights two limitations.
+
+#### Chattering
+
+Conventional switching SMC can produce high-frequency oscillations in the control signal.
+
+This is undesirable for practical power-system control.
+
+#### Slow asymptotic convergence
+
+Standard asymptotic stability only guarantees that the error approaches zero as time goes to infinity.
+
+For real-time cyber defense, the controller should recover much faster.
+
+The proposed method therefore combines:
+
+- second-order sliding mode;
+- finite-time convergence;
+- adaptive gain;
+- barrier-function regulation.
+
+---
+
+### 7. PID-type second-order sliding surface
+
+The paper defines a PID sliding surface:
+
+\[
+s_e(t)
+=
+k_p e(t)
++
+k_i\int_0^t e(\tau)d\tau
++
+k_d\dot e(t)
+\]
+
+The second-order design aims to drive both:
+
+\[
+s_e(t)\rightarrow0
+\]
+
+and
+
+\[
+\dot{s}_e(t)\rightarrow0
+\]
+
+in finite time.
+
+If the gains are selected properly, the resulting tracking-error dynamics are stable.
+
+Using a second-order sliding surface also helps reduce chattering compared with a conventional first-order switching controller.
+
+---
+
+### 8. Proposed finite-time control law
+
+The controller contains two main components.
+
+#### Equivalent control
+
+This part compensates the nominal system dynamics.
+
+#### Switching / robust control
+
+This part rejects:
+
+- uncertainty;
+- disturbances;
+- cyber-attack effects.
+
+The discontinuous term is applied to the **derivative of the control input** rather than directly to the control input.
+
+After integration, the actual control signal becomes smoother.
+
+This is the main reason the authors describe the proposed controller as **chattering-free**.
+
+---
+
+### 9. Adaptive barrier-function law
+
+A major challenge is that the upper bounds of disturbances and attack effects are not known in practice.
+
+A fixed robust gain would therefore be difficult to select.
+
+The paper uses a two-stage adaptive mechanism.
+
+#### Stage 1 — Adaptive gain
+
+Before the tracking error reaches a small neighborhood of the sliding surface, the control gain increases according to the sliding error.
+
+This helps the controller reach the desired region quickly.
+
+#### Stage 2 — Barrier function
+
+After the error enters the prescribed region, a positive-semidefinite barrier function becomes active.
+
+Its purpose is to keep the error inside the region and reduce unnecessary overestimation of the control gain.
+
+So the controller tries to achieve:
+
+**fast approach + small steady error + no excessive control gain**
+
+---
+
+### 10. Finite-time stability guarantee
+
+The paper provides Lyapunov-based proofs for two operating stages:
+
+- before the tracking error reaches the prescribed vicinity;
+- after the trajectory enters that vicinity.
+
+The main theoretical result is that the sliding variables reach the required region in **finite time** under the stated assumptions.
+
+This is stronger than simply showing asymptotic convergence.
+
+For this paper, finite-time convergence is important because the controller is intended to reject cyber-attacks online.
+
+---
+
+### 11. Overall computational procedure
+
+![Computational procedure of the proposed cyber-resilient controller. Source: Fig. 2 of Rouhani et al. (2024).](papers/p014-rouhani2024-cyber-resilient-control/figures/rouhani2024_cyber_resilience/fig2_control_procedure.png){width=74%}
+
+The complete procedure can be summarized as:
+
+1. build the multi-area deregulated power-system model;
+2. include market contract changes and cyber-attack channels;
+3. decompose attacked and non-attacked outputs;
+4. construct the augmented filtered state-space model;
+5. define tracking error;
+6. design the PID second-order sliding surface;
+7. apply adaptive finite-time control;
+8. switch to barrier-function gain regulation after entering the desired region;
+9. verify frequency stability under attack.
+
+---
+
+### 12. Case study
+
+The main numerical case uses an **IEEE 39-bus system** divided into three control areas.
+
+Some generators provide spinning reserve and participate in AGC.
+
+The market side is represented by changing GENCO–DISCO contracts.
+
+The study includes:
+
+- online contract changes;
+- FDIA during the contract-changing periods;
+- communication delay;
+- governor dead-band nonlinearity;
+- 10% parameter uncertainty.
+
+The proposed controller is compared with **Active Disturbance Rejection Control (ADRC)**.
+
+---
+
+### 13. Main findings
+
+#### Frequency recovery under simultaneous market changes and FDIA
+
+When bidding contracts change and FDIA occurs, frequency deviations appear in all three control areas.
+
+The proposed controller quickly drives these deviations back toward the operating region.
+
+#### Better performance than ADRC
+
+The comparison shows that the proposed method gives faster and more accurate frequency recovery under the tested attack conditions.
+
+The authors attribute this to:
+
+- the filtered augmented-state formulation;
+- the second-order sliding surface;
+- finite-time tracking;
+- adaptive barrier-function gain.
+
+#### Chattering mitigation
+
+Because the discontinuous action is applied to the derivative of the controller rather than directly to the control signal, the final control input is smoother.
+
+---
+
+### 14. Real-time experimental validation
+
+The method is also tested using:
+
+- a **Speedgoat Real-Time Target Machine**;
+- Simulink Real-Time;
+- an FPGA-based I/O platform.
+
+The experimental results reproduce the main behavior found in simulation:
+
+- attack rejection;
+- frequency recovery;
+- fast sliding-surface convergence.
+
+The authors also test an **IEEE 118-bus system** to show that the approach can be applied to a larger power-system model.
+
+---
+
+### 15. What this paper teaches
+
+#### Lesson 1 — Market dynamics and control security are coupled
+
+Real-time market contracts are not only an economic issue.
+
+They change physical power-flow and AGC reference signals.
+
+This can affect how cyber-attacks appear to the controller.
+
+#### Lesson 2 — Cyber resilience does not always require a separate attack detector
+
+The proposed strategy focuses on **robust rejection** of the attack effect.
+
+The controller is designed to keep the system stable even without first identifying the exact attack signal.
+
+#### Lesson 3 — Finite-time recovery matters in cyber-physical systems
+
+A controller that is theoretically stable but very slow may be unsuitable for online attack rejection.
+
+#### Lesson 4 — Adaptive gain design can reduce unnecessary conservatism
+
+A fixed very large robust gain may cause poor control quality.
+
+The adaptive barrier-function mechanism tries to provide only the gain needed to keep the trajectory inside the desired region.
+
+---
+
+### 16. Limitations
+
+Important limitations include:
+
+- the numerical FDIA is mainly represented by a random scaling attack;
+- the method assumes disturbances are bounded;
+- several structural assumptions are required for the system decomposition and stability proof;
+- the attack is rejected, but the method does not identify the attacker or attack location;
+- the market model is used mainly to generate contract-driven dynamics rather than to study strategic bidding or market equilibrium;
+- controller tuning still requires several design parameters;
+- the main validation is simulation and real-time target-machine testing rather than long-term field deployment;
+- the approach does not explicitly optimize the economic cost of cyber-resilient control.
+
+---
+
+### 17. Research idea triggers
+
+Possible extensions include:
+
+- resilient Model Predictive Control (MPC) under real-time market cyber-attacks;
+- attack detection + attack rejection in one architecture;
+- event-triggered or communication-efficient cyber-resilient AGC;
+- adaptive protection against unknown or learning-based attacks;
+- coordinated cyber resilience across electricity-market and communication layers;
+- secure AGC under renewable uncertainty and low inertia;
+- cyber-resilient market operation with strategic bidding;
+- distributed or decentralized finite-time controllers;
+- comparison of SMC, MPC, \(H_\infty\), ADRC, and learning-based resilient control under the same attack scenarios;
+- controller design that jointly considers **frequency security + control effort + market cost**.
+
+**Problem-map tags:** `cyber resilience` · `real-time electricity market` · `FDIA` · `AGC` · `finite-time control` · `sliding mode control` · `barrier function` · `frequency stability`
+
+:::

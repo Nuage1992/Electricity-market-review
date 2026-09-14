@@ -1,0 +1,379 @@
+::: {.callout-note collapse="true" icon=false}
+## [P010] Zhang et al. (2023) — A Framework for Several Electricity Retailers Cooperatively Implement Demand Response to Distributed Data Center
+
+**Journal:** IEEE Transactions on Smart Grid, 14(1), 277–289, 2023  
+**DOI:** 10.1109/TSG.2022.3189835  
+**Main topics:** Distributed Data Center Cluster (DDCC); Demand Response (DR); workload shifting; electricity retailers; cooperative game; Shapley value; Mixed-Integer Linear Programming (MILP)
+
+### Quick takeaway
+
+This paper studies a coordination problem created by geographically distributed data centers.
+
+A **Distributed Data Center Cluster (DDCC)** may contain data centers in different regions, and each data center may buy electricity from a different retailer.
+
+The key problem is:
+
+**If each retailer independently asks its local data center to increase or reduce electricity use, workload shifting inside the DDCC may help one retailer but unintentionally hurt another.**
+
+The paper therefore proposes a cooperative framework in which:
+
+1. several retailers jointly send DR instructions;
+2. the DDCC shifts workloads to maximize the total profit of all participants;
+3. the final profit is redistributed using the **Shapley value** so that cooperation remains attractive to every participant.
+
+---
+
+### 1. Problem addressed
+
+A DDCC can move computing workloads among geographically separated data centers.
+
+This flexibility is valuable for Demand Response (DR), because electricity use can be moved from one region to another without stopping the computing service.
+
+However, different data centers may be supplied by different electricity retailers.
+
+If the retailers act independently, one retailer's DR request may create an unwanted effect for another retailer.
+
+Example:
+
+- Retailer 1 wants Data Center 1 to reduce electricity use.
+- The DDCC moves part of its workload to Data Center 2.
+- Data Center 2 therefore consumes more electricity.
+- If extra electricity sales are unfavorable for Retailer 2, Retailer 2 loses money.
+
+So the real problem is not simply:
+
+**How can a data center reduce load?**
+
+It is:
+
+**How should several retailers coordinate the spatial shifting of one common customer's load?**
+
+---
+
+### 2. Why independent DR can be inefficient
+
+The important feature of a DDCC is **workload spatial shifting**.
+
+A workload removed from one data center usually has to be processed somewhere else.
+
+Therefore:
+
+\[
+\text{load reduction in one region}
+\]
+
+often means:
+
+\[
+\text{load increase in another region}
+\]
+
+If retailers issue DR requests separately, they only see their own local benefit.
+
+They may not know whether the workload is shifted to a region where the corresponding retailer benefits or loses.
+
+The paper's Fig. 1 gives a simple three-region example:
+
+- Retailer 1 benefits from reducing Data Center 1 load;
+- Retailer 2 is harmed if Data Center 2 load increases;
+- Retailer 3 benefits if Data Center 3 load increases.
+
+Cooperation allows the workload to be moved from Data Center 1 to Data Center 3 rather than Data Center 2.
+
+---
+
+### 3. Two-step cooperation framework
+
+![Two-step cooperation framework: first maximize the total collaborative DR profit, then redistribute the profit using the Shapley value. Source: Fig. 2 of Zhang et al. (2023).](papers/p010-zhang2023-ddcc-dr/figures/zhang2023_ddcc_dr/fig2_cooperation_framework.png){width=68%}
+
+The framework has two main steps.
+
+#### Step 1 — Maximize total cooperative profit
+
+The electricity retailers and the DDCC form an **ED union**.
+
+The retailers jointly send their DR requirements to the DDCC.
+
+The DDCC then redistributes workloads among its data centers to maximize:
+
+**retailers' total DR profit + DDCC electricity-cost saving**
+
+#### Step 2 — Reallocate the profit fairly
+
+Maximizing total profit does not guarantee that every participant benefits individually.
+
+Some retailer may lose money even when the whole group gains.
+
+The paper therefore applies the **Shapley value** to redistribute the total cooperative profit.
+
+The target is:
+
+**every participant receives at least as much profit as under independent operation.**
+
+---
+
+### 4. What information does each retailer send?
+
+Each retailer sends two types of DR information.
+
+#### Economic effect of load change
+
+The retailer calculates:
+
+- profit change if the local data center reduces 1 unit of electricity;
+- profit change if the local data center increases 1 unit of electricity.
+
+These values depend on:
+
+- day-ahead market purchase;
+- real-time market price;
+- retail electricity price;
+- possible DR reward or penalty.
+
+#### Allowed load-change range
+
+The retailer also tells the DDCC how much the local data-center load is allowed to increase or decrease.
+
+The limit considers:
+
+- maximum permissible demand deviation;
+- local distribution-network capacity.
+
+So the DDCC receives both:
+
+**economic preference + feasible adjustment range**
+
+from every retailer.
+
+---
+
+### 5. DDCC energy-management model
+
+After receiving all DR instructions, the DDCC decides how to distribute computing workloads.
+
+Main decision variables include:
+
+- workload assigned from each front-end server to each data center;
+- number of active servers in each data center;
+- resulting electricity consumption of each data center.
+
+The optimization objective is:
+
+\[
+\max \; \text{total profit of the ED union}
+\]
+
+The model is formulated as a **Mixed-Integer Linear Programming (MILP)** problem.
+
+---
+
+### 6. Workload shifting is limited by computing-service quality
+
+The DDCC cannot move workloads only according to electricity economics.
+
+The computing service must still satisfy delay limits.
+
+The model therefore considers:
+
+- workload transmission delay between regions;
+- processing delay at each data center;
+- server service rate;
+- maximum number of available servers.
+
+Processing delay is modeled using **M/M/1 queueing theory**.
+
+This creates an important coupling:
+
+**electricity-side DR decisions ↔ computing-side Quality of Service**
+
+A data center cannot simply deactivate servers or receive unlimited workloads if the resulting computing delay becomes too large.
+
+---
+
+### 7. How workload determines electricity consumption
+
+The logic is:
+
+**workload allocation → active server number → server utilization → data-center electricity use**
+
+An active server consumes power between its idle and peak power.
+
+The total IT electricity is then multiplied by the **Power Usage Effectiveness (PUE)** to obtain the total data-center electricity consumption.
+
+Therefore, the paper does not directly set electricity consumption as a free variable.
+
+Electricity use is linked to the actual computing workload.
+
+---
+
+### 8. Profit allocation: why Shapley value is needed
+
+The Shapley value allocates cooperative profit according to each member's marginal contribution.
+
+This is important because:
+
+**maximum total profit ≠ fair individual profit**
+
+After the collaborative DR is completed, some participants may initially earn less than under independent operation.
+
+The paper introduces a common **fund pool**:
+
+- some participants pay money into the pool;
+- others receive money from the pool;
+- the total transfer sums to zero.
+
+The total cooperative profit is unchanged.
+
+Only its distribution changes.
+
+This gives each member a reason to remain in the cooperation.
+
+---
+
+### 9. Why traditional local incentive allocation can be unfair
+
+The paper compares the Shapley-based allocation with a traditional approach where each retailer rewards its own local data center according to local load reduction.
+
+This can be misleading in a DDCC.
+
+For example:
+
+- Data Center 2 reduces its local load;
+- its workload is shifted to Data Center 3;
+- Retailer 3 may be the largest beneficiary;
+- but Retailer 2 is still required to reward Data Center 2.
+
+In the paper's comparison, this traditional allocation can even make **Retailer 2's DR profit negative**.
+
+The reason is that:
+
+**local load reduction does not necessarily identify who actually benefits from the workload shift.**
+
+---
+
+### 10. Case study
+
+The case contains:
+
+- 4 electricity retailers;
+- 4 geographically distributed data centers;
+- 100,000 servers in each data center;
+- a 24-hour operating setting;
+- workload data from a public data-center archive;
+- electricity-price data from PJM.
+
+The MILP is solved using Gurobi 9.0.
+
+Reported computation time is about:
+
+**0.5 s**
+
+Four main operating situations are compared:
+
+- **S1:** no DR;
+- **S2:** one retailer independently implements DR;
+- **S3:** collaborative DR + proposed Shapley allocation;
+- **S4:** collaborative DR + traditional profit allocation.
+
+---
+
+### 11. How collaborative DR changes workload allocation
+
+Under independent operation, the DDCC mainly sends more workloads to data centers with lower electricity prices.
+
+When only Retailer 1 requests DR, workloads removed from Data Center 1 are spread to other data centers without considering whether the other retailers benefit.
+
+Under collaborative DR:
+
+- Data Centers 1 and 2 reduce electricity use;
+- Data Centers 3 and 4 increase electricity use.
+
+This matches the different economic preferences of all four retailers.
+
+The key improvement is therefore not only load reduction.
+
+It is:
+
+**moving computing load to the regions where that movement creates the highest total value.**
+
+---
+
+### 12. Main findings
+
+The collaborative scheme produces a higher total profit than the independent DR cases.
+
+More importantly, after Shapley-value redistribution:
+
+- every electricity retailer benefits;
+- the DDCC benefits;
+- no participant receives less than under independent operation.
+
+![Final profits of the four retailers and the DDCC under independent single-retailer DR cases and the proposed collaborative DR case. Source: Fig. 7 of Zhang et al. (2023).](papers/p010-zhang2023-ddcc-dr/figures/zhang2023_ddcc_dr/fig7_profit_comparison.png){width=74%}
+
+The paper also shows that the proposed profit-allocation mechanism is more suitable than rewarding each local data center only according to its local load reduction.
+
+---
+
+### 13. What this paper teaches
+
+#### Lesson 1 — Flexible load can create cross-region externalities
+
+Reducing electricity use at one location may increase electricity use somewhere else.
+
+Therefore, local DR decisions can affect other market participants.
+
+#### Lesson 2 — Data-center workloads are an energy-flexibility resource
+
+A DDCC can change regional electricity demand by moving computing tasks without necessarily reducing total computing service.
+
+#### Lesson 3 — System-wide optimization and benefit allocation are different problems
+
+First determine the best cooperative action.
+
+Then decide how the benefit should be shared.
+
+Both steps are necessary for stable cooperation.
+
+#### Lesson 4 — Energy optimization should respect computing constraints
+
+Electricity savings cannot come at the cost of unacceptable processing delay.
+
+This is a typical **energy-computing coupling** problem.
+
+---
+
+### 14. Limitations
+
+Important limitations include:
+
+- only workload **spatial shifting** is modeled in detail;
+- workload processing-time shifting is not included;
+- renewable generation at data centers is not considered;
+- the DDCC is assumed to buy electricity from retailers rather than directly from wholesale markets;
+- uncertainty in electricity price and workload forecasts is not explicitly modeled;
+- retailer cooperation is assumed rather than strategically negotiated;
+- the Shapley value may become computationally expensive when the number of participants becomes large.
+
+The authors specifically identify workload time shifting, direct wholesale-market participation, and data-center renewable generation as future extensions.
+
+---
+
+### 15. Research idea triggers
+
+Possible extensions include:
+
+- joint **spatial + temporal workload shifting**;
+- DDCC participation in wholesale electricity and ancillary-service markets;
+- renewable-powered and battery-equipped data centers;
+- stochastic or robust optimization under workload and electricity-price uncertainty;
+- carbon-aware workload migration across regions;
+- electricity price + carbon intensity + computing delay co-optimization;
+- game-theoretic cooperation among multiple retailers;
+- scalable alternatives to Shapley-value profit allocation;
+- data-center DR coordinated with Virtual Power Plants (VPPs);
+- demand response for AI / GPU data-center clusters;
+- multi-timescale scheduling linking fast computing control with slower energy-market decisions.
+
+**Problem-map tags:** `data center demand response` · `workload shifting` · `electricity retailers` · `cooperative DR` · `Shapley value` · `MILP` · `energy-computing coupling` · `profit allocation`
+
+:::

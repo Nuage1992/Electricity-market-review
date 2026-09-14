@@ -1,0 +1,582 @@
+::: {.callout-note collapse="true" icon=false}
+## P018 — Charge Manipulation Attacks Against Smart Electric Vehicle Charging Stations and Deep Learning-Based Detection Mechanisms
+
+**Author:** Hamidreza Jahangir, Subhash Lakshminarayana, and H. Vincent Poor  
+**Date:** 2024  
+**Categories:** electric vehicle charging; cybersecurity; charge manipulation attack; electricity market; OCPP; anomaly detection; deep autoencoder
+
+## Bibliographic information
+
+**Journal:** IEEE Transactions on Smart Grid, 15(5), 5182–5194, September 2024  
+**DOI:** 10.1109/TSG.2024.3401090
+
+## One-sentence takeaway
+
+This paper shows that a cyber attacker does not need to create an obvious high-frequency switching event to damage smart EV charging operations: by stealthily manipulating **requested charging demand and preferred charging times**, the attacker can shift the aggregator's real-time demand away from its day-ahead schedule, increase market penalties and operating costs, and remain difficult to detect; the authors therefore propose an **unsupervised 2D-CNN autoencoder monitoring framework** for real-time CMA detection.
+
+## 1. What problem does the paper solve?
+
+Smart EV charging relies on communications between EV users, charging points/stations, central systems, mobile applications, and energy-market interfaces. This connectivity enables coordinated charging, but it also creates a cyber-physical attack surface.
+
+Earlier EV charging cyber-security studies often focus on highly visible attacks such as:
+
+- sudden charging-demand surges,
+- synchronous switching of many chargers,
+- denial-of-service or false-data-injection attacks that directly disturb grid stability.
+
+The authors argue that modern smart-charging protocols already include mechanisms that make some of these direct attacks harder to execute. They therefore ask a more practical question:
+
+```text
+Can an attacker manipulate ordinary smart-charging preferences
+without producing an obviously abnormal charging command,
+and thereby create economically damaging deviations in the
+energy market?
+```
+
+The paper proposes **Charge Manipulation Attacks (CMAs)** that modify charging-setting information such as requested demand, preferred start time, and preferred end time. The main impact is not necessarily an immediate grid collapse; instead, the attack changes the aggregator's actual charging trajectory and therefore its day-ahead/real-time market settlement.
+
+## 2. Why this attack is different from conventional EV charging attacks
+
+The paper makes a useful distinction between three broad cyber-threat classes.
+
+### Sudden demand surge/drop attacks
+
+These attacks attempt to turn on many chargers together or sharply change charging rates, potentially creating frequency or congestion problems.
+
+### Coordinated switching attacks
+
+These repeatedly switch chargers on and off and can excite grid oscillations. They are potentially severe but require continued access and may be constrained by smart-charging control logic.
+
+### Energy-market manipulation
+
+CMAs belong mainly to this third class. Their objective is to make the aggregator's **actual charging demand differ from its scheduled/forecast demand**, creating:
+
+```text
+forecast error
+     ↓
+DA/RT schedule mismatch
+     ↓
+additional RT purchases and/or penalties
+     ↓
+aggregator economic loss
+```
+
+This market-oriented perspective is one of the paper's most important contributions.
+
+## 3. OCPP context: why the authors consider CMAs more realistic
+
+The paper uses the Open Charge Point Protocol (OCPP) architecture to explain the attack surface.
+
+![](papers/p018-jahangir2024-ev-cma-detection/figures/fig1_ocpp_architecture.png){fig-cap="OCPP-based smart-charging architecture and the control/security layers discussed in the paper." width=88%}
+
+OCPP 1.6 and later versions contain smart-charging functions that can restrict maximum charging rates and introduce randomized delays. These features make extremely aggressive surge or rapid switching attacks less straightforward.
+
+CMAs instead target ordinary charging-setting information, especially:
+
+```text
+requested charging demand
+preferred start time
+preferred end time
+```
+
+The key idea is that manipulated settings can still look like plausible user requests. Therefore, the central system may have difficulty distinguishing malicious manipulation from normal variation in user charging behavior.
+
+## 4. The six CMA types
+
+The authors construct six attack categories from three basic manipulations.
+
+### Type 1 — requested-demand manipulation
+
+The requested charging energy is increased while the charging window is otherwise maintained.
+
+Main effect:
+
+> higher charging demand / higher peak demand.
+
+### Type 2 — demand increase + earlier end time
+
+The requested demand is increased while the preferred end time is moved earlier.
+
+Main effect:
+
+> charging demand is shifted toward earlier time periods.
+
+### Type 3 — demand increase + later start time
+
+The requested demand is increased while the preferred start time is moved later.
+
+Main effect:
+
+> charging demand is shifted toward later time periods.
+
+### Types 4–6 — mixed attacks
+
+These combine Types 1–3 across different subsets of compromised charging points.
+
+The important insight is that mixed attacks can be **more stealthy** because the aggregate charging-setting distribution is not altered in one simple direction. Instead, multiple small manipulations partly mask each other.
+
+A useful summary is:
+
+| CMA type | Main manipulation | Main system effect | Relative stealthiness reported by authors |
+|---|---|---|---|
+| Type 1 | Requested demand | Increase peak demand | Lower |
+| Type 2 | Demand + earlier end time | Shift demand earlier | Lower |
+| Type 3 | Demand + later start time | Shift demand later | Lower |
+| Type 4 | Mix of Types 1 and 2 | Increase + earlier shift | Medium |
+| Type 5 | Mix of Types 1 and 3 | Increase + later shift | Medium |
+| Type 6 | Mix of Types 1–3 | Mixed demand reshaping | Highest |
+
+## 5. Why the attacks can be stealthy
+
+The simulations use 5000 EV charging points and a five-minute resolution. For the illustrative case, approximately 70% of charging points are assumed compromised and the attack-induced increase in charging rate is kept relatively small.
+
+The resulting charging-setting histograms before and after attack remain visually similar. This matters because a conventional rule such as:
+
+```text
+if charging demand suddenly becomes extremely large → alarm
+```
+
+would not be sufficient.
+
+Instead, the security problem becomes a **multivariate anomaly-detection problem** involving subtle changes across:
+
+- start time,
+- end time,
+- requested charging demand,
+- large numbers of charging points.
+
+## 6. Why the electricity market is vulnerable
+
+The paper models an EV aggregator participating in both the **day-ahead market (DAM)** and **real-time market (RTM)**.
+
+The aggregator first predicts the next day's charging demand and places DA bids. In real time, it must operate close to the awarded DA schedule. If actual charging demand changes unexpectedly, it may need to:
+
+- submit incremental RT bids,
+- pay for deviations,
+- incur penalties for not honoring its DA commitments,
+- suffer energy-not-served costs.
+
+Therefore, a CMA can create an economic attack even when the power system remains operationally stable.
+
+The main chain is:
+
+```text
+CMA changes user charging settings
+            ↓
+smart-charging schedule changes
+            ↓
+actual RT demand deviates from DA forecast/bid
+            ↓
+RT balancing + penalty cost rises
+            ↓
+aggregator profit and market credibility deteriorate
+```
+
+## 7. Energy-market cost model
+
+The authors represent the aggregator's total cost as:
+
+```text
+Total Cost = Day-Ahead Cost + Real-Time Cost
+```
+
+The day-ahead component includes:
+
+```text
+DA charging cost
++
+expected energy-not-charged cost
+```
+
+The real-time component includes:
+
+```text
+incremental RT bidding cost
++
+DA-bid deviation penalty
++
+real-time energy-not-charged cost
+```
+
+This formulation is important because the cyberattack is translated into a directly measurable economic consequence instead of only a grid-stability metric.
+
+## 8. Type-1 attack result: about 13% higher surcharge cost
+
+The paper uses CAISO market prices and the ACN-data EV charging dataset to quantify the market impact.
+
+For the reported Type-1 CMA case:
+
+| Cost component | Before attack ($) | After attack ($) |
+|---|---:|---:|
+| DA EV charging cost | 9316 | 9316 |
+| Penalty cost | 1287 | 4899 |
+| RT EV charging cost | 2211 | 670 |
+| RT energy-not-charged cost | 416 | 15 |
+| Total EV charging cost | 13182 | 14903 |
+
+The total increase is approximately **$1720**, corresponding to roughly a **13% increase in aggregated surcharge charging cost**.
+
+The key observation is that the attack does not simply increase every cost component. Instead, it distorts the optimal DA/RT settlement: the penalty cost increases sharply while other real-time components may fall. The economic damage comes from the overall mismatch between planned and actual charging behavior.
+
+## 9. Mixed CMAs are economically more damaging
+
+The boxplots for the six CMA scenarios show that Types 4–6 generally lead to higher surcharge costs than Types 1–3.
+
+The reason is straightforward:
+
+```text
+simple CMA
+→ primarily changes one characteristic of demand
+
+mixed CMA
+→ simultaneously changes magnitude and timing
+→ larger DA–RT mismatch
+→ larger economic impact
+```
+
+This is especially important because the mixed attacks are also harder to detect, creating a difficult combination of:
+
+> **higher economic impact + higher stealthiness**.
+
+## 10. Proposed defense: centralized monitoring of charging settings
+
+Instead of requiring additional physical sensors, the paper proposes using data already available in smart-charging platforms.
+
+The central monitoring system collects changes in:
+
+```text
+start time
+end time
+requested charging demand
+```
+
+for large populations of EV charging points.
+
+The monitoring architecture is intended to operate as an **additional protection layer** alongside conventional encryption/authentication mechanisms.
+
+## 11. Why use unsupervised anomaly detection?
+
+Cyberattack datasets are usually highly imbalanced and labeled attack examples are limited. Moreover, future attacks may not exactly match known attack patterns.
+
+The authors therefore choose an **unsupervised autoencoder**.
+
+The model is trained mainly on normal charging behavior:
+
+```text
+normal charging profiles
+        ↓
+encoder
+        ↓
+latent representation
+        ↓
+decoder
+        ↓
+reconstructed charging profiles
+```
+
+If a new sample is normal, the autoencoder should reconstruct it accurately.
+
+If a new sample contains an abnormal pattern:
+
+```text
+reconstruction error ↑
+        ↓
+loss exceeds threshold
+        ↓
+anomaly alarm
+```
+
+This avoids requiring a fully labeled training set containing every possible CMA type.
+
+## 12. 2D-CNN autoencoder monitoring framework
+
+The main detection architecture uses a **2D convolutional autoencoder**.
+
+![](papers/p018-jahangir2024-ev-cma-detection/figures/fig8_detection_framework.png){fig-cap="Data-driven CMA monitoring framework based on an unsupervised 2D-CNN autoencoder." width=88%}
+
+For each monitoring interval, the input is based on the change in charging settings between two consecutive time points.
+
+Conceptually:
+
+```text
+Δ requested demand
+Δ start time
+Δ end time
+        ↓
+reshape charging-point population into 2D structure
+        ↓
+2D-CNN autoencoder
+        ↓
+reconstruction loss
+        ↓
+normal / anomalous
+```
+
+The paper chooses the anomaly threshold from the loss distribution of normal validation samples and uses a 5% false-positive tolerance in threshold selection.
+
+## 13. Detection performance
+
+The proposed 2D-CNN autoencoder is compared with:
+
+- a deep MLP autoencoder,
+- One-Class SVM,
+- Isolation Forest.
+
+The proposed method reports approximately:
+
+```text
+Precision = 0.88
+Recall    = 0.91
+F1-score  = 0.89
+Accuracy  = 91.24%
+```
+
+The paper concludes that the 2D-CNN structure provides the best overall performance among the tested methods and improves accuracy by more than 5 percentage points relative to the benchmark learning methods discussed in the study.
+
+The offline model training is reported to take less than 17 minutes on the authors' test computer, while online inference takes approximately **96 ms**, indicating that the method is compatible with near-real-time monitoring.
+
+## 14. A particularly interesting result: mixed attacks are hardest to detect
+
+The per-attack confusion matrices are very informative.
+
+![](papers/p018-jahangir2024-ev-cma-detection/figures/fig12_detection_by_attack_type.png){fig-cap="Detection results for the six CMA types, showing that mixed attack strategies are substantially more difficult to detect." width=90%}
+
+For 20 attack samples of each CMA type, the number correctly identified as attacks decreases substantially from simple to mixed attacks:
+
+```text
+Type 1: 20 / 20 detected
+Type 2: 19 / 20 detected
+Type 3: 18 / 20 detected
+Type 4:  8 / 20 detected
+Type 5: 10 / 20 detected
+Type 6:  1 / 20 detected
+```
+
+This is one of the most important practical findings in the paper:
+
+> An anomaly detector can perform well on average while still being weak against deliberately mixed, stealth-oriented attacks.
+
+### Terminology issue worth noting
+
+The paper's discussion around Fig. 12 refers to some missed attack detections as **false positives (FPs)**. Based on the confusion matrices, these appear more naturally interpreted as **false negatives** (attack samples classified as normal). This wording should be checked carefully before quoting the detection-error counts.
+
+## 15. Why one-time manipulation matters
+
+The authors emphasize that the proposed CMA does not require continuous high-frequency control of the charging devices.
+
+This has three implications.
+
+### Greater stealthiness
+
+Repeated switching creates an obvious temporal signature. A one-time manipulation of a charging request can instead be absorbed by the legitimate smart-charging scheduler.
+
+### Lower attacker persistence requirement
+
+The attacker does not need to maintain uninterrupted control throughout the entire charging process.
+
+### Greater market relevance
+
+Even a small manipulation made before or during market operation can change the aggregate schedule for many subsequent time intervals.
+
+This changes the cyber-risk question from:
+
+```text
+Can an attacker directly switch many chargers?
+```
+
+to:
+
+```text
+Can an attacker subtly corrupt the input information
+used by the legitimate charging scheduler?
+```
+
+That is a much broader vulnerability class.
+
+## 16. What is genuinely new in this paper?
+
+The novelty is best understood as the combination of three elements.
+
+### Attack-model novelty
+
+```text
+smart-charging preference manipulation
++
+one-time manipulation
++
+stealth-oriented mixed attacks
+```
+
+### Market-impact novelty
+
+```text
+cyberattack
+→ DA/RT demand mismatch
+→ market penalties and charging-cost increase
+```
+
+Rather than evaluating only frequency or voltage consequences, the paper explicitly quantifies the aggregator's economic exposure.
+
+### Detection novelty
+
+```text
+existing charging-setting data
++
+unsupervised 2D-CNN autoencoder
++
+real-time anomaly monitoring
+```
+
+The detector is designed to use infrastructure already available in modern charging-management systems.
+
+## 17. Critical reading and limitations
+
+Several limitations are worth remembering.
+
+### 17.1 Market model is a generalized CAISO representation
+
+The authors explicitly state that they do not replicate every detailed CAISO penalty and real-time settlement rule. Therefore, the reported dollar values demonstrate the mechanism and relative impact rather than serving as exact market-loss forecasts.
+
+### 17.2 Detection is evaluated on synthetically generated attacks
+
+Normal behavior comes from a real EV charging dataset, but attack samples are generated by the proposed CMA procedure. Real attackers may produce different statistical signatures.
+
+### 17.3 Aggregate accuracy hides attack-specific weaknesses
+
+The overall 91.24% accuracy looks strong, but Type-6 detection is much weaker. For a security application, worst-case or attack-specific recall may be more important than aggregate accuracy.
+
+### 17.4 The threshold is fixed from normal validation data
+
+A fixed anomaly threshold may require recalibration when charging behavior, fleet composition, seasons, tariffs, or user populations change.
+
+### 17.5 Detection is emphasized more than mitigation
+
+The paper focuses on detecting attacks. A practical resilient system would also need a response policy, for example:
+
+- isolate suspicious charging requests,
+- revalidate user preferences,
+- re-optimize the charging schedule,
+- reserve flexibility for cyber contingencies,
+- quantify confidence before rejecting legitimate requests.
+
+### 17.6 Communication imperfections remain future work
+
+The authors identify missing and noisy monitoring data as an important future issue. This is highly relevant because a cyber-monitoring system itself depends on reliable communication.
+
+## 18. Relationship to the previous market papers
+
+P016 and P017 focus mainly on **market design and carbon-aware trading**, whereas P018 introduces a different but highly complementary question:
+
+```text
+P016/P017:
+How should distributed users trade energy/carbon efficiently?
+
+P018:
+What happens if the information feeding such flexible-energy markets
+is maliciously manipulated?
+```
+
+This creates an important bridge between **electricity-market optimization** and **cyber-physical security**.
+
+For future P2P/VPP/EV-market research, it suggests that market models should not automatically assume that every submitted demand, flexibility, or preference signal is trustworthy.
+
+## 19. Research directions inspired by the paper
+
+### Direction 1: Attack-aware EV aggregator scheduling
+
+Instead of detection and scheduling being independent modules, integrate the anomaly score directly into the charging optimization:
+
+```text
+charging cost
++
+DA/RT imbalance risk
++
+cyber-risk penalty
+```
+
+Suspicious charging requests could receive uncertainty bounds or reduced scheduling priority rather than being simply accepted/rejected.
+
+### Direction 2: Distributionally robust scheduling under cyber uncertainty
+
+Model uncertain or potentially manipulated EV requests using:
+
+- Wasserstein DRO,
+- robust optimization,
+- chance constraints.
+
+This would connect cyber-security directly with uncertainty-aware energy scheduling.
+
+### Direction 3: Detection + mitigation closed loop
+
+A stronger architecture would be:
+
+```text
+monitor
+  ↓
+detect anomaly
+  ↓
+identify affected EVCPs
+  ↓
+reconstruct trusted demand
+  ↓
+re-optimize charging / market bid
+  ↓
+measure residual economic loss
+```
+
+This would turn anomaly detection into a complete cyber-resilient energy-management system.
+
+### Direction 4: Adversarially trained detectors
+
+The weakness against Type-6 mixed attacks suggests studying:
+
+- adversarial training,
+- contrastive/self-supervised learning,
+- temporal transformers,
+- graph neural networks across charging stations,
+- ensemble anomaly detectors.
+
+The research objective should focus particularly on **worst-case attack recall**, not only average accuracy.
+
+### Direction 5: Market manipulation across EV, VPP and P2P systems
+
+The same principle can be extended beyond charging stations.
+
+A malicious actor could manipulate:
+
+- EV availability,
+- battery SOC reports,
+- flexible-load baselines,
+- renewable forecasts,
+- P2P bids,
+- carbon-trading quantities.
+
+This leads naturally to a broader topic:
+
+> **cyber-resilient transactive energy markets**.
+
+## 20. Position in the literature problem map
+
+```text
+Cyber-resilient electricity market / EV charging
+│
+├── Smart EV charging
+├── OCPP communication architecture
+├── Cyber-physical attack surface
+├── Charge Manipulation Attack (CMA)          ← core
+│   ├── demand manipulation
+│   ├── start-time manipulation
+│   ├── end-time manipulation
+│   └── mixed stealth attacks                 ← core
+├── EV aggregator
+├── Day-ahead / real-time market mismatch     ← core
+├── Market penalty and economic loss          ← core
+├── Central charging-data monitoring
+├── Unsupervised anomaly detection
+├── 2D-CNN autoencoder                        ← core
+├── Real-time attack detection
+└── Detection + resilient scheduling          ← research extension
+```
+
+
+:::

@@ -1,0 +1,383 @@
+::: {.callout-note collapse="true" icon=false}
+## [P006] Li et al. (2025) — A Cost-Effective Online Dynamic Scheduling Method for Communication Services in Large-Scale Software-Defined Virtual Power Plants
+
+**Journal:** IEEE Transactions on Smart Grid, 16(6), 5641–5654, 2025  
+**DOI:** 10.1109/TSG.2025.3581975  
+**Main topics:** Virtual Power Plant (VPP); Software-Defined Networking (SDN); communication cost; P95 billing; Quality of Service (QoS); online scheduling; routing optimization
+
+### Quick takeaway
+
+This paper studies a problem that is often ignored in VPP research:
+
+**communication itself costs money, especially when a VPP connects hundreds or thousands of distributed sites.**
+
+The paper develops an online routing method that reduces communication cost while still meeting the required Quality of Service (QoS).
+
+Its key idea is to combine:
+
+- an **offline optimization database**;
+- online matching of current traffic patterns to historical patterns;
+- a fast routing algorithm for the current time slot.
+
+---
+
+### 1. Problem addressed
+
+Large-scale VPPs depend on continuous communication between:
+
+- the cloud control center;
+- distributed energy resources;
+- controllable loads;
+- storage systems;
+- electric vehicles;
+- utility-grid and electricity-market interfaces.
+
+Building a dedicated private network for all sites is expensive.
+
+A practical solution is to rent existing communication links, such as:
+
+- low-cost Internet;
+- high-reliability dedicated lines such as **Multiprotocol Label Switching (MPLS)**.
+
+The problem is:
+
+**how should the VPP route different communication services across these links so that total communication cost is minimized without violating latency, jitter, and packet-loss requirements?**
+
+---
+
+### 2. Why existing approaches are not enough
+
+Most VPP studies focus on the energy side:
+
+- economic dispatch;
+- market participation;
+- renewable forecasting;
+- storage scheduling;
+- frequency regulation.
+
+Communication research usually focuses on:
+
+- delay;
+- reliability;
+- cybersecurity;
+- communication protocols.
+
+The **economic cost of communication** is much less studied.
+
+Another issue is that many cost-minimizing traffic methods assume the entire future communication demand over the billing cycle is already known.
+
+That assumption is unrealistic for real-time VPP operation.
+
+---
+
+### 3. SD-VPP communication architecture
+
+![Large-scale Software-Defined VPP communication architecture. Source: Fig. 1 of Li et al. (2025).](papers/p006-li2025-sdvpp/figures/li2025_sdvpp/fig1_sdvpp_architecture.png){width=76%}
+
+The paper uses a **Software-Defined Virtual Power Plant (SD-VPP)** architecture.
+
+There are two layers.
+
+#### Device layer
+
+Includes photovoltaic and wind resources, controllable loads, energy storage, and electric vehicles.
+
+Resources in the same area are grouped as one VPP site.
+
+#### Network layer
+
+The network connects all VPP sites to the cloud control center.
+
+It uses **Software-Defined Networking (SDN)** so that routing can be changed dynamically.
+
+The topology is mainly **hub-and-spoke**:
+
+**VPP site → network provider → VPP cloud control center**
+
+---
+
+### 4. Three types of communication services
+
+The paper classifies communication services by their QoS requirements.
+
+#### High real-time services
+
+Examples:
+
+- real-time control;
+- protection;
+- security-event monitoring.
+
+These require very low latency and high reliability, so they must use dedicated MPLS links.
+
+#### Near real-time services
+
+Examples:
+
+- monitoring data;
+- equipment management;
+- electricity-market signals.
+
+These also mainly use MPLS links.
+
+#### Non-real-time services
+
+Examples:
+
+- metering and settlement data;
+- equipment logs;
+- image/video data.
+
+These can tolerate more delay and may use either MPLS or Internet links.
+
+The key point is:
+
+**different VPP data should not all use the same communication path.**
+
+---
+
+### 5. Why P95 billing matters
+
+A key concept in the paper is **P95 billing**.
+
+During a billing cycle, traffic is measured at fixed intervals, for example every 5 minutes.
+
+The traffic values are sorted, and the highest 5% are ignored.
+
+The next highest value becomes the billing bandwidth.
+
+So the VPP can temporarily use high bandwidth in about 5% of the time slots without increasing the billed bandwidth.
+
+This creates a scheduling opportunity:
+
+**use the “free” 5% peak slots carefully to reduce total network cost.**
+
+The difficulty is that the cost of the current time slot depends on traffic over the whole billing cycle.
+
+---
+
+### 6. Offline scheduling model
+
+The authors first build an offline optimization model.
+
+The objective is to minimize:
+
+- fixed communication cost;
+- variable bandwidth cost under P95 billing.
+
+The model also considers:
+
+- link capacity;
+- QoS;
+- upstream/downstream traffic;
+- routing choices;
+- link-sharing relationships.
+
+The original problem is a **Mixed-Integer Nonlinear Programming (MINLP)** model.
+
+It is reformulated into a **Mixed-Integer Linear Programming (MILP)** model so it can be solved with Gurobi.
+
+The main purpose is to create an **offline database of good routing patterns** for later online use.
+
+---
+
+### 7. IORS and DORS for offline database construction
+
+For small systems, the paper uses **Ideal Optimal Routing Strategies (IORS)**.
+
+IORS solves the full MILP and gives high-quality offline solutions.
+
+For large systems, memory and computation become too expensive.
+
+The authors therefore introduce **Decoupled Optimal Routing Strategies (DORS)**.
+
+DORS separates branch-site subproblems and solves them independently.
+
+It gives up some global optimality, but makes large-scale database construction practical.
+
+This is a clear engineering trade-off:
+
+**slightly less optimal → much easier to solve.**
+
+---
+
+### 8. Online CEOR algorithm
+
+The main online method is called **Cost-Effective Online Rolling (CEOR)**.
+
+![Cost-Effective Online Rolling framework. Source: Fig. 3 of Li et al. (2025).](papers/p006-li2025-sdvpp/figures/li2025_sdvpp/fig3_ceor_framework.png){width=76%}
+
+Each billing cycle is divided into:
+
+- past period;
+- current decision period;
+- future period.
+
+At each time slot, CEOR performs two main steps.
+
+#### Step 1 — Match the current traffic pattern
+
+Features are extracted from recent communication traffic.
+
+These features are compared with records in the offline database.
+
+The best-matching historical record is selected, and its future traffic pattern is used as an estimate of coming traffic.
+
+#### Step 2 — Make the current routing decision
+
+Using:
+
+- already observed traffic;
+- estimated future traffic;
+- current QoS conditions;
+
+the algorithm quickly selects the routing strategy for the current time slot.
+
+Then the process rolls forward to the next time slot.
+
+---
+
+### 9. What makes CEOR fast
+
+The paper avoids solving a large MILP from scratch every 5 minutes.
+
+Instead, CEOR:
+
+1. reuses information from the offline database;
+2. estimates the P95 billing bandwidth from past and matched future traffic;
+3. checks a limited set of feasible routing options;
+4. prioritizes larger-demand sites first.
+
+Its practical complexity is approximately:
+
+\[
+O(TN\log N)
+\]
+
+where \(T\) is the number of time slots and \(N\) is the number of branch sites.
+
+---
+
+### 10. Case study
+
+The study uses real VPP-related communication data.
+
+Main settings include:
+
+- 4 operator-network nodes;
+- 10 to 1000 branch sites;
+- 3 service types;
+- 30-day billing cycle;
+- 5-minute scheduling interval;
+- **8640 decision time slots** per billing cycle.
+
+CEOR is compared with:
+
+- Load Balancing (LB);
+- Cascara (CA);
+- IORS/DORS;
+- Single Time Slot Gurobi (STSG).
+
+---
+
+### 11. Main findings
+
+#### Communication cost
+
+For large-scale systems, CEOR consistently reduces communication cost.
+
+In the reported large cases, CEOR reduces total cost by roughly:
+
+**6%–40% compared with other algorithms**
+
+depending on system size and the comparison method.
+
+For some cases, savings relative to LB exceed **50%**.
+
+#### Computational speed
+
+This is the strongest result.
+
+Compared with STSG, CEOR is typically **2–3 orders of magnitude faster**.
+
+For 100 branch sites:
+
+- STSG maximum online decision time: **312.96 s**;
+- CEOR: about **3.93 s**.
+
+For 1000 branch sites:
+
+- CEOR still completes one decision in about **17.23 s**.
+
+This is well below the 5-minute decision interval.
+
+#### Scalability
+
+STSG runs into memory problems for very large systems.
+
+CEOR remains computationally feasible.
+
+So the main value of CEOR is not only lower cost, but also:
+
+**real-time scalability.**
+
+---
+
+### 12. What this paper teaches
+
+#### Lesson 1 — Communication cost is part of VPP operating cost
+
+A VPP is not only an energy optimization system.
+
+Large-scale VPPs also need communication infrastructure, and this can become economically important.
+
+#### Lesson 2 — Communication services have different priorities
+
+Control and protection signals should not be treated in the same way as logs, images, or settlement data.
+
+QoS requirements should affect routing decisions.
+
+#### Lesson 3 — Billing rules can create optimization opportunities
+
+The P95 rule means that temporary traffic peaks may not increase the bill.
+
+A smart scheduler can exploit this feature.
+
+#### Lesson 4 — Offline optimization can support fast online decisions
+
+Instead of solving a large optimization problem from scratch every time, historical optimized solutions can be reused to guide online decisions.
+
+---
+
+### 13. Limitations
+
+Important limitations include:
+
+- future traffic is approximated by matching historical patterns;
+- online performance depends on the quality and diversity of the offline database;
+- DORS sacrifices some optimality to improve scalability;
+- the study is numerical and does not yet include an SDN testbed;
+- network failures and cyberattacks are not the main focus;
+- communication routing is not directly co-optimized with VPP energy dispatch.
+
+The authors identify SDN testbed implementation and large-scale practical validation as future work.
+
+---
+
+### 14. Research idea triggers
+
+Possible extensions include:
+
+- joint optimization of **energy dispatch + communication routing**;
+- communication-aware VPP economic dispatch;
+- adaptive or learning-based traffic prediction instead of historical feature matching;
+- robust routing under link failures and cyberattacks;
+- communication-cost-aware frequency regulation;
+- edge/cloud computation placement together with routing;
+- dynamic communication pricing instead of fixed P95 rules;
+- multi-timescale coordination between fast communication control and slower VPP energy scheduling;
+- HIL or SDN testbed validation.
+
+**Problem-map tags:** `VPP communication` · `SDN` · `P95 billing` · `QoS` · `online scheduling` · `routing optimization` · `communication cost` · `large-scale scalability`
+
+:::

@@ -1,0 +1,495 @@
+::: {.callout-note collapse="true" icon=false}
+## [P013] Chen et al. (2023) — An Energy Sharing Mechanism Considering Network Constraints and Market Power Limitation
+
+**Journal:** IEEE Transactions on Smart Grid, 14(2), 1027–1041, 2023  
+**DOI:** 10.1109/TSG.2022.3198721  
+**Main topics:** energy sharing; prosumer market; Generalized Nash Equilibrium (GNE); network constraints; market power; price regulation; Locational Marginal Price (LMP); distributed bidding
+
+### Quick takeaway
+
+This paper studies a difficult problem in prosumer energy sharing:
+
+**How can prosumers actively bid and trade energy through a network, while preventing congestion and market-power manipulation?**
+
+The authors first design a network-aware energy sharing market in which prosumers are **price-makers** and can become buyers or sellers endogenously.
+
+However, they show that congestion can create serious market problems:
+
+- no equilibrium;
+- multiple equilibria;
+- inefficient equilibria.
+
+They then add a **price regulation policy** that limits each prosumer's ability to manipulate the trading price.
+
+The improved mechanism guarantees a unique, socially near-optimal equilibrium and can be implemented through an iterative bidding algorithm.
+
+---
+
+### 1. Problem addressed
+
+Traditional centralized energy management becomes less attractive when many prosumers own Distributed Energy Resources (DERs).
+
+Important issues include:
+
+- different prosumers have conflicting economic interests;
+- private cost information should not be fully revealed;
+- low feed-in tariffs may give weak incentives for renewable-energy sharing;
+- network congestion limits who can trade with whom;
+- strategic prosumers may deliberately change bids to influence prices.
+
+The paper therefore asks:
+
+**Can an energy-sharing market preserve privacy and flexibility, satisfy network limits, and still avoid market-power abuse?**
+
+---
+
+### 2. Self-sufficiency versus energy sharing
+
+Each prosumer is asked to reduce its purchase from the main grid by a target amount \(D_i\).
+
+Under **self-sufficiency**, prosumer \(i\) must provide the entire reduction by itself:
+
+\[
+p_i=D_i
+\]
+
+where \(p_i\) is its net production adjustment.
+
+This can be inefficient.
+
+If Prosumer A has a low adjustment cost and Prosumer B has a high adjustment cost, it may be cheaper for A to adjust more and sell energy to B.
+
+Energy sharing therefore allows:
+
+\[
+p_i+q_i=D_i
+\]
+
+where:
+
+- \(q_i>0\): prosumer \(i\) buys energy;
+- \(q_i<0\): prosumer \(i\) sells energy.
+
+The system still achieves the required total reduction, but individual prosumers can share the adjustment burden.
+
+---
+
+### 3. Prosumers are price-makers, not passive price-takers
+
+The paper uses the generalized bidding relation:
+
+\[
+q_i=-a\lambda_i+b_i
+\]
+
+where:
+
+- \(q_i\): sharing quantity;
+- \(\lambda_i\): local sharing price;
+- \(b_i\): prosumer bid;
+- \(a\): market sensitivity parameter.
+
+A prosumer chooses \(b_i\), knowing that its bid can influence the market-clearing price.
+
+This makes the prosumer a **price-maker**.
+
+Another important feature is that the buyer/seller role is not fixed beforehand.
+
+A prosumer becomes a buyer or seller depending on its bid relative to the other bids.
+
+So market roles are **endogenous**.
+
+---
+
+### 4. Market clearing includes network constraints
+
+The platform clears the market subject to:
+
+- total energy balance;
+- transmission/distribution line-flow limits.
+
+A Direct Current (DC) power-flow model is used.
+
+The network effect of each prosumer is represented through line-flow distribution factors.
+
+The platform solves a price-clearing problem that minimizes:
+
+\[
+\sum_i \lambda_i^2
+\]
+
+This is equivalent to reducing the variance of prices across prosumers.
+
+So the platform is not designed to maximize its own profit.
+
+Its purpose is to:
+
+**clear the market while reducing unnecessary price discrimination.**
+
+When there is no congestion, all prosumers receive the same sharing price.
+
+When congestion occurs, nodal prices can differ.
+
+---
+
+### 5. Basic energy-sharing process
+
+![Procedure of the proposed energy sharing mechanism: prosumers submit bids, the platform clears network-feasible prices and quantities, and prosumers update their decisions. Source: Fig. 1 of Chen et al. (2023).](papers/p013-chen2023-energy-sharing/figures/chen2023_energy_sharing/fig1_sharing_mechanism.png){width=70%}
+
+The basic process is:
+
+1. each prosumer submits a bid \(b_i\);
+2. the platform calculates network-feasible prices \(\lambda_i\);
+3. sharing quantities \(q_i\) are determined;
+4. each prosumer chooses its own production adjustment;
+5. prosumers update their bids.
+
+Because each player's feasible decision depends on the other players through market-clearing and network constraints, the market is modeled as a **Generalized Nash Game (GNG)**.
+
+Its equilibrium is a **Generalized Nash Equilibrium (GNE)**.
+
+---
+
+### 6. Why network congestion creates a market-power problem
+
+Without strong congestion, the market can behave well.
+
+In a large market, each prosumer has little influence on price, and the equilibrium approaches the centralized social optimum.
+
+The problem appears when:
+
+- the market is relatively small;
+- a transmission line becomes congested;
+- one participant can strongly influence its local price.
+
+A strategic prosumer may then keep changing its bid while the physical line flow is already fixed at its limit.
+
+This can create:
+
+- **market failure:** no GNE;
+- **market instability:** multiple GNEs;
+- **market inefficiency:** an equilibrium far from the desired social outcome.
+
+This is why network-aware market design cannot stop at simply adding line-flow constraints.
+
+---
+
+### 7. Counterexample: congestion can produce multiple equilibria
+
+The paper uses simple two- and three-prosumer examples to demonstrate the problem.
+
+In the two-prosumer case:
+
+- when the line is not congested, the game has a unique equilibrium;
+- when the line becomes congested, a range of equilibria may appear.
+
+The physical power flow may be fixed by the line limit, but strategic bids can still change prices.
+
+This creates room for market-power exploitation.
+
+The three-prosumer example shows an even more serious result:
+
+**depending on the parameters, the original market may have no GNE, one GNE, or infinitely many GNEs.**
+
+So equilibrium existence and uniqueness cannot be taken for granted.
+
+---
+
+### 8. Price regulation: the main solution
+
+To solve the market-power problem, the paper introduces a **price regulation policy**.
+
+The basic idea is:
+
+> A prosumer should not be allowed to push its trading price arbitrarily far away from its marginal production-adjustment cost.
+
+The regulation limits the prosumer's price privilege according to:
+
+- its sharing quantity \(|q_i|\);
+- market sensitivity \(a\);
+- number of prosumers \(I\).
+
+The maximum price privilege is proportional to:
+
+\[
+\frac{|q_i|}{a(I-1)}
+\]
+
+This means market power becomes weaker when:
+
+- the market contains more prosumers;
+- market sensitivity is larger;
+- the prosumer's trading quantity is small.
+
+---
+
+### 9. What price regulation achieves
+
+With price regulation, the improved mechanism guarantees several important properties.
+
+#### Unique equilibrium
+
+The improved game has a unique GNE.
+
+So the no-equilibrium and multiple-equilibrium problems are removed.
+
+#### Individual rationality
+
+Every prosumer's cost under energy sharing is no higher than under self-sufficiency.
+
+Therefore, no participant becomes worse off by joining.
+
+This gives a clear economic incentive to participate.
+
+#### Near-social optimum
+
+The equilibrium is not always exactly equal to the centralized optimum.
+
+However, the efficiency loss becomes smaller as the number of prosumers increases.
+
+#### Market power is limited
+
+A single prosumer cannot obtain an unlimited price advantage through strategic bidding.
+
+---
+
+### 10. Price of Anarchy and market size
+
+The paper uses **Price of Anarchy (PoA)** to measure the efficiency loss caused by strategic behavior.
+
+\[
+\text{PoA}
+=
+\frac{\text{cost at equilibrium}}
+{\text{cost at social optimum}}
+\]
+
+A value of:
+
+\[
+\text{PoA}=1
+\]
+
+means the market equilibrium is socially optimal.
+
+The paper proves that:
+
+\[
+\text{PoA}\rightarrow1
+\quad\text{as}\quad I\rightarrow\infty
+\]
+
+So the improved sharing market becomes more efficient as the number of prosumers grows.
+
+This gives an intuitive result:
+
+**market power becomes weaker in a larger market.**
+
+---
+
+### 11. Energy-sharing prices have an LMP-like structure
+
+At equilibrium, the regulated sharing price can be decomposed into:
+
+- a system-wide energy-balance component;
+- line-congestion components.
+
+This is structurally similar to a **Locational Marginal Price (LMP)**.
+
+So the local sharing price reflects where the prosumer is located in the network.
+
+If there is no congestion:
+
+> all prosumers obtain the same price.
+
+If lines are congested:
+
+> prices become location-dependent.
+
+The mechanism therefore connects local energy sharing with familiar electricity-market pricing principles.
+
+---
+
+### 12. Bidding algorithm
+
+The paper develops a practical iterative bidding process.
+
+Each iteration contains two steps.
+
+#### Platform update
+
+Given current bids, the platform updates sharing prices while:
+
+- satisfying network constraints;
+- balancing energy;
+- avoiding large price oscillations.
+
+#### Prosumer update
+
+Each prosumer updates:
+
+- its production adjustment;
+- its bid.
+
+The process repeats until the bids stop changing significantly.
+
+This allows the equilibrium to be reached without asking every prosumer to reveal its complete cost function to the platform.
+
+---
+
+### 13. Why the market sensitivity parameter \(a\) matters
+
+The parameter \(a\) controls how strongly sharing quantity reacts to price.
+
+If \(a\) is too small:
+
+- a small price change causes a strong bid response;
+- bids can oscillate;
+- the algorithm may diverge.
+
+If \(a\) is larger:
+
+- the bidding process becomes more stable;
+- but convergence can be slower.
+
+The paper provides a sufficient lower bound on \(a\) that guarantees convergence.
+
+The authors explain this using the economic **cobweb model**.
+
+So \(a\) is not only a market-demand parameter.
+
+It is also an **algorithm-stability parameter**.
+
+---
+
+### 14. Effect of price regulation in the simple case
+
+![Best-response curves for two prosumers. Without congestion there is a unique equilibrium; congestion can create multiple equilibria; price regulation restores a unique equilibrium. Source: Fig. 5 of Chen et al. (2023).](papers/p013-chen2023-energy-sharing/figures/chen2023_energy_sharing/fig5_price_regulation_effect.png){width=78%}
+
+The two-prosumer example clearly illustrates the main mechanism.
+
+When the line limit is loose:
+
+- one unique GNE exists.
+
+When the line is congested and there is no regulation:
+
+- multiple GNEs appear.
+
+After price regulation:
+
+- a unique GNE is recovered.
+
+This figure gives the clearest visual explanation of why the price-regulation layer is needed.
+
+---
+
+### 15. Case-study results
+
+#### Two-prosumer case
+
+With price regulation and a congested line:
+
+- a unique GNE is obtained;
+- both prosumers are better off than under self-sufficiency;
+- the bidding algorithm converges in **4 iterations**.
+
+#### IEEE 38-bus system
+
+The mechanism is tested with many prosumers.
+
+The paper reports that:
+
+- no prosumer is worse off than under self-sufficiency;
+- some prosumers move from paying for adjustment to earning from energy sharing;
+- the average cost improvement is significant;
+- the bidding process converges in about **35 iterations** for the illustrated case.
+
+The study also shows that larger \(a\) gives slower but more stable convergence.
+
+#### IEEE 69-bus system
+
+Six flexible prosumers are tested with production-capacity limits.
+
+The algorithm converges in about:
+
+- **200 iterations**
+- **4.92 s**
+
+The final production adjustments satisfy the capacity constraints and match the corresponding optimization benchmark.
+
+---
+
+### 16. What this paper teaches
+
+#### Lesson 1 — Network constraints change market behavior, not only physical feasibility
+
+Congestion can give participants market power.
+
+So network constraints affect both:
+
+- power flow;
+- strategic bidding behavior.
+
+#### Lesson 2 — Allowing price-making behavior creates both flexibility and risk
+
+Price-making prosumers can respond more actively than price-takers.
+
+But they can also manipulate prices.
+
+A market-design layer is therefore needed.
+
+#### Lesson 3 — Buyer and seller roles can be endogenous
+
+A prosumer does not need to be permanently classified as a buyer or seller.
+
+Its role can change with the system state and the bids of other participants.
+
+#### Lesson 4 — Equilibrium existence is a design issue
+
+A market model is not useful merely because each player has an optimization problem.
+
+The designer must ask:
+
+- Does an equilibrium exist?
+- Is it unique?
+- Is it efficient?
+- Can an algorithm actually reach it?
+
+---
+
+### 17. Limitations
+
+Important limitations include:
+
+- DC power flow is used, so voltage and reactive-power constraints are neglected;
+- cost/disutility functions are mainly quadratic;
+- uncertainty in renewable generation and demand is not modeled explicitly;
+- a common market-sensitivity parameter \(a\) is used in the main theoretical model;
+- the study mainly considers a single-period balancing problem rather than multi-period storage and ramping;
+- communication delay, packet loss, and cyberattacks are not considered;
+- the platform still performs centralized market clearing.
+
+The paper identifies AC power flow and more general cost/capacity models as important extensions.
+
+---
+
+### 18. Research idea triggers
+
+Possible extensions include:
+
+- AC-network-constrained energy sharing with voltage and reactive-power limits;
+- multi-period sharing with batteries and EVs;
+- stochastic or Distributionally Robust Optimization under PV/load uncertainty;
+- dynamic market-power monitoring and adaptive price regulation;
+- heterogeneous market-sensitivity parameters;
+- privacy-preserving bidding or Differential Privacy;
+- fully distributed market clearing without a central platform;
+- communication-delay-aware bidding algorithms;
+- electricity + carbon + flexibility joint sharing markets;
+- mechanism design for Virtual Power Plants (VPPs);
+- comparison between price regulation, market caps, and other market-power mitigation policies.
+
+**Problem-map tags:** `energy sharing` · `prosumer market` · `network constraints` · `market power` · `price regulation` · `generalized Nash equilibrium` · `LMP-like pricing` · `distributed bidding`
+
+:::

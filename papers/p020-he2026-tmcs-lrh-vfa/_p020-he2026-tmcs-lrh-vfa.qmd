@@ -1,0 +1,1037 @@
+::: {.callout-note collapse="true" icon=false}
+## [P020] He et al. (2026) — Coordinated Scheduling of EV Charging Service and Energy Arbitrage for Truck Mobile Charging Stations
+
+**Journal:** IEEE Transactions on Smart Grid, 17(1), 467–482, January 2026  
+**DOI:** 10.1109/TSG.2025.3571790  
+**Main topics:** Truck Mobile Charging Station (TMCS); EV charging service; energy arbitrage; coordinated scheduling; charging-demand uncertainty; Multinomial Logit (MNL); extended graph model; Markov Decision Process (MDP); Approximate Dynamic Programming (ADP); Value Function Approximation (VFA); rolling horizon; LRH-VFA
+
+### Quick takeaway
+
+This paper asks a practical business-model question for **Truck Mobile Charging Stations (TMCSs)**:
+
+**If a large mobile battery truck is deployed mainly to support EV charging peaks, what should it do during low-demand periods instead of remaining idle?**
+
+The proposed answer is to coordinate two service provisions:
+
+- **EV charging service:** move to highway charging-demand hotspots and support overloaded fixed charging stations (FCSs);
+- **energy arbitrage:** when charging demand is low, connect to selected distribution-grid nodes, charge when electricity is cheap, and discharge when electricity is expensive.
+
+The difficult part is that future EV charging demand is uncertain. A TMCS that performs too much energy arbitrage now may have insufficient energy or be in the wrong location when charging demand suddenly rises later.
+
+The paper therefore proposes a **lookahead rolling horizon-value function approximation (LRH-VFA)** method. It combines:
+
+- offline learning from historical scenarios;
+- a piecewise-linear approximation of future value;
+- short-term lookahead forecasts;
+- online rolling optimization.
+
+The central idea is:
+
+**do not maximize only the current-hour profit; attach an estimated future value to the current SOC and location decision.**
+
+---
+
+### 1. Problem addressed
+
+Conventional **Fixed Charging Stations (FCSs)** have several limitations:
+
+- expensive initial infrastructure investment;
+- limited ability to relocate or expand;
+- potentially severe congestion during holidays or peak travel periods;
+- low utilization in other periods;
+- possible coincidence between EV charging peaks and other electricity-demand peaks.
+
+A TMCS is essentially:
+
+**truck + large battery storage + multiple EV chargers**.
+
+It can physically move between locations, which gives it much greater spatial flexibility than an FCS.
+
+However, this flexibility creates a new economic problem.
+
+If TMCS capacity is designed for peak EV demand, then on ordinary weekdays a large fraction of that expensive battery capacity may remain unused.
+
+The paper therefore asks:
+
+> Can TMCSs switch dynamically between EV charging service and grid energy arbitrage so that the same asset earns revenue in both high-demand and low-demand periods?
+
+---
+
+### 2. Why charging-service-only operation can be economically weak
+
+A TMCS is normally deployed because fixed infrastructure cannot economically cover every temporary demand peak.
+
+But peak-oriented sizing creates **idle capacity**.
+
+For example:
+
+```text
+Holiday / peak traffic
+        ↓
+high EV charging demand
+        ↓
+TMCS mainly serves EVs
+
+Ordinary weekday
+        ↓
+low EV charging demand
+        ↓
+TMCS may remain idle
+```
+
+If the truck, battery and chargers are expensive assets, low utilization directly weakens the business case.
+
+The paper therefore treats **asset utilization** as a core economic issue rather than only a charging-service issue.
+
+---
+
+### 3. Two service provisions of TMCS
+
+![Two-stage scheduling framework integrating EV charging-demand generation, the extended graph model, MDP reformulation, offline value-function training, and online rolling operation. Source: Fig. 1 of He et al. (2026).](papers/p020-he2026-tmcs-lrh-vfa/figures/he2026_tmcs_lrh_vfa/fig1_two_stage_scheduling_framework.png){width=86%}
+
+The TMCS has two main operating modes.
+
+#### Service provision 1 — EV charging service
+
+The TMCS travels to a charging-service node and supplies EV charging demand.
+
+Its main role is to:
+
+- support FCSs;
+- absorb temporary charging peaks;
+- improve charging-service availability.
+
+#### Service provision 2 — Energy arbitrage
+
+During low EV charging demand, the TMCS can travel to an energy-arbitrage node in the distribution network.
+
+It then:
+
+- charges during low-price periods;
+- discharges during high-price periods;
+- earns revenue from electricity-price differences.
+
+So the same battery asset serves both:
+
+**transportation charging infrastructure + mobile grid energy storage**.
+
+---
+
+### 4. The key coordination conflict
+
+The two services compete for the same resources:
+
+- battery energy;
+- charging/discharging power;
+- location;
+- time;
+- battery life.
+
+Energy arbitrage can increase short-term revenue, but excessive arbitrage may reduce the ability to satisfy later EV charging demand.
+
+For example:
+
+```text
+14:00
+cheap electricity
+→ attractive to charge for arbitrage
+
+17:00
+EV charging demand suddenly rises elsewhere
+→ TMCS must travel there
+→ battery energy and location now matter
+```
+
+Therefore, the decision at time `t` changes the feasible and profitable decisions at `t+1`, `t+2`, ...
+
+This is why a purely myopic optimizer is insufficient.
+
+---
+
+### 5. EV charging demand is not assumed to be fixed
+
+A particularly useful feature of the paper is that EV charging demand for TMCS is **generated from user behavior**, rather than imposed directly as an exogenous load curve.
+
+The model considers:
+
+- traffic origin-destination information;
+- EV departure time;
+- initial battery SOC;
+- trip path;
+- traffic speed;
+- road congestion;
+- outdoor temperature;
+- vehicle energy consumption;
+- charging fee;
+- charging time;
+- queuing time;
+- heterogeneous value of users' time.
+
+The resulting process is:
+
+```text
+traffic + vehicle characteristics
+          ↓
+EV energy consumption
+          ↓
+need for charging
+          ↓
+set of feasible FCS/TMCS options
+          ↓
+user choice model
+          ↓
+spatial-temporal TMCS charging demand
+```
+
+---
+
+### 6. Traffic and temperature affect EV energy consumption
+
+The road network is represented by a directed graph.
+
+EV routes are generated from OD information and the Floyd shortest-path algorithm.
+
+Road speed is determined using a speed-flow relationship, so traffic congestion changes travel time.
+
+The paper also explicitly models the impact of outdoor temperature on EV energy consumption through air-conditioning use.
+
+This is important because charging demand is therefore not only a function of distance.
+
+It is linked to:
+
+**traffic state + ambient temperature + battery state + travel plan**.
+
+---
+
+### 7. How users choose between FCS and TMCS
+
+When an EV needs charging, it may have several feasible charging options.
+
+The user's generalized charging cost includes:
+
+
+a) electricity charging fee;  
+b) queuing-time value;  
+c) actual charging-time value;  
+d) additional service time.
+
+The paper writes the cost of charging scheme `j` as:
+
+\[
+c_i(j)
+=
+\alpha_m^j M_i^{m,j}
++
+\frac{INC_i}{T_m}
+\left(
+W_q^{j,t}
++
+\frac{M_i^{m,j}}{\eta_{dch}P_r^j}
++s_c
+\right)
+\]
+
+The **Multinomial Logit (MNL)** model is then used to simulate the probability that an EV driver selects a given FCS/TMCS charging option.
+
+As a result, TMCS charging demand emerges from users' individual choices.
+
+This is more realistic than assuming that all potential EV demand assigned to a location must automatically be served by the TMCS.
+
+---
+
+### 8. Why user choice matters for TMCS scheduling
+
+Suppose a TMCS raises its charging price.
+
+Two effects may occur simultaneously:
+
+- revenue per kWh increases;
+- fewer EV drivers choose the TMCS.
+
+Similarly, a TMCS may move closer to a demand hotspot and reduce queuing time, making it more attractive relative to an FCS.
+
+Therefore:
+
+**TMCS location → waiting time → user choice → charging demand → TMCS schedule**.
+
+This creates a coupling between transportation behavior and energy scheduling.
+
+---
+
+### 9. Spatial-temporal coordination: the extended graph model
+
+![Extended graph used to represent parking, transit, charging-service, energy-arbitrage, and exchange arcs of TMCS operation. Source: Fig. 3 of He et al. (2026).](papers/p020-he2026-tmcs-lrh-vfa/figures/he2026_tmcs_lrh_vfa/fig3_extended_graph_tmcs_operation.png){width=70%}
+
+The TMCS cannot instantaneously jump between service locations.
+
+Its physical movement must therefore be modeled explicitly.
+
+The paper constructs an **extended graph** with two basic arc types:
+
+- **parking arcs:** the TMCS remains at a node;
+- **transit arcs:** the TMCS moves between nodes.
+
+The arcs are further classified according to service type:
+
+- charging-service arcs \(Z_c\);
+- energy-arbitrage arcs \(Z_a\);
+- exchange arcs \(Z_e\).
+
+This graph keeps track of:
+
+- where the TMCS is;
+- where it can move next;
+- whether it stays at a charging node;
+- whether it stays at an arbitrage node;
+- travel feasibility between consecutive time intervals.
+
+---
+
+### 10. Why the extended graph is useful
+
+Without explicit spatial constraints, an optimizer might produce physically impossible schedules such as:
+
+```text
+Hour t:     serve EVs at node A
+Hour t+1:   discharge to grid at distant node B
+```
+
+without accounting for travel time.
+
+The extended graph prevents this.
+
+It also prevents immediate unrealistic round trips and enforces initial/terminal positions.
+
+Therefore the scheduling problem is not simply a battery dispatch problem.
+
+It is a coupled:
+
+**routing + location + charging-service + storage-dispatch problem**.
+
+---
+
+### 11. Power and SOC constraints
+
+When TMCS is in energy-arbitrage mode, it may:
+
+- charge from the grid;
+- discharge to the grid.
+
+When it is in EV charging-service mode, it discharges its battery to EV users.
+
+The model imposes:
+
+- charging-power limits;
+- discharging-power limits;
+- mutually exclusive charging/discharging states;
+- charging-service power limits;
+- minimum service-quality constraints;
+- SOC upper/lower bounds;
+- inter-temporal SOC dynamics.
+
+The parameter \(\rho\) is particularly important.
+
+It represents the operator's preference for satisfying EV charging demand and prevents energy arbitrage from excessively sacrificing the primary charging-service function.
+
+---
+
+### 12. Objective: maximize Charging Facility Operator profit
+
+The Charging Facility Operator (CFO) maximizes:
+
+\[
+\text{Profit}
+=
+\text{Revenue}
+-
+\text{O\&M cost}
+-
+\text{battery degradation cost}
+\]
+
+Revenue includes:
+
+- EV charging-service revenue;
+- grid discharging revenue from arbitrage;
+- minus electricity purchased for arbitrage charging.
+
+O&M cost includes:
+
+- travel-energy cost;
+- labor cost;
+- maintenance cost.
+
+Battery degradation cost includes both:
+
+- cycling degradation related to charging/discharging throughput;
+- calendar degradation.
+
+So arbitrage is not treated as free extra revenue.
+
+It consumes battery life and can increase operational cost.
+
+---
+
+### 13. Why a deterministic MILP is not enough
+
+If all future EV charging demand were known perfectly, the entire problem could be solved as a multi-period MILP.
+
+But in reality:
+
+> future charging demand is uncertain and continuously revealed.
+
+A deterministic full-horizon solution therefore relies on information that is not actually available online.
+
+Traditional alternatives include:
+
+- stochastic programming;
+- robust optimization.
+
+The paper argues that these methods are relatively static because their decisions are tied to predefined probability distributions or uncertainty sets.
+
+The authors instead want the scheduler to use **newly revealed real-time information** continuously.
+
+---
+
+### 14. MDP reformulation
+
+The multi-period scheduling problem is reformulated as a **Markov Decision Process (MDP)**.
+
+The state includes key information such as:
+
+- TMCS SOC;
+- previous-period location/arc state;
+- current EV charging demand.
+
+The decision includes:
+
+- grid charging power;
+- grid discharging power;
+- EV charging-service power;
+- routing/arc decisions;
+- charging/discharging mode variables.
+
+The exogenous information includes errors or changes in:
+
+- EV charging demand;
+- TMCS charging-service fee;
+- grid charging price;
+- grid discharging price.
+
+The state transition then connects today's decision with tomorrow's feasible state.
+
+---
+
+### 15. Why dynamic programming is conceptually correct but computationally difficult
+
+The Bellman equation has the usual structure:
+
+\[
+V_t(S_t)
+=
+\max_{x_t\in X_t}
+\left\{
+f_t(S_t,x_t)
++
+\gamma\,\mathbb{E}[V_{t+\Delta t}(S_{t+\Delta t})]
+\right\}
+\]
+
+This equation makes the core issue explicit:
+
+> current profit is not enough; the future value of the resulting SOC/location state must also be considered.
+
+However, exact dynamic programming suffers from the **curse of dimensionality**.
+
+Enumerating all combinations of:
+
+- SOC;
+- locations;
+- routes;
+- service modes;
+- demand realizations;
+
+is not practical for online operation.
+
+---
+
+### 16. Core method: LRH-VFA
+
+![Lookahead rolling horizon-value function approximation method. The current decision is optimized over a finite lookahead window while the terminal post-decision state is assigned an approximate future value. Source: Fig. 4 of He et al. (2026).](papers/p020-he2026-tmcs-lrh-vfa/figures/he2026_tmcs_lrh_vfa/fig4_lrh_vfa_method.png){width=70%}
+
+The authors therefore combine three ideas:
+
+1. **Value Function Approximation (VFA)**  
+   Approximate future profit rather than solving the full Bellman recursion exactly.
+
+2. **Lookahead optimization**  
+   Optimize several future periods using short-term forecasts.
+
+3. **Rolling horizon**  
+   Execute only the current decision, receive updated information, and solve again.
+
+This combination is called:
+
+**Lookahead Rolling Horizon-Value Function Approximation (LRH-VFA).**
+
+---
+
+### 17. The intuition of the value function
+
+This is the most important part of the paper.
+
+Suppose two candidate decisions give the same current-hour profit.
+
+#### Decision A
+
+Leaves the TMCS with:
+
+- high SOC;
+- a useful location close to future charging demand.
+
+#### Decision B
+
+Leaves the TMCS with:
+
+- low SOC;
+- a poor location.
+
+A myopic optimizer may treat A and B as equally attractive.
+
+LRH-VFA does not.
+
+It assigns a **future value** to the post-decision state.
+
+In simple terms:
+
+```text
+current decision
+     ↓
+post-decision SOC/location
+     ↓
+estimated future profit potential
+     ↓
+current optimization
+```
+
+So the model learns that **stored energy has an opportunity value**.
+
+---
+
+### 18. Why the value function is approximated mainly through SOC
+
+The paper notes that uncertainty in charging demand ultimately affects how much energy remains in the TMCS battery.
+
+For storage-type optimization, a convex piecewise-linear function can approximate the future value associated with SOC efficiently.
+
+The approximate terminal value is represented using a **Piecewise Linear Function (PLF)**.
+
+Its segment slopes indicate approximately:
+
+> how much additional future CFO profit can be obtained from one additional unit of stored energy.
+
+Therefore, the slope is essentially a learned **marginal value of stored energy**.
+
+---
+
+### 19. Offline training stage
+
+The first stage is not day-ahead dispatch.
+
+It is **offline learning**.
+
+Historical data and Monte Carlo scenarios are used repeatedly.
+
+For each training iteration:
+
+1. generate a charging-demand scenario;
+2. solve the lookahead scheduling problem;
+3. observe the gradient / marginal value of SOC;
+4. update the PLF slope;
+5. preserve the monotonic/convex structure;
+6. repeat until slopes converge.
+
+The resulting PLFs contain empirical knowledge about how current battery decisions affect future profitability.
+
+This is why the authors describe the model as embedding historical experience into optimization.
+
+---
+
+### 20. Online operation stage
+
+After offline training, the PLF slopes are fixed for online operation.
+
+At every time step:
+
+1. obtain short-term charging-demand predictions over the next \(H\) periods;
+2. solve the LRH-VFA optimization;
+3. calculate decisions for the entire short lookahead window;
+4. execute **only the first-period decision**;
+5. observe updated demand/state information;
+6. roll the horizon forward and solve again.
+
+This is conceptually similar to receding-horizon control:
+
+```text
+forecast → optimize → execute first action → update → repeat
+```
+
+but the terminal state is strengthened by a learned value function rather than being treated as valueless.
+
+---
+
+### 21. LRH-VFA versus ordinary rolling horizon
+
+A normal rolling-horizon model looks only \(H\) steps ahead.
+
+Anything after the horizon is effectively ignored.
+
+This can produce a **terminal effect**.
+
+For example, near the end of the lookahead window, the optimizer may discharge too much battery because it does not see demand after the window.
+
+LRH-VFA adds:
+
+\[
+\gamma V_x(S_{terminal})
+\]
+
+so the terminal SOC still has economic value.
+
+Therefore:
+
+**RH = short-term forecast value**  
+**VFA = learned long-term value**  
+**LRH-VFA = short-term forecast + learned long-term value**
+
+This is the main methodological contribution.
+
+---
+
+### 22. Main test system
+
+The first case uses a **ring-form highway network**.
+
+The CFO operates:
+
+- 18 FCSs;
+- 4 TMCSs.
+
+Each TMCS is assumed to combine:
+
+- a Tesla Semi;
+- a Powerpack;
+- 12 chargers.
+
+TMCSs support highway charging service and can also travel to designated arbitrage nodes.
+
+The scheduling time interval is:
+
+**1 hour**.
+
+Offline training uses:
+
+**500 Monte Carlo scenarios**.
+
+Two traffic scenarios are studied.
+
+#### Scenario I — weekday
+
+Relatively low EV charging demand.
+
+#### Scenario II — holiday
+
+High charging demand.
+
+The two operating cases are:
+
+- **Case 1:** EV charging service only;
+- **Case 2:** proposed coordinated EV charging + energy arbitrage.
+
+---
+
+### 23. Weekday result: arbitrage dramatically increases utilization
+
+![Operating schedules of TMCS1 and TMCS2 in Scenario I, comparing charging-service-only operation with coordinated charging-service and energy-arbitrage operation. Source: Fig. 6 of He et al. (2026).](papers/p020-he2026-tmcs-lrh-vfa/figures/he2026_tmcs_lrh_vfa/fig6_tmcs_operation_results.png){width=66%}
+
+In Scenario I, EV demand is relatively low.
+
+If TMCS only provides EV charging service:
+
+- much of the fleet remains idle;
+- utilization is very low;
+- daily profit is small.
+
+Reported results are:
+
+| Scenario I | Charging-service only | Coordinated scheduling |
+|---|---:|---:|
+| TMCS profit | ¥0.27×10³ | ¥2.02×10³ |
+| EV demand served by TMCS | 992 kWh | 766 kWh |
+| Energy-arbitrage discharge | 0 | 5800 kWh |
+| EV-demand satisfied ratio \(\rho\) | 78.67% | 60.75% |
+| Capacity utilization \(\delta\) | 11.02% | 72.96% |
+
+The proposed scheme therefore raises utilization by:
+
+**61.94 percentage points**
+
+and increases CFO profit by approximately:
+
+**6.49 times**.
+
+This is the paper's most important economic result.
+
+---
+
+### 24. But the extra profit is not free: some charging service is sacrificed
+
+The coordinated strategy does not maximize charging-service coverage alone.
+
+In Scenario I:
+
+- charging-service-only mode serves 992 kWh;
+- coordinated mode serves 766 kWh.
+
+The difference is:
+
+**226 kWh**
+
+of TMCS charging demand, which is instead expected to be served by the FCS network.
+
+This is a key trade-off:
+
+**TMCS utilization/profit ↑ ↔ direct TMCS charging-service share ↓**.
+
+The service-quality constraint prevents this trade-off from becoming excessive.
+
+So the paper is not claiming that energy arbitrage is always preferable.
+
+It is claiming that some charging demand can economically remain with FCSs while TMCS capacity is used for higher-value services.
+
+---
+
+### 25. Holiday result: TMCS returns to its primary charging role
+
+In Scenario II, EV charging demand rises substantially.
+
+The coordinated optimizer then stops using the TMCS fleet for energy arbitrage and prioritizes EV charging service.
+
+Reported profit is the same for Case 1 and Case 2:
+
+**¥10.41×10³ per day**.
+
+The capacity utilization reaches approximately:
+
+**102.76%**.
+
+A value greater than 100% is possible because the battery can charge and discharge multiple times during one day.
+
+This result is important because it shows that the model does not force arbitrage.
+
+Instead:
+
+```text
+low EV demand → use spare capacity for arbitrage
+high EV demand → prioritize EV charging service
+```
+
+That is the desired coordination behavior.
+
+---
+
+### 26. Comparison of solution methods
+
+The paper compares:
+
+- **Myopic:** optimize only the current period;
+- **RH:** rolling horizon using short-term predictions;
+- **VFA:** traditional value-function approximation without lookahead;
+- **LRH-VFA:** proposed method;
+- **MILP:** full-information benchmark for calculating the solution gap.
+
+For Scenario I, the reported average results are approximately:
+
+| Method | Avg. profit (×10³ ¥) | Avg. gap | Avg. \(\rho\) | Avg. \(\delta\) | Avg. calculation time |
+|---|---:|---:|---:|---:|---:|
+| Myopic | 1.89 | 12.85% | 45.71% | 78.25% | 5.10 s |
+| RH | 2.12 | 8.65% | 53.10% | 74.62% | 10.43 s |
+| VFA | 2.18 | 5.82% | 58.62% | 76.88% | 5.71 s |
+| LRH-VFA | **2.27** | **2.31%** | **62.66%** | 73.17% | 12.12 s |
+
+The important point is not that LRH-VFA is the fastest.
+
+It is that it gives the **smallest optimality gap and highest profit/service quality** among the online methods while remaining computationally feasible.
+
+---
+
+### 27. Why myopic and RH strategies lose performance
+
+#### Myopic strategy
+
+It only asks:
+
+> What action earns the most profit now?
+
+It may consume battery energy or move to a location that harms future charging service.
+
+#### Rolling horizon
+
+It sees several future periods, but cannot see beyond the finite window.
+
+A charging-demand surge just outside the lookahead horizon may still be missed.
+
+#### VFA
+
+It captures long-term value but does not exploit detailed short-term forecast information as effectively.
+
+#### LRH-VFA
+
+Combines both:
+
+**near-term prediction + long-term learned value**.
+
+That combination produces the best results.
+
+---
+
+### 28. Large-scale validation and forecast-error sensitivity
+
+A larger grid-form highway network is also studied.
+
+It contains:
+
+- 10 traffic nodes;
+- 18 links;
+- 20 FCSs;
+- 18 TMCSs.
+
+The model considers three levels of charging-demand forecast error:
+
+- Base Noise (BN);
+- Medium Noise (MN);
+- High Noise (HN).
+
+Reported averages are:
+
+| Forecast uncertainty | Avg. profit (×10³ ¥) | Avg. gap | Avg. \(\rho\) | Avg. \(\delta\) | Avg. calculation time |
+|---|---:|---:|---:|---:|---:|
+| BN | 34.52 | 3.23% | 85.75% | 91.67% | 182.07 s |
+| MN | 33.53 | 3.86% | 81.06% | 87.55% | 228.31 s |
+| HN | 30.09 | 7.33% | 73.16% | 78.41% | 281.40 s |
+
+The proposed method remains effective under moderate uncertainty.
+
+But high forecast error clearly reduces:
+
+- profit;
+- service quality;
+- utilization;
+- solution quality.
+
+So LRH-VFA is adaptive, but it does **not eliminate the value of accurate forecasting**.
+
+---
+
+### 29. Computation is compatible with the scheduling timescale
+
+For the large-scale case, the longest reported average calculation time is approximately:
+
+**281.4 s**
+
+under high noise.
+
+The paper therefore concludes that decisions can be obtained within about five minutes.
+
+Because the operational time step in the main formulation is one hour, this is acceptable for the intended scheduling application.
+
+The method is therefore closer to:
+
+- real-time/rolling operational scheduling;
+- hour-ahead decision support;
+
+than to sub-second control.
+
+---
+
+### 30. EV growth changes the long-term business case
+
+The paper also examines different EV-growth rates.
+
+During the early years, charging demand may still be low.
+
+In this period:
+
+> energy arbitrage significantly improves TMCS utilization and profitability.
+
+The proposed coordinated strategy increases CFO profit by more than approximately:
+
+- **133%** under low EV growth;
+- **112%** under medium EV growth;
+- **27%** under high EV growth;
+
+in the early operating years considered.
+
+As EV adoption increases, however:
+
+- more TMCS capacity is required for charging service;
+- less spare capacity remains for arbitrage;
+- existing TMCS fleets can eventually become insufficient.
+
+So arbitrage is particularly valuable during the **early/underutilized stage of infrastructure deployment**.
+
+---
+
+### 31. Charging price and electricity-price spread matter
+
+The economic attractiveness of the two service provisions depends strongly on their relative prices.
+
+If the TMCS charging fee is too low:
+
+- many EV users choose TMCS;
+- direct charging revenue per kWh falls;
+- arbitrage opportunities shrink;
+- service demand may exceed TMCS capacity.
+
+If the charging fee is too high:
+
+- too few EV users choose TMCS;
+- charging-service utilization falls;
+- energy arbitrage alone may not fully compensate.
+
+Therefore an intermediate charging-price range is preferable.
+
+Similarly, a larger peak-valley electricity-price spread makes energy arbitrage more attractive.
+
+This can cause the optimizer to deliberately leave more EV charging demand to FCSs while using TMCS battery capacity for grid arbitrage.
+
+---
+
+### 32. Pricing volatility creates another uncertainty source
+
+The paper also tests stochastic fluctuations in:
+
+- EV charging fees;
+- peak electricity prices;
+- valley electricity prices.
+
+Low, medium and high volatility are considered.
+
+The scheduling strategy remains relatively robust under moderate volatility.
+
+However, high volatility increases the optimality gap and reduces profit.
+
+This suggests an obvious extension:
+
+**online price learning / adaptive forecasting + LRH-VFA**.
+
+---
+
+### 33. What this paper teaches
+
+#### Lesson 1 — Mobile charging infrastructure should be treated as a multi-service asset
+
+A TMCS is not only an emergency EV charger.
+
+Its battery can also provide grid services when charging demand is low.
+
+#### Lesson 2 — The opportunity cost of stored energy matters
+
+A kWh stored in the truck has different future value depending on:
+
+- time;
+- location;
+- expected EV demand;
+- electricity price.
+
+This is exactly what the value function tries to capture.
+
+#### Lesson 3 — Short-term forecasting and long-term learning are complementary
+
+A short lookahead is useful for immediate demand changes.
+
+Historical learning is useful for what lies beyond the forecast window.
+
+LRH-VFA combines both.
+
+#### Lesson 4 — Utilization can matter as much as nominal charging capacity
+
+Building high-capacity mobile infrastructure for rare demand peaks can be uneconomic unless idle periods are monetized.
+
+#### Lesson 5 — Mobility couples transportation and electricity markets
+
+The value of a TMCS depends not only on when it charges/discharges but also **where it is located**.
+
+So spatial decisions are fundamental.
+
+---
+
+### 34. Limitations and points to read critically
+
+Important limitations include:
+
+- EV users are assumed to choose charging options through a rational MNL framework;
+- route choice is simplified using shortest-path assumptions;
+- the main time resolution is one hour, so fast operational dynamics are not represented;
+- traffic and charging-demand generation still rely on simulation assumptions and historical fitting;
+- battery energy consumption per kilometer and charging/discharging efficiencies are assumed constant;
+- electricity-market participation is represented mainly through energy arbitrage rather than a full market-clearing model;
+- competition/cooperation among multiple CFOs is not modeled;
+- ancillary-service participation is left for future work;
+- high prediction/price uncertainty still degrades the performance of LRH-VFA;
+- the theoretical optimality gap of LRH-VFA is difficult to derive, so performance is evaluated empirically against the MILP benchmark.
+
+Two details are also worth checking carefully when reproducing the model.
+
+#### MNL sign convention
+
+Equation (5) is printed using \(\exp(c_i(j))\), while \(c_i(j)\) is described as a generalized **cost**.
+
+In a conventional cost-based MNL formulation, higher cost would normally reduce choice probability, often through a negative cost coefficient or negative utility transformation.
+
+So the sign/utility convention should be verified carefully before implementation.
+
+#### Unit interpretation of dropped charging demand
+
+TABLE II reports charging energy in **kWh**, while the discussion refers to the 226-unit reduction as **226 kW**.
+
+Because the operational interval is one hour, the numerical values coincide, but the energy/power distinction should be kept clear when reusing the result.
+
+---
+
+### 35. Research idea triggers
+
+Possible extensions include:
+
+- TMCS participation in **frequency regulation / ancillary-service markets** in addition to energy arbitrage;
+- joint **FCS expansion + TMCS fleet sizing + real-time operation**;
+- multi-CFO competition using game theory;
+- cooperative TMCS sharing among different charging operators;
+- stochastic/Distributionally Robust Optimization versus LRH-VFA comparison;
+- reinforcement learning or actor-critic methods for nonlinear price/demand environments;
+- adaptive VFA with online slope updates rather than fixed offline training;
+- traffic congestion uncertainty and stochastic travel times;
+- battery-health-aware routing and arbitrage with nonlinear degradation models;
+- joint charging-price optimization and TMCS scheduling;
+- carbon-aware arbitrage using time-varying grid carbon intensity;
+- renewable-energy absorption using TMCS as mobile storage;
+- emergency/disaster charging support;
+- urban TMCS scheduling rather than highway-only operation;
+- coupling TMCS with V2G/P2P energy trading;
+- comparing LRH-VFA with MPC, stochastic MPC, and data-driven MPC.
+
+A particularly interesting control-oriented interpretation is:
+
+```text
+LRH-VFA
+≈ rolling-horizon optimization
++ learned terminal value function
+```
+
+This makes the paper highly relevant to research connecting:
+
+**MPC + ADP / reinforcement learning + mobile energy storage**.
+
+**Problem-map tags:** `truck mobile charging station` · `EV charging service` · `energy arbitrage` · `power-transportation coupling` · `user choice` · `MNL` · `extended graph` · `MDP` · `approximate dynamic programming` · `value function approximation` · `rolling horizon` · `LRH-VFA`
+
+:::

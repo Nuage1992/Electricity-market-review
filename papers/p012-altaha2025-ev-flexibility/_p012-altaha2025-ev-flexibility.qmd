@@ -1,0 +1,539 @@
+::: {.callout-note collapse="true" icon=false}
+## [P012] Al Taha et al. (2025) — An Efficient Method for Quantifying the Aggregate Flexibility of Plug-In Electric Vehicle Populations
+
+**Journal:** IEEE Transactions on Smart Grid, 16(4), 3142–3154, 2025  
+**DOI:** 10.1109/TSG.2024.3384871  
+**Main topics:** Electric Vehicle (EV) aggregation; Distributed Energy Resource (DER); flexibility modeling; Minkowski sum; inner approximation; affine transformation; Linear Programming (LP); disaggregation
+
+### Quick takeaway
+
+This paper studies a fundamental problem for large-scale EV aggregation:
+
+**How can an aggregator describe the combined charging flexibility of many heterogeneous EVs using one compact model that is safe, computationally tractable, and compatible with electricity-market rules?**
+
+The exact aggregate flexibility set is a **Minkowski sum** of all individual EV flexibility sets, but computing this set exactly is generally intractable.
+
+The paper therefore develops efficient **inner approximations** based on affine transformations and linear programming.
+
+The main goal is not to find the charging schedule itself, but to build a reliable **aggregate flexibility model** that can later be used by an optimizer or electricity market.
+
+---
+
+### 1. Problem addressed
+
+An EV aggregator may control hundreds or thousands of EVs.
+
+Each EV has different:
+
+- arrival and departure times;
+- charging/discharging power limits;
+- battery capacity;
+- initial State of Charge (SoC);
+- required final energy.
+
+The aggregator needs to answer:
+
+> **What total charging-power profiles can this whole EV population actually provide?**
+
+This is important because the aggregator may want to participate in:
+
+- energy markets;
+- ancillary-service markets;
+- peak-load management;
+- demand response.
+
+However, the market normally does not want thousands of individual EV models.
+
+It needs one **aggregate resource model**.
+
+---
+
+### 2. Individual EV flexibility: a generalized battery
+
+For each EV \(i\), the charging profile is:
+
+\[
+u_i = [u_i(0),\ldots,u_i(T-1)]
+\]
+
+The delivered energy evolves as:
+
+\[
+x_i(t+1)=x_i(t)+u_i(t)\delta
+\]
+
+The feasible set of charging profiles is defined by:
+
+- minimum and maximum charging power;
+- minimum and maximum accumulated energy.
+
+The paper writes this compactly as:
+
+\[
+\mathcal U_i=\{u\mid Hu\le h_i\}
+\]
+
+This is a convex polytope in **Half-space representation (H-representation)**.
+
+A useful interpretation is:
+
+> **each EV behaves like a small virtual battery with its own power and energy limits.**
+
+---
+
+### 3. What is aggregate flexibility?
+
+If there are \(N\) EVs, the total charging power is:
+
+\[
+u=\sum_{i=1}^{N}u_i
+\]
+
+The aggregate flexibility set is therefore:
+
+\[
+\mathcal U=\bigoplus_{i=1}^{N}\mathcal U_i
+\]
+
+where \(\oplus\) denotes the **Minkowski sum**.
+
+In simple terms:
+
+> take every feasible charging profile of EV 1, add it to every feasible profile of EV 2, and continue for all EVs.
+
+The final set contains every total charging profile that can be achieved without violating any individual EV constraint.
+
+---
+
+### 4. Why exact aggregation is difficult
+
+The difficulty is computational.
+
+Each EV flexibility set is naturally given as an H-polytope.
+
+But computing the exact Minkowski sum of H-polytopes is generally hard, and converting between:
+
+- H-representation: constraints;
+- Vertex representation (V-representation): corner points;
+
+can grow exponentially with problem dimension.
+
+So exact aggregation becomes impractical when:
+
+- the time horizon is long;
+- the number of EVs is large;
+- EV parameters are heterogeneous.
+
+This is why the paper does **approximation rather than exact aggregation**.
+
+---
+
+### 5. Why an inner approximation is preferred
+
+There are two basic approximation types.
+
+#### Outer approximation
+
+It contains the true flexibility set.
+
+Advantage:
+
+- it may look less conservative.
+
+Problem:
+
+- it can contain charging profiles that the EV population cannot actually deliver.
+
+#### Inner approximation
+
+It is fully contained inside the true flexibility set.
+
+Advantage:
+
+- every aggregate profile inside it is guaranteed feasible.
+
+For control and market participation, this safety property is important.
+
+The paper therefore focuses on:
+
+\[
+\mathcal P \subseteq \mathcal U
+\]
+
+where \(\mathcal P\) is a tractable inner approximation.
+
+---
+
+### 6. Core idea: transform one base flexibility set
+
+The paper first defines a common **base set** \(\mathcal U_0\).
+
+It is built from the average parameters of the individual EV flexibility sets.
+
+Then, instead of describing each EV with a completely new geometry, the paper approximates each EV using an affine transformation of this base set:
+
+\[
+\gamma_i+\Gamma_i\mathcal U_0
+\]
+
+where:
+
+- \(\gamma_i\): translation;
+- \(\Gamma_i\): linear transformation.
+
+The transformed set must remain inside the true individual flexibility set:
+
+\[
+\gamma_i+\Gamma_i\mathcal U_0 \subseteq \mathcal U_i
+\]
+
+The individual approximations are then combined to construct one safe aggregate approximation.
+
+![Main inner-approximation idea: affine transformations of one base set approximate individual EV flexibility sets and are then combined into an aggregate inner approximation. Source: Fig. 2 of Al Taha et al. (2025).](papers/p012-altaha2025-ev-flexibility/figures/altaha2025_ev_flexibility/fig2_inner_approximation_framework.png){width=88%}
+
+The important idea is:
+
+**approximate locally → combine safely → obtain one aggregate model.**
+
+---
+
+### 7. Why affine transformation is better than simple scaling
+
+Earlier methods often use a **homothetic transformation**:
+
+\[
+\gamma_i+\alpha_i\mathcal U_0
+\]
+
+This only allows:
+
+- translation;
+- uniform scaling.
+
+That works well when EV flexibility sets have similar shapes.
+
+But heterogeneous EVs can have very different:
+
+- charging windows;
+- power limits;
+- energy requirements.
+
+Simple scaling may therefore waste a large amount of usable flexibility.
+
+The proposed affine transformation:
+
+\[
+\gamma_i+\Gamma_i\mathcal U_0
+\]
+
+can stretch, shrink, and reshape the base set in different directions.
+
+This provides more freedom and usually a less conservative approximation.
+
+---
+
+### 8. Two approximation models
+
+The paper develops two main versions.
+
+#### Structure-preserving approximation
+
+The final aggregate approximation must still look like a generalized battery.
+
+It uses:
+
+\[
+\mathcal P=p+\alpha\mathcal U_0
+\]
+
+The main advantage is:
+
+**the result can be represented using familiar aggregate power and energy limits.**
+
+This is important for electricity-market compatibility.
+
+#### General affine approximation
+
+The final approximation is:
+
+\[
+\mathcal P=p+P\mathcal U_0
+\]
+
+where \(P\) is a general matrix.
+
+This gives more geometric freedom and usually improves approximation accuracy.
+
+However, the resulting set may no longer have a simple battery-style representation.
+
+So there is a clear trade-off:
+
+**market-friendly representation ↔ approximation accuracy**
+
+---
+
+### 9. How the difficult set-containment problem becomes an LP
+
+A key mathematical contribution is converting the condition:
+
+\[
+\gamma_i+\Gamma_i\mathcal U_0\subseteq\mathcal U_i
+\]
+
+into linear constraints using a polytope-containment result related to **Farkas' Lemma** and Linear Programming (LP) duality.
+
+This means the original difficult geometric problem can be conservatively handled with LPs.
+
+The final optimization size grows polynomially with:
+
+- number of EVs \(N\);
+- time dimension \(T\).
+
+This is the main reason the method can scale better than exact Minkowski-sum calculations.
+
+---
+
+### 10. Structure-preserving versus general affine LP
+
+For the structure-preserving case, the LP mainly maximizes the scaling factor:
+
+\[
+\max \alpha
+\]
+
+A larger \(\alpha\) means a larger safe aggregate flexibility region.
+
+For the general affine case, directly maximizing volume is still difficult.
+
+The authors therefore approximate the volume objective using:
+
+\[
+\max \operatorname{Tr}(P)
+\]
+
+This creates another LP.
+
+The general affine formulation also has an important computational advantage:
+
+> the individual EV approximation problems can be solved independently.
+
+So the computation can be parallelized.
+
+---
+
+### 11. Disaggregation: from aggregate command back to individual EVs
+
+Aggregation alone is not enough.
+
+Suppose the market sends the aggregator one feasible total charging profile:
+
+\[
+u
+\]
+
+The aggregator must convert this into:
+
+\[
+u_1,u_2,\ldots,u_N
+\]
+
+so that every EV remains feasible.
+
+A common solution is to solve another optimization problem.
+
+This paper avoids that.
+
+The affine mappings obtained during aggregation can be reused directly.
+
+For an aggregate point inside the proposed inner approximation, the individual charging profiles can be recovered by:
+
+\[
+u_i=\gamma_i+\Gamma_iP^{-1}(u-p)
+\]
+
+when \(P\) is invertible.
+
+So:
+
+**aggregate schedule → direct affine mapping → individual EV schedules**
+
+No additional disaggregation optimization is required.
+
+This is an important practical advantage.
+
+---
+
+### 12. Case study: what is being tested?
+
+The paper tests whether the approximate aggregate model is good enough for real downstream optimization tasks.
+
+Two applications are considered.
+
+#### Peak-power minimization
+
+The EV population is controlled to reduce the maximum household net load.
+
+#### Electricity-cost minimization
+
+The EVs charge when electricity is cheap and can discharge when prices are high.
+
+The study uses:
+
+- household load data from **Pecan Street Dataport**;
+- New York Independent System Operator (NYISO) day-ahead electricity prices;
+- 25 simulated EVs;
+- 18 one-hour time periods;
+- six months of daily data.
+
+Four approximation methods are compared:
+
+1. proposed general affine;
+2. proposed structure-preserving;
+3. homothet-based method;
+4. zonotope-based method.
+
+The true aggregate flexibility set is also used as the benchmark.
+
+---
+
+### 13. Main findings: approximation quality
+
+![Suboptimality gaps of different aggregate-flexibility approximation methods for peak-power and electricity-cost minimization. Source: Fig. 4 of Al Taha et al. (2025).](papers/p012-altaha2025-ev-flexibility/figures/altaha2025_ev_flexibility/fig4_suboptimality_comparison.png){width=72%}
+
+For peak-power minimization:
+
+- the **general affine method** performs best;
+- its suboptimality gap is almost zero for more than half of the tested days.
+
+For electricity-cost minimization:
+
+- the general affine and structure-preserving methods generally outperform the homothet and zonotope approaches.
+
+The zonotope method also shows larger day-to-day variation.
+
+The key conclusion is:
+
+**a more accurate flexibility geometry leads to better downstream control and scheduling decisions.**
+
+---
+
+### 14. Accuracy versus usability
+
+The paper does not claim that one method is best for every purpose.
+
+#### General affine
+
+Best when:
+
+- approximation accuracy is the priority;
+- a general polytope representation is acceptable;
+- parallel computation is available.
+
+#### Structure-preserving
+
+Best when:
+
+- the result must look like one energy-storage resource;
+- compatibility with market bid formats is important;
+- slightly more conservatism is acceptable.
+
+This distinction is practically important.
+
+A mathematically tighter model is not always the most useful market model.
+
+---
+
+### 15. Computational scalability
+
+The paper also tests EV populations from:
+
+**20 to 200 EVs**
+
+The reported trend is:
+
+- structure-preserving computation grows faster than linearly;
+- general affine computation grows approximately linearly.
+
+The reason is that the general affine problem can be decomposed into one LP per EV.
+
+These LPs can also be solved in parallel.
+
+So the general affine approach has a strong scalability advantage.
+
+The authors note that the structure-preserving LP also has block structure that may be exploited using decomposition methods such as **Dantzig-Wolfe decomposition**.
+
+---
+
+### 16. What this paper teaches
+
+#### Lesson 1 — Flexibility itself must be modeled before it can be optimized
+
+Before asking:
+
+> “What is the best EV charging schedule?”
+
+we first need to know:
+
+> “What charging schedules are actually possible for the whole EV population?”
+
+#### Lesson 2 — Aggregation is a model-reduction problem
+
+Thousands of flexible devices must be represented by one manageable model.
+
+The challenge is to reduce complexity without removing too much usable flexibility.
+
+#### Lesson 3 — Safe approximation matters
+
+An inner approximation may be conservative, but every schedule inside it is implementable.
+
+This is valuable for market bidding and real-time control.
+
+#### Lesson 4 — Aggregation and disaggregation should be designed together
+
+It is not enough to build one aggregate model.
+
+The aggregator must also be able to translate a market-level command back to feasible individual-device commands.
+
+---
+
+### 17. Limitations
+
+Important limitations include:
+
+- the main model assumes lossless EV charging dynamics;
+- general charging/discharging efficiency losses can make individual flexibility sets nonconvex;
+- the case study assumes perfect knowledge of household load and electricity prices;
+- the aggregator is assumed to be a price taker;
+- distribution-network constraints are not included;
+- the structure-preserving approximation is still visibly conservative;
+- experiments mainly use dozens to hundreds of EVs rather than very large field fleets.
+
+The authors specifically identify:
+
+- general lossy charging models;
+- distribution-network capacity constraints;
+- hierarchical aggregation
+
+as future directions.
+
+---
+
+### 18. Research idea triggers
+
+Possible extensions include:
+
+- hierarchical aggregation for thousands or millions of EVs;
+- network-constrained EV flexibility aggregation;
+- stochastic flexibility under uncertain arrival/departure times;
+- data-driven aggregate flexibility models;
+- nonconvex flexibility caused by efficiency losses or discrete charging states;
+- dynamic aggregate models that update online as EVs connect and disconnect;
+- aggregation including battery degradation;
+- EV flexibility + electricity-market bidding;
+- flexibility aggregation for EVs + HVAC + batteries together;
+- robust aggregation under uncertain user behavior;
+- comparison between geometric, optimization-based, and learning-based flexibility models.
+
+**Problem-map tags:** `EV aggregation` · `flexibility modeling` · `Minkowski sum` · `inner approximation` · `affine transformation` · `virtual battery` · `disaggregation` · `market participation`
+
+:::

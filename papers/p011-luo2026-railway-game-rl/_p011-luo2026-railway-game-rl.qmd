@@ -1,0 +1,453 @@
+::: {.callout-note collapse="true" icon=false}
+## [P011] Luo et al. (2026) — A Hierarchical Game-Decoupled-RL-Based Energy Flow Optimization Strategy for Cross-Regional Railway Integrated Energy System
+
+**Journal:** IEEE Transactions on Smart Grid, 17(4), 2646–2659, 2026  
+**DOI:** 10.1109/TSG.2026.3655819  
+**Main topics:** Railway Integrated Energy System (RIES); Regenerative Braking Energy (RBE); Energy Storage System (ESS); photovoltaic generation; game theory; Q-learning; hierarchical energy management; real-time control
+
+### Quick takeaway
+
+This paper studies how several railway traction substations can coordinate **regenerative braking energy, photovoltaic energy, and energy storage** across regions.
+
+The main difficulty is that a wide-area Railway Integrated Energy System (RIES) has too many coupled control variables for one centralized real-time controller.
+
+The proposed solution is a **two-level hierarchical Energy Management System (EMS)**:
+
+1. **Upper level:** use a Complete-Information Static Game (CISG) to match energy among substations and absorb RBE/PV energy.
+2. **Lower level:** use a decoupled Q-learning algorithm to control each ESS and compensate the remaining traction-power demand.
+
+The main design idea is:
+
+**use game theory for wide-area coordination, and reinforcement learning for local adaptive storage control.**
+
+---
+
+### 1. Problem addressed
+
+Traditional railway traction power systems are divided into feeding sections.
+
+A train under regenerative braking may produce useful electrical energy, but this **Regenerative Braking Energy (RBE)** can be difficult to transfer to trains in another section.
+
+A RIES adds:
+
+- Railway Power Conditioners (RPCs);
+- Energy Storage Systems (ESSs);
+- photovoltaic (PV) generation;
+- shared energy-transfer paths between traction substations.
+
+This makes cross-regional energy sharing possible, but creates a new control problem:
+
+**how can several substations coordinate energy transfer in real time without creating an extremely large optimization problem?**
+
+---
+
+### 2. Why existing methods are not enough
+
+#### Rule-based control
+
+Simple and fast, but thresholds depend heavily on engineering experience.
+
+It is difficult to design rules for many interacting substations and changing train operations.
+
+#### Model Predictive Control (MPC) and optimization
+
+They can plan energy flow systematically, but performance depends on forecasts and models.
+
+Irregular train schedules and a growing number of substations increase the optimization burden.
+
+#### Deep Reinforcement Learning (DRL)
+
+Methods such as DDPG, TD3, SAC, and DQN can handle complex problems.
+
+However, the authors emphasize two concerns:
+
+- training and decision-making can become more complicated;
+- neural-network policies are less interpretable for railway engineering applications.
+
+#### Multi-Agent Reinforcement Learning (MARL)
+
+MARL is attractive for multiple substations, but a large joint action space and non-stationary multi-agent interactions can make convergence difficult.
+
+The paper therefore avoids using one method for the whole system.
+
+---
+
+### 3. RIES and two operating modes
+
+Each traction substation contains:
+
+- two-phase traction loads;
+- an RPC;
+- an ESS;
+- a PV system.
+
+The system can operate in two modes.
+
+#### Independent operation
+
+A substation mainly uses its own ESS and PV to manage local energy.
+
+No wide-area energy exchange is required.
+
+#### Cooperative operation
+
+Several substations exchange energy through connected feeding sections.
+
+The EMS must decide:
+
+- which substations should cooperate;
+- how much energy should be transferred;
+- when the system should remain locally independent.
+
+This switching between local and cooperative operation is one of the key management problems.
+
+---
+
+### 4. Hierarchical Game-RL architecture
+
+![Hierarchical Game-RL Energy Management System. The upper level coordinates primary cross-regional energy absorption, while the lower level controls local ESS compensation. Source: Fig. 4 of Luo et al. (2026).](papers/p011-luo2026-railway-game-rl/figures/luo2026_railway_game_rl/fig4_hierarchical_game_rl_architecture.png){width=82%}
+
+The EMS separates the problem into two levels.
+
+#### Upper level — Primary Energy Flow Absorption (PEFA)
+
+Main tasks:
+
+- match RBE with traction demand;
+- transfer energy between adjacent feeding sections;
+- absorb as much PV power as possible;
+- reduce energy exchange with the external grid.
+
+The main actuator is the RPC network.
+
+#### Lower level — Secondary Energy Flow Compensation (SEFC)
+
+After the upper level finishes energy matching, some power imbalance remains.
+
+The ESS then:
+
+- absorbs remaining regenerative energy;
+- absorbs unused PV energy;
+- supplies traction demand;
+- reduces traction power peaks.
+
+This decomposition reduces the size of the decision problem at each level.
+
+---
+
+### 5. Why game theory is used at the upper level
+
+Cross-regional RBE utilization is essentially an **energy matching problem among several substations**.
+
+Each feeding section can be treated as a player.
+
+The player's strategy is the discretized RPC power-transfer decision.
+
+The paper uses a **Complete-Information Static Game (CISG)**:
+
+- every player knows the relevant system states;
+- all players select strategies under complete information;
+- the action space is finite and discretized.
+
+The payoff encourages:
+
+- lower total traction-energy exchange;
+- energy transfer toward sections that need more compensation.
+
+The authors use a **dominant-strategy equilibrium** to obtain consistent decisions among neighboring feeding sections.
+
+A key claimed advantage is that the final matching does not require a large iterative numerical optimization at every control step.
+
+---
+
+### 6. Primary energy flow absorption
+
+The upper level has two main objectives.
+
+#### RBE utilization
+
+Regenerative energy should be transferred to trains that are currently consuming traction power.
+
+Priority is given to:
+
+- the same feeding section;
+- adjacent feeding sections;
+- nearby traction substations when cross-regional transfer is possible.
+
+#### PV utilization
+
+PV generation is first used locally.
+
+If local demand is insufficient, remaining PV energy can support neighboring sections or charge the ESS.
+
+So PEFA tries to reduce two forms of waste:
+
+**unused regenerative braking energy + curtailed PV energy**
+
+---
+
+### 7. Why Q-learning is used for the lower ESS control
+
+After primary energy matching, the ESS must react to rapidly changing two-phase traction loads.
+
+The authors choose tabular **Q-learning** instead of a neural-network policy because they want:
+
+- fast online table lookup;
+- transparent state-action relationships;
+- easier interpretation;
+- no online nonlinear optimization.
+
+However, ordinary Q-learning still faces a problem:
+
+**the two-phase ESS action space grows rapidly when power is finely discretized.**
+
+This motivates the proposed decoupling method.
+
+---
+
+### 8. Decoupled Q-learning: the key RL idea
+
+![Decoupled Q-learning for secondary energy-flow compensation. The original two-phase decision space is separated into independent and simultaneous compensation modes. Source: Fig. 6 of Luo et al. (2026).](papers/p011-luo2026-railway-game-rl/figures/luo2026_railway_game_rl/fig6_decoupled_q_learning.png){width=90%}
+
+The algorithm divides ESS operation into two modes.
+
+#### Independent compensation
+
+When the two phases are in different operating conditions, only the phase that needs compensation is considered.
+
+The state and action dimensions can therefore be reduced.
+
+#### Simultaneous compensation
+
+When both phases need similar compensation, their power demands are combined.
+
+The ESS first decides the total compensation power, then allocates it between the two phases according to demand.
+
+Instead of one very large Q-table, the method uses two smaller Q-tables:
+
+- \(Q_{in}\): independent compensation;
+- \(Q_{si}\): simultaneous compensation.
+
+The main purpose is:
+
+**reduce dimensionality without replacing the transparent Q-table with a black-box neural network.**
+
+---
+
+### 9. Distance-based sampling policy
+
+Offline Q-learning still requires exploration.
+
+Uniform random action sampling wastes many training samples on actions that are very far from the actual traction-power demand.
+
+The paper therefore defines a distance between:
+
+- candidate ESS compensation power;
+- current power demand.
+
+Actions closer to the actual demand receive higher sampling probability.
+
+The idea is simple:
+
+**more realistic actions are explored more often.**
+
+The authors describe this as an experience-driven pre-training mechanism.
+
+It improves learning efficiency while keeping the Q-learning structure unchanged.
+
+---
+
+### 10. Reward-function design
+
+The RL reward combines several requirements.
+
+It encourages the ESS to:
+
+- keep State of Charge (SoC) within limits;
+- choose the correct charging/discharging direction;
+- compensate the total substation energy demand;
+- compensate individual feeding-section demand;
+- preserve energy for high-power peak compensation.
+
+This last point is important.
+
+If the ESS spends too much energy during low-demand periods, it may have insufficient energy later when a large traction peak occurs.
+
+So the reward balances:
+
+**frequent energy compensation ↔ preserving capacity for peak shaving**
+
+These two objectives are partly conflicting.
+
+---
+
+### 11. Data and real-time validation
+
+The case study uses measured **Supervisory Control and Data Acquisition (SCADA)** traction-power data from three adjacent substations on the Baotou–Shenmu Railway in Inner Mongolia, China.
+
+Training and testing use different measured daily datasets.
+
+The control framework is also tested on a **Real-Time Digital Simulator (RTDS)** platform.
+
+This gives the validation three useful features:
+
+- real railway power data;
+- separate training and test datasets;
+- real-time simulation of online EMS decisions.
+
+---
+
+### 12. RL convergence improvement
+
+The distance-based sampling policy clearly improves offline training speed.
+
+For the SS2 agent:
+
+- proposed distance-based sampling converges in **30,953 iterations**;
+- traditional random sampling requires **51,568 iterations**.
+
+For SS3, after 6,000 iterations, the reward of the proposed method is:
+
+**20.27% higher**
+
+than with traditional random sampling.
+
+So the main benefit of the sampling policy is not a new control objective.
+
+It is:
+
+**faster learning of a useful Q-table.**
+
+---
+
+### 13. Primary absorption results
+
+The upper game-based PEFA transfers regenerative energy between feeding sections and coordinates PV utilization.
+
+For SS2, the reported RBE utilization efficiencies of the two phases are approximately:
+
+- **89.97%**
+- **89.89%**
+
+Across the whole RIES after the primary stage:
+
+- traction energy decreases from **334.04 MWh to 290.56 MWh**;
+- **21.66 MWh** of RBE is absorbed;
+- RBE absorption ratio: **75.01%**;
+- overall PV utilization: **83.84%**.
+
+The remaining renewable/regenerative energy is then handled by the secondary ESS stage.
+
+---
+
+### 14. Secondary compensation and comparison methods
+
+The decoupled Q-learning method is compared with:
+
+- Fixed Threshold Control (FTC);
+- Fuzzy Logic Control (FLC);
+- Particle Swarm Optimization (PSO);
+- a multi-timescale Deep Reinforcement Learning (DRL) method.
+
+The paper reports that the proposed Q-learning method achieves energy-performance results close to PSO, but with much lower online decision time.
+
+Reported single-decision time:
+
+- decoupled Q-learning: **0.54 ms**
+- PSO: **2882.65 ms**
+- multi-timescale DRL: **145.83 ms**
+
+This is one of the paper's strongest practical results.
+
+The proposed method sacrifices some modeling sophistication in exchange for extremely fast online lookup.
+
+---
+
+### 15. Overall energy-saving results
+
+After combining the primary game-based stage and the secondary RL stage:
+
+- total RBE utilized: **28.39 MWh**;
+- RBE utilization ratio: **98.31%**;
+- PV utilization ratio: **96.75%**;
+- total traction energy decreases from **334.04 MWh to 279.58 MWh**;
+- traction-energy reduction: **16.31%**.
+
+So the hierarchical strategy uses the two stages for different purposes:
+
+**game → move available energy to where it is needed**
+
+**RL → use ESS to absorb and compensate what remains**
+
+---
+
+### 16. What this paper teaches
+
+#### Lesson 1 — Hierarchical control is useful when one method is not suitable for every subproblem
+
+The paper does not force game theory or RL to solve the entire RIES.
+
+Each method is assigned to the task where it is more suitable.
+
+#### Lesson 2 — Wide-area coordination and local device control are different problems
+
+Cross-regional energy matching requires coordination among several substations.
+
+ESS control is mainly a local sequential decision problem.
+
+Separating them reduces complexity.
+
+#### Lesson 3 — Interpretability can influence algorithm choice
+
+A more complex Deep RL method is not automatically preferable.
+
+For safety-critical engineering applications, a transparent Q-table and very fast online lookup may be valuable.
+
+#### Lesson 4 — Reducing the decision space can be as important as designing a more powerful algorithm
+
+The decoupling idea improves Q-learning mainly by restructuring the state-action space.
+
+This is a useful general lesson for large control problems.
+
+---
+
+### 17. Limitations
+
+Important limitations and open issues include:
+
+- the upper-level game assumes complete information among substations;
+- RPC power decisions are discretized;
+- the main optimization focuses on active power;
+- reactive-power compensation and voltage control are not jointly optimized in the proposed EMS;
+- the Q-learning stage relies on offline training data;
+- economic cost and equipment degradation are not the main objectives;
+- large-scale ESS economic feasibility is not evaluated in detail;
+- validation uses RTDS rather than long-term railway field deployment.
+
+The authors identify three future directions:
+
+- use game theory to guide Multi-Agent Reinforcement Learning (MARL);
+- study wide-area compensation with larger ESSs and evaluate its economics;
+- use residual RPC capacity for reactive-power compensation, voltage support, and power-quality improvement.
+
+---
+
+### 18. Research idea triggers
+
+Possible extensions include:
+
+- game-guided MARL for many traction substations;
+- adaptive or online Q-table updating when train patterns change;
+- battery degradation-aware ESS control;
+- economic optimization including electricity price and demand charges;
+- stochastic or robust control under uncertain train schedules and PV generation;
+- active + reactive power hierarchical control;
+- joint energy efficiency and voltage/power-quality management;
+- safety-constrained RL for ESS operation;
+- comparison with MPC under the same measured railway dataset;
+- transfer learning between railway lines or different substation configurations;
+- sizing + operation co-optimization for RPC, PV, and ESS.
+
+**Problem-map tags:** `railway integrated energy system` · `regenerative braking energy` · `hierarchical EMS` · `game theory` · `Q-learning` · `energy storage` · `cross-regional coordination` · `real-time control`
+
+:::

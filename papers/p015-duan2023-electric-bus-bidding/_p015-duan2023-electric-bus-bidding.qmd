@@ -1,0 +1,531 @@
+::: {.callout-note collapse="true" icon=false}
+## [P015] Duan et al. (2023) — Bidding and Charging Scheduling Optimization for the Urban Electric Bus Operator
+
+**Journal:** IEEE Transactions on Smart Grid, 14(1), 489–501, 2023  
+**DOI:** 10.1109/TSG.2022.3197429  
+**Main topics:** Electric Bus Operator (EBO); Electric Bus Station (EBS); trip-chain flexibility; stochastic optimization; day-ahead energy market; reserve market; Energy Storage System (ESS); Benders decomposition
+
+### Quick takeaway
+
+This paper studies a large-scale electric-bus operation problem:
+
+**How can an urban Electric Bus Operator (EBO) jointly schedule the charging of hundreds of buses and decide how much energy and reserve capacity to bid into electricity markets?**
+
+The difficulty is that:
+
+- each bus has several trips and several charging windows;
+- trip energy consumption is uncertain;
+- individual-bus optimization becomes very large;
+- an aggregated charging plan may be impossible to decompose back to individual buses.
+
+The paper solves this by combining:
+
+- a **trip-chain based flexibility boundary model**;
+- a **state-based aggregation method**;
+- a **hierarchical stochastic optimization framework**;
+- **accelerated Benders decomposition** to preserve disaggregation feasibility.
+
+---
+
+### 1. Problem addressed
+
+An urban EBO may manage:
+
+- many electric bus lines;
+- several Electric Bus Stations (EBSs);
+- hundreds of Electric Buses (EBs);
+- station-level Energy Storage Systems (ESSs).
+
+The EBO must guarantee that every bus has enough energy for its scheduled trips.
+
+At the same time, the fleet has substantial charging flexibility because a bus does not always need to recharge immediately after each trip.
+
+This creates an economic opportunity:
+
+- buy electricity when prices are low;
+- avoid high-price periods;
+- use bus and ESS flexibility to provide reserve services.
+
+The central problem is therefore:
+
+**how to convert operational flexibility of a large bus fleet into market value without making the optimization problem computationally intractable.**
+
+---
+
+### 2. Why electric buses are different from ordinary EV charging
+
+Ordinary fast-charging stations mainly react to arriving vehicles.
+
+The charging station operator usually cannot control the travel schedule of those vehicles.
+
+An EBO is different.
+
+It typically knows and manages:
+
+- bus timetables;
+- trip chains;
+- station assignment;
+- charging windows.
+
+So the EBO has much more scheduling freedom.
+
+A bus may complete multiple trips in one day and recharge between some of them.
+
+This means the key flexibility is not simply:
+
+**arrival → charge → departure**
+
+but:
+
+**trip → charging window → trip → charging window → ...**
+
+---
+
+### 3. Why existing single-trip boundary models are insufficient
+
+Existing EV flexibility models often use upper/lower boundaries of:
+
+- charging power;
+- accumulated charged energy.
+
+For one charging window, this works well.
+
+However, a bus with several sequential trips has temporal coupling:
+
+- how much it charged after Trip 1 affects the available energy before Trip 2;
+- the charging decision in one window changes the feasible region of later windows.
+
+So a single-trip boundary model cannot simply be repeated independently for every trip.
+
+The paper therefore develops a **trip-chain based boundary model**.
+
+---
+
+### 4. Trip-chain based multi-trip flexibility model
+
+The basic idea is to represent the charging flexibility of one bus by:
+
+- upper/lower charging-power bounds;
+- upper/lower accumulated-energy bounds.
+
+The energy boundaries are updated across multiple trips using the accumulated trip-energy consumption.
+
+![Trip-chain based multi-trip energy and power boundary model. Source: Fig. 3 of Duan et al. (2023).](papers/p015-duan2023-electric-bus-bidding/figures/duan2023_electric_bus/fig3_multitrip_boundary_model.png){width=68%}
+
+The upper energy boundary represents:
+
+**the maximum energy that the bus can absorb while respecting battery and charging limits.**
+
+The lower boundary represents:
+
+**the minimum energy that must be charged to guarantee the next scheduled trip.**
+
+So the region between the two curves is the bus's charging flexibility.
+
+---
+
+### 5. Why the boundary model is useful
+
+Instead of optimizing every charging decision first, the boundary model tells the optimizer:
+
+> **What charging trajectories are feasible?**
+
+This is a compact flexibility representation.
+
+The optimizer can then choose any charging trajectory that stays inside:
+
+- power limits;
+- energy limits;
+- trip requirements.
+
+This substantially reduces the number of variables needed in large-scale scheduling.
+
+---
+
+### 6. Trip-energy uncertainty makes the boundary uncertain
+
+The actual energy consumed by a bus trip is uncertain because of:
+
+- traffic conditions;
+- weather;
+- passenger load;
+- driving conditions.
+
+So the amount of energy required after a trip is not fixed.
+
+The paper therefore builds **uncertain energy boundaries**.
+
+If a trip consumes more energy than expected:
+
+- the upper energy boundary shifts;
+- the lower energy boundary also shifts.
+
+The paper uses a scenario-based representation so that different trip-energy outcomes generate different feasible charging regions.
+
+---
+
+### 7. Why simple aggregation can become unsafe
+
+A natural idea is:
+
+> sum the boundaries of all buses.
+
+But for multi-trip buses, this can enlarge the feasible region.
+
+The aggregate model may then contain a total charging trajectory that looks feasible at station level but cannot be decomposed into valid schedules for individual buses.
+
+This is a critical issue:
+
+**aggregate feasibility does not automatically guarantee individual feasibility.**
+
+The paper solves this problem with a new **state-based aggregation** plus Benders decomposition.
+
+---
+
+### 8. State-based aggregation
+
+Every bus is classified into one of four states.
+
+#### S1 — Available
+
+The bus is inside the EBS and can charge.
+
+#### S2 — On-duty
+
+The bus is away from the station and is operating on its route.
+
+#### S3 — Just-left
+
+The bus has just started a trip.
+
+#### S4 — Return
+
+The bus is about to return to the EBS.
+
+The state transitions depend only on the known timetable.
+
+This allows the EBS to aggregate energy boundaries separately for each state.
+
+Only buses in S1 are available for charging.
+
+The state-based model retains more temporal information than directly summing all individual boundaries.
+
+---
+
+### 9. Charger availability is also included
+
+The total charging flexibility is not only limited by bus batteries.
+
+It is also limited by the number of chargers in each EBS.
+
+If many buses are parked but only a few chargers are available:
+
+> not all buses can charge simultaneously.
+
+The paper therefore modifies the aggregate power and energy boundaries according to the available number of chargers.
+
+This tightens the feasible region and avoids overly optimistic aggregate flexibility.
+
+---
+
+### 10. Hierarchical operation framework
+
+![Hierarchical framework linking the EBO and multiple EBSs. Source: Fig. 6 of Duan et al. (2023).](papers/p015-duan2023-electric-bus-bidding/figures/duan2023_electric_bus/fig6_hierarchical_framework.png){width=88%}
+
+The optimization is divided into two layers.
+
+#### Upper layer — EBO
+
+The EBO decides:
+
+- day-ahead electricity purchases;
+- balancing-market adjustments;
+- reserve-market bids;
+- aggregated station-level charging targets.
+
+#### Lower layer — EBS
+
+Each station determines:
+
+- individual EB charging schedules;
+- whether the aggregate power command can be decomposed feasibly.
+
+The information exchange has two directions.
+
+**Bottom-up:** EBSs report aggregate flexibility boundaries.
+
+**Top-down:** the EBO sends aggregate charging and reserve decisions to the EBSs.
+
+---
+
+### 11. Electricity markets considered
+
+The EBO participates in three markets.
+
+#### Day-Ahead Market (DAM)
+
+The EBO schedules electricity purchases before real operation.
+
+The aim is to buy more electricity during cheaper periods.
+
+#### Balancing Market (BM)
+
+If actual energy consumption differs from the day-ahead plan because of trip uncertainty, the imbalance is settled in the balancing market.
+
+#### Reserve Market (RM)
+
+Unused charging flexibility of EBs and ESSs can be offered as reserve capacity.
+
+This allows the EBO to earn additional revenue.
+
+So the operation problem is not only:
+
+**minimize charging cost**
+
+but:
+
+**energy cost + balancing cost − reserve revenue + shortage penalties**
+
+---
+
+### 12. Role of the station ESS
+
+Each EBS contains an ESS.
+
+The ESS provides several kinds of flexibility:
+
+- charge during low-price periods;
+- discharge during high-price periods;
+- buffer fast-charging peaks;
+- provide up/down reserve;
+- reduce dependence on the balancing market.
+
+The EB fleet and ESS therefore work together.
+
+The EBs provide large but schedule-dependent flexibility.
+
+The ESS provides more directly controllable power and energy flexibility.
+
+---
+
+### 13. Why Benders decomposition is needed
+
+The upper-level model wants to work with aggregate station variables.
+
+But the true feasibility conditions belong to individual buses.
+
+This naturally creates:
+
+- a **master problem** at the EBO level;
+- many **slave problems** at the EBS/scenario level.
+
+The master problem decides the aggregated market and station schedules.
+
+Each slave problem checks:
+
+> **Can this aggregate solution actually be decomposed to individual EBs while respecting trip and reserve constraints?**
+
+If not, the slave problem generates a cut and sends it back to the master problem.
+
+The process repeats until the aggregate plan is individually feasible.
+
+---
+
+### 14. Accelerated Benders decomposition
+
+Basic Benders decomposition can still be slow.
+
+The paper accelerates it using:
+
+- multiple cuts;
+- parallel computation;
+- modified Pareto-optimal cuts.
+
+This improves convergence while maintaining the hierarchical structure.
+
+The key practical advantage is:
+
+**the EBO does not need to solve all individual EB variables inside one huge centralized model.**
+
+---
+
+### 15. Case study
+
+The test system contains:
+
+- **10 EBSs**;
+- **547 EBs**;
+- 3–7 bus lines per station;
+- real bus schedules based on Xi'an, China;
+- 5 trips per bus per day;
+- 300 kW rated charging power;
+- 200 kWh bus-battery capacity;
+- an ESS at every EBS;
+- 5-minute time steps;
+- four typical trip-energy scenarios.
+
+Electricity and reserve prices are taken from the PJM market.
+
+---
+
+### 16. Main operating results
+
+#### Price-responsive charging
+
+The EBO purchases more electricity during low-price periods and avoids charging during expensive periods.
+
+The paper especially shows reduced charging during the high-price window around:
+
+**15:00–18:00**
+
+Buses tend to recharge earlier when electricity is cheaper.
+
+#### ESS time shifting
+
+ESSs are charged in low-price periods and discharged later to support bus charging during expensive periods.
+
+#### Reserve participation
+
+Both EBs and ESSs provide reserve capacity.
+
+The paper shows that EBs contribute a large share of the available **up-reserve** in many periods.
+
+An important operational behavior appears:
+
+> EBs and ESSs are not always charged to full capacity, because some empty capacity is deliberately preserved for reserve provision.
+
+---
+
+### 17. Deterministic versus stochastic operation
+
+In the deterministic case:
+
+- total cost: **$21,475.8**
+- DAM electricity cost: **$23,663.4**
+- reserve revenue: **$2,187.6**
+
+In the stochastic case:
+
+- total cost: **$21,551.1**
+- DAM cost: **$23,343.7**
+- expected BM cost: **$374.3**
+- reserve revenue: **$2,166.9**
+
+The stochastic solution is slightly more expensive because it pays for protection against uncertain trip-energy consumption.
+
+This is a typical result:
+
+**uncertainty protection has an economic cost.**
+
+---
+
+### 18. How valuable is the ESS?
+
+The paper compares cases with different ESS and transformer capacities.
+
+Without station ESSs:
+
+- electricity cost increases;
+- reserve revenue drops by more than half.
+
+Increasing ESS energy capacity lowers electricity cost.
+
+Increasing ESS power capacity significantly increases reserve-market revenue.
+
+Increasing transformer capacity can also improve reserve-market participation because the transformer itself can become the bottleneck.
+
+So the economic value of station flexibility depends on:
+
+**battery energy capacity + battery power capacity + transformer capacity**
+
+rather than the ESS alone.
+
+---
+
+### 19. Computational improvement
+
+The paper compares:
+
+- centralized optimization;
+- hierarchical optimization with accelerated Benders decomposition;
+- hierarchical optimization with basic Benders decomposition.
+
+All methods reach the same optimum.
+
+However, the proposed accelerated hierarchical method requires only about:
+
+**12.5% of the computation time of the centralized model**
+
+in the reported comparison.
+
+This is one of the strongest contributions of the paper.
+
+The method therefore addresses both:
+
+- model scalability;
+- feasibility of disaggregation.
+
+---
+
+### 20. What this paper teaches
+
+#### Lesson 1 — Flexibility modeling is as important as optimization
+
+Before optimizing a large bus fleet, the operator needs a compact description of what the buses can actually do.
+
+#### Lesson 2 — Multi-trip EVs have strong temporal coupling
+
+A bus's flexibility cannot be modeled as a set of independent charging windows.
+
+Earlier charging decisions affect later trip feasibility.
+
+#### Lesson 3 — Aggregation can create false flexibility
+
+A compact aggregate model is useful, but it must still be possible to map the result back to individual vehicles.
+
+#### Lesson 4 — Buses can provide market services, not only consume energy
+
+Unused charging flexibility can become reserve capacity and generate revenue.
+
+#### Lesson 5 — Hierarchical optimization is valuable for very large fleets
+
+The upper level can make market decisions using aggregate models, while lower levels preserve individual operational feasibility.
+
+---
+
+### 21. Limitations
+
+Important limitations include:
+
+- uncertainty is represented by a limited scenario set;
+- the paper does not use Distributionally Robust Optimization (DRO);
+- battery degradation cost is not included in the objective;
+- Vehicle-to-Grid (V2G) operation is not the main focus of the bus model;
+- network constraints outside the station transformer are not modeled in detail;
+- electricity prices are treated as exogenous;
+- the stochastic case still requires a long computation time;
+- bus schedules are assumed known in advance.
+
+The authors explicitly identify **Distributionally Robust Optimization** as a promising future direction.
+
+---
+
+### 22. Research idea triggers
+
+Possible extensions include:
+
+- Distributionally Robust Optimization for uncertain trip-energy consumption;
+- rolling-horizon or real-time EBO scheduling;
+- battery degradation-aware EB and ESS operation;
+- V2G-enabled electric buses;
+- network-constrained charging with distribution-grid voltage and line limits;
+- joint market bidding in energy, reserve, and regulation markets;
+- adaptive flexibility boundaries updated from real bus telemetry;
+- coordinated scheduling of EB fleet, ESS, PV, and charging infrastructure;
+- stochastic timetable disruption and trip-delay modeling;
+- comparison of hierarchical optimization, MPC, and learning-based methods;
+- integrated planning of charger number, transformer size, and ESS capacity.
+
+**Problem-map tags:** `electric bus operator` · `trip-chain flexibility` · `stochastic charging` · `energy market bidding` · `reserve market` · `hierarchical optimization` · `Benders decomposition` · `ESS`
+
+:::

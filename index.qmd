@@ -15,3 +15,35 @@ Click on the title of the document to expand or collapse the full text. Subseque
 {{< include papers/p004-zhang2023-hydrogen/_p004-zhang2023-hydrogen.qmd >}}
 
 {{< include papers/p005-chakraborty2023/_p005-chakraborty2023.qmd >}}
+
+{{< include papers/p006-li2025-sdvpp/_p006-li2025-sdvpp.qmd >}}
+
+{{< include papers/p007-li2023-rea-game/_p007-li2023-rea-game.qmd >}}
+
+{{< include papers/p008-mu2023-cer-market/_p008-mu2023-cer-market.qmd >}}
+
+{{< include papers/p009-cao2026-differential-privacy/_p009-cao2026-differential-privacy.qmd >}}
+
+{{< include papers/p010-zhang2023-ddcc-dr/_p010-zhang2023-ddcc-dr.qmd >}}
+
+{{< include papers/p011-luo2026-railway-game-rl/_p011-luo2026-railway-game-rl.qmd >}}
+
+{{< include papers/p012-altaha2025-ev-flexibility/_p012-altaha2025-ev-flexibility.qmd >}}
+
+{{< include papers/p013-chen2023-energy-sharing/_p013-chen2023-energy-sharing.qmd >}}
+
+{{< include papers/p014-rouhani2024-cyber-resilient-control/_p014-rouhani2024-cyber-resilient-control.qmd >}}
+
+{{< include papers/p015-duan2023-electric-bus-bidding/_p015-duan2023-electric-bus-bidding.qmd >}}
+
+{{< include papers/p016-yan2023-bilevel-carbon-trading/_p016-yan2023-bilevel-carbon-trading.qmd >}}
+
+{{< include papers/p017-liu2025-carbon-aware-p2p-ne-trpo/_p017-liu2025-carbon-aware-p2p-ne-trpo.qmd >}}
+
+{{< include papers/p018-jahangir2024-ev-cma-detection/_p018-jahangir2024-ev-cma-detection.qmd >}}
+
+{{< include papers/p019-wu2025-ev-vsm-two-stage/_p019-wu2025-ev-vsm-two-stage.qmd >}}
+
+{{< include papers/p020-he2026-tmcs-lrh-vfa/_p020-he2026-tmcs-lrh-vfa.qmd >}}
+
+{{< include papers/p021-tao2023-customer-centered-nilm/_p021-tao2023-customer-centered-nilm.qmd >}}
